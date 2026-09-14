@@ -1,0 +1,98 @@
+[
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-8hc4-vh64-cxmj",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.7.9"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.9.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-8hc4-vh64-cxmj",
+    "Raw": {
+      "source": 1098583,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Server-Side Request Forgery in axios",
+      "url": "https://github.com/advisories/GHSA-8hc4-vh64-cxmj",
+      "severity": "high",
+      "cwe": [
+        "CWE-918"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+      },
+      "range": "\u003c1.7.4"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-7fh5-64p2-3v2j",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "5.4.11"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "development",
+      "transitive": true,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.9.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-7fh5-64p2-3v2j",
+    "Raw": {
+      "source": 1094544,
+      "name": "postcss",
+      "dependency": "postcss",
+      "title": "PostCSS line return parsing error",
+      "url": "https://github.com/advisories/GHSA-7fh5-64p2-3v2j",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-74"
+      ],
+      "cvss": {
+        "score": 5.3,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+      },
+      "range": "\u003c8.4.31"
+    }
+  }
+]

@@ -1,0 +1,80 @@
+[
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "staticcheck",
+    "RuleID": "SA1019",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "internal/api/client.go",
+    "ResourceKey": "",
+    "Line": 88,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "LOW",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "2024.1.1",
+    "AdvisoryURL": "",
+    "Raw": {
+      "code": "SA1019",
+      "severity": "warning",
+      "location": {
+        "file": "/tmp/scan-7f21a/clone/internal/api/client.go",
+        "line": 88,
+        "col": 2
+      },
+      "message": "crypto/tls.Config.NameToCertificate is deprecated: NameToCertificate only allows associating a single certificate with a given name."
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "staticcheck",
+    "RuleID": "SA1000",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "internal/validate/rules.go",
+    "ResourceKey": "",
+    "Line": 23,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "2024.1.1",
+    "AdvisoryURL": "",
+    "Raw": {
+      "code": "SA1000",
+      "severity": "error",
+      "location": {
+        "file": "/tmp/scan-7f21a/clone/internal/validate/rules.go",
+        "line": 23,
+        "col": 14
+      },
+      "message": "invalid regular expression: error parsing regexp: missing closing ]"
+    }
+  }
+]

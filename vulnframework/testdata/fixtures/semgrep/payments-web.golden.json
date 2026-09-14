@@ -1,0 +1,118 @@
+[
+  {
+    "Repo": "org/payments-web",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "semgrep",
+    "RuleID": "javascript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "src/components/Render.jsx",
+    "ResourceKey": "",
+    "Line": 24,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "1.86.0",
+    "AdvisoryURL": "https://reactjs.org/docs/dom-elements.html#dangerouslysetinnerhtml",
+    "Raw": {
+      "check_id": "javascript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml",
+      "path": "src/components/Render.jsx",
+      "start": {
+        "line": 24,
+        "col": 9
+      },
+      "end": {
+        "line": 24,
+        "col": 60
+      },
+      "extra": {
+        "message": "Setting HTML from code is risky because it's easy to inadvertently expose your users to a cross-site scripting (XSS) attack.",
+        "severity": "WARNING",
+        "metadata": {
+          "cwe": [
+            "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+          ],
+          "owasp": [
+            "A07:2017 - Cross-Site Scripting (XSS)"
+          ],
+          "category": "security",
+          "confidence": "MEDIUM",
+          "references": [
+            "https://reactjs.org/docs/dom-elements.html#dangerouslysetinnerhtml"
+          ]
+        },
+        "is_ignored": false
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "semgrep",
+    "RuleID": "javascript.lang.security.audit.code-string-concat.code-string-concat",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "src/util/url.js",
+    "ResourceKey": "",
+    "Line": 11,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "HIGH",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "1.86.0",
+    "AdvisoryURL": "",
+    "Raw": {
+      "check_id": "javascript.lang.security.audit.code-string-concat.code-string-concat",
+      "path": "src/util/url.js",
+      "start": {
+        "line": 11,
+        "col": 3
+      },
+      "end": {
+        "line": 11,
+        "col": 48
+      },
+      "extra": {
+        "message": "Detected string concatenation with a non-literal variable in a call to a code-evaluating function.",
+        "severity": "ERROR",
+        "metadata": {
+          "cwe": [
+            "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+          ],
+          "owasp": [
+            "A03:2021 - Injection"
+          ],
+          "category": "security",
+          "confidence": "HIGH",
+          "references": []
+        },
+        "is_ignored": false
+      }
+    }
+  }
+]

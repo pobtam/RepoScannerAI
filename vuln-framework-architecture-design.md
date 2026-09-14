@@ -19,7 +19,7 @@
 | 0.3 | 2026-09-02 | Report generation subsystem (§14.5–14.9): report identity, anchoring, template registry, renderer pipeline, delivery, and ADR-15. Satisfies VM-FR v0.3 §5.12. |
 | 0.2 | 2026-09-02 | Run identity as per-kind sequence (§4.2, ADR-11). Coverage history persistence and gap classification (§4.2, §8.6). Verification gated on successful scan (ADR-12). Per-consumer reachability and fan-out (§12, ADR-13). SLA computation (§9.5). API additions for scope, coverage, waves and SLA (§6.2). Satisfies VM-FR v0.2 and VM-UI v0.2. |
 
-> **Reading order for an implementing agent.** Read §16 (Build sequence) first. It defines the phase order and the acceptance gate for each phase. Do not begin a phase until the prior phase's gate is green. Sections 1–15 are the reference material each phase needs.
+> **Reading order for an implementing agent.** Read §17 (Build sequence) first. It defines the phase order and the acceptance gate for each phase. Do not begin a phase until the prior phase's gate is green. Sections 1–15 are the reference material each phase needs.
 
 ---
 

@@ -1,0 +1,69 @@
+{
+  "version": "1.86.0",
+  "errors": [],
+  "paths": {"scanned": ["src/components/Render.jsx", "src/api/client.js", "src/util/url.js"]},
+  "results": [
+    {
+      "check_id": "javascript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml",
+      "path": "src/components/Render.jsx",
+      "start": {"line": 24, "col": 9, "offset": 612},
+      "end": {"line": 24, "col": 60, "offset": 663},
+      "extra": {
+        "message": "Setting HTML from code is risky because it's easy to inadvertently expose your users to a cross-site scripting (XSS) attack.",
+        "metadata": {
+          "cwe": ["CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"],
+          "owasp": ["A07:2017 - Cross-Site Scripting (XSS)"],
+          "references": ["https://reactjs.org/docs/dom-elements.html#dangerouslysetinnerhtml"],
+          "category": "security",
+          "technology": ["react"],
+          "confidence": "MEDIUM",
+          "likelihood": "MEDIUM",
+          "impact": "MEDIUM",
+          "subcategory": ["audit"]
+        },
+        "severity": "WARNING",
+        "fingerprint": "8f2c1a09d4e77b31",
+        "lines": "        <div dangerouslySetInnerHTML={{ __html: props.body }} />",
+        "is_ignored": false
+      }
+    },
+    {
+      "check_id": "javascript.lang.security.audit.code-string-concat.code-string-concat",
+      "path": "src/util/url.js",
+      "start": {"line": 11, "col": 3, "offset": 240},
+      "end": {"line": 11, "col": 48, "offset": 285},
+      "extra": {
+        "message": "Detected string concatenation with a non-literal variable in a call to a code-evaluating function.",
+        "metadata": {
+          "cwe": ["CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"],
+          "owasp": ["A03:2021 - Injection"],
+          "references": [],
+          "category": "security",
+          "technology": ["javascript"],
+          "confidence": "HIGH",
+          "likelihood": "HIGH",
+          "impact": "HIGH",
+          "subcategory": ["vuln"]
+        },
+        "severity": "ERROR",
+        "fingerprint": "2b77e0c5fa1d9e04",
+        "lines": "  return eval('handler_' + name)();",
+        "is_ignored": false
+      }
+    },
+    {
+      "check_id": "javascript.lang.best-practice.leftover-debugging.javascript-console-log",
+      "path": "src/api/client.js",
+      "start": {"line": 57, "col": 5, "offset": 1402},
+      "end": {"line": 57, "col": 38, "offset": 1435},
+      "extra": {
+        "message": "Leftover debugging statement detected.",
+        "metadata": {"category": "best-practice", "technology": ["javascript"], "confidence": "LOW", "likelihood": "LOW", "impact": "LOW"},
+        "severity": "INFO",
+        "fingerprint": "c19a4b7e2f0d8a55",
+        "lines": "    console.log('response', response)",
+        "is_ignored": false
+      }
+    }
+  ]
+}

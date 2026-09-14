@@ -10,7 +10,7 @@ green.
 | Phase | Status | Gate |
 |---|---|---|
 | **0** — module scaffold, `internal/model`, `internal/fingerprint` | **Green** | passing |
-| 1 — scanner adapters + fixtures | Not started | |
+| **1** — scanner adapters + `testdata/fixtures` | **Green** | passing |
 | 2 — store + migrations | Not started | |
 | 3–12 | Not started | |
 | U0–U10 — frontend | Not started | |
@@ -109,12 +109,16 @@ specification enumerates it. The first four are those used throughout
 no severity must be representable rather than silently collapsing to `LOW`.
 `UNKNOWN` sorts after `LOW` — it is an absence, not a severity floor.
 
-**A4 — A partial scan does not verify.** VM-ADR-12 requires a "successful" scan
-for `VERIFIED`; VM-AD §4.2 gives the outcome enum `complete | partial | failed`,
-and neither says which of those counts as successful. Only `complete` verifies.
-Rationale: in a partial scan the lost signal may be precisely the one that would
-have observed the finding, which is the exact failure mode ADR-12 exists to
-prevent. *Narrow reading; widen only with a stated reason.*
+**A4 — A partial scan does not verify. → CONFIRMED as the shipping floor
+2026-09-14.** VM-ADR-12 requires a "successful" scan for `VERIFIED`; VM-AD §4.2
+gives the outcome enum `complete | partial | failed`, and neither says which of
+those counts as successful. Only `complete` verifies. Rationale: in a partial
+scan the lost signal may be precisely the one that would have observed the
+finding, which is the exact failure mode ADR-12 exists to prevent.
+
+*Decision (owner, 2026-09-14): keep the narrow reading as the shipping floor
+through Phase 2.* The refinement below is recorded as OQ-P1-01 and is **not to be
+implemented now.**
 
 **A5 — JSON `null` reachability is rejected rather than coerced to
 `"unknown"`.** Absence of a value and a positive assertion of ignorance are
@@ -122,15 +126,31 @@ different claims, and the tri-state exists to keep them distinct.
 
 ### Open questions hit
 
-**OQ-P0-01 — `WONT_FIX` is unreachable.** It is declared in the VM-AD §6 state
-enumeration but appears in no row of the §6.1 transition table, so no finding can
-ever enter it. It is implemented (and partitioned as unresolved) but no
-transition admits it. Either the table is missing a row — plausibly
-`NEEDS_HUMAN → WONT_FIX` by human decision, parallel to
-`FALSE_POSITIVE_CANDIDATE → SUPPRESSED` — or the state should be removed.
-`TestWontFixIsUnreachable` locks the current reading and will fail loudly if a
-transition is added, as a prompt to update this log. **Needs a decision before
-Phase 6** (policy) — a `WONT_FIX` outcome would otherwise have no route.
+**OQ-P0-01 — `WONT_FIX` is unreachable. → RESOLVED 2026-09-14.**
+
+*Question as raised:* `WONT_FIX` is declared in the VM-AD §6 state enumeration
+but appears in no row of the §6.1 transition table, so no finding can ever enter
+it. Missing row, or remove the state?
+
+*Decision (owner, 2026-09-14): keep the state.* It represents **accepted risk** —
+a real, exploitable finding the organisation consciously chooses not to
+remediate. Neither neighbouring state can express that: `DECLINED` is a rejected
+fix on a still-unresolved finding, and `SUPPRESSED` is a false positive. It is
+reached by a **human action only, never by policy**, so there is no policy
+`wont_fix` outcome and **this does not block Phase 6**.
+
+*Planned edit, deferred to the human write-actions work — not implemented now:*
+
+| Change | Detail |
+|---|---|
+| VM-AD §6.1 transition table | Add `NEEDS_HUMAN → WONT_FIX`, trigger: human decision, actor: `human` |
+| VM-FR §5.3 partition (VM-F-159) | `WONT_FIX` becomes its own **accepted risk** partition: resolved for SLA and queue purposes, **never folded into `VERIFIED`** — the risk is still present and must remain distinguishable in any count |
+
+Both are **required changes to the specifications**, not just to code. Until they
+land, `TestWontFixIsUnreachable` stays in place as a lock and will fail loudly if
+a transition is added, as a prompt to update this log. The model currently
+partitions `WONT_FIX` as unresolved; that moves to the new bucket with the same
+edit.
 
 **OQ-P0-02 — `MERGED` partitioning interacts with VM-OQ-09.** VM-F-159 makes
 `MERGED` its own partition, which the model implements. VM-OQ-09 still asks how
@@ -139,10 +159,33 @@ without prejudging it; the answer is needed before Phase 7 (reporting), and
 VM-UI-OQ-09 must be answered identically or the interface and the reports will
 disagree.
 
-**OQ-P0-03 — documentation inconsistency, no impact.** VM-AD's reading-order
-note directs an implementing agent to "§16 (Build sequence)", but §16 is
-Architecture Decision Records and §17 is the Build sequence. Followed §17 as
-instructed. Related: ADR-14 appears after ADR-15 in §16.
+**OQ-P0-03 — documentation inconsistency. → FIXED 2026-09-14.** VM-AD's
+reading-order note directed an implementing agent to "§16 (Build sequence)", but
+§16 is Architecture Decision Records and §17 is the Build sequence. Corrected in
+the specification to read §17 (VM-AD line 22). Phase 0 followed §17, which was
+the right sequence. Still outstanding, cosmetic and unfixed: ADR-14 appears after
+ADR-15 in §16.
+
+### Carried forward to later phases
+
+**OQ-P1-01 — verification from a partial scan, at tool granularity.** Deliberate
+widening of A4, to be implemented later as a tested change, **not now**.
+
+> Verify from a partial scan **iff** every tool in the finding's
+> `provenance.tools` appears in that scan's `repo_scan_results.tools_ok`
+> (equivalently: is disjoint from `tools_failed`).
+
+*Rationale (owner, 2026-09-14):* the narrow floor has its own failure mode — if
+any one tool is chronically flaky, a repository never verifies anything and open
+counts inflate indefinitely. The tool-level reading fixes that while fully
+honouring ADR-12, because the question ADR-12 actually asks is whether *the
+scanner that would have observed this finding* ran successfully, not whether
+every scanner did.
+
+Acceptance when implemented: a finding whose detecting tool succeeded **verifies**
+from a partial scan; a finding whose detecting tool failed **does not**. Both
+directions must be tested. Requires `provenance.tools` to be reliably populated,
+which Phase 1 establishes.
 
 ### How to run the gate
 
@@ -150,5 +193,162 @@ instructed. Related: ADR-14 appears after ADR-15 in §16.
 cd vulnframework
 go vet ./... && go test ./... -race
 ```
+
+---
+
+## Phase 1 — Scanner adapters + `testdata/fixtures`
+
+**Gate (VM-AD §17):** *Each adapter normalises its captured fixture to expected
+output byte-for-byte. Alias resolution collapses the `govulncheck` and
+`osv-scanner` reports of one defect to one fingerprint.*
+
+**Status: green.** 81 top-level tests (180 with subtests) across the module.
+`go vet` and `gofmt` clean, passes under `-race`. Still no external Go
+dependency, and no test touches a binary, a network or a credential.
+
+### What landed
+
+**`internal/scan`** — the VM-AD §8.4 adapter contract: `Adapter`, `RepoProfile`,
+`RunOpts`, `RawOutput`, a name-keyed `Registry` with profile-based selection,
+and a `config/tools.lock` parser (VM-AD §8.3, VM-F-202).
+
+**`internal/scan/runner`** — `CommandRunner` with two implementations: `Exec`
+for real binaries and `Fake` for fixtures. A non-zero exit is a *result* (a
+scanner exits non-zero because it found something); an execution failure is an
+*error* (that is a coverage gap, VM-F-205). Conflating the two would turn every
+repository with a finding into a coverage gap.
+
+**`internal/scan/adapters`** — nine adapters, each with a fixture and a golden:
+
+| Adapter | Category | Notes |
+|---|---|---|
+| `govulncheck` | dependency | The reachability authority for Go (VM-F-221). Collapses its own module/package/symbol messages to one finding. Reports severity `UNKNOWN` — the Go vulnerability database does not score advisories. |
+| `osv-scanner` | dependency | Go + JavaScript. Carries CVSS; never asserts reachability. |
+| `gosec` | code | Thresholds per tier (VM-F-224); honours `#nosec`. |
+| `staticcheck` | code | Filtered to a security subset (see A7). |
+| `gitleaks` | secret | **Redaction enforcement point** (VM-F-264). |
+| `trivy` | config | Dockerfile + Kubernetes; only `FAIL` status is a finding. |
+| `semgrep` | code | JavaScript; filtered to `category: security`. |
+| `npm-audit` | dependency | Extracts GHSA from the advisory URL; dev/prod from `package.json`. |
+| `actions-pin` | config | Internal check, no binary (VM-F-266). |
+
+### The gate, and proof it can fail
+
+Each clause was verified by mutation — the behaviour was deliberately broken and
+the suite confirmed to fail, then restored:
+
+| Mutation | Caught by |
+|---|---|
+| Alias resolution disabled | `TestCrossToolAliasCollapse` — "one defect produced two fingerprints" |
+| Credential copied into retained raw output | `TestGitleaksRedactsCredentialMaterial` |
+| Credential concatenated into `CredentialType` | `TestGitleaksRedactsCredentialMaterial` |
+| Module-level findings treated as reachable | `TestGovulncheckReachability` + the golden |
+
+The alias-collapse clause is genuinely exercised: the fixtures have govulncheck
+report `GO-2025-3106` and osv-scanner report `GHSA-hcg3-q754-cr77` for the same
+`golang.org/x/crypto` defect. The test asserts the two identifiers *differ*
+before asserting the fingerprints *match*, so it cannot pass vacuously.
+
+`TestCrossToolReachabilityDisagreement` records why the collapse matters: for the
+shared fingerprint, govulncheck supplies reachability and no severity, while
+osv-scanner supplies severity and no reachability. Merging those complementary
+attributes is Phase 2's job and is only possible because the fingerprints agree.
+
+### Secret redaction (VM-F-263/264)
+
+gitleaks reports the matched credential verbatim in its `Secret` and `Match`
+fields. The adapter never copies either into a finding, and the retained raw
+output is a **reconstruction** from safe fields only (`redactedHit`), so there is
+no path by which credential material can reach the store. The committed golden
+file `testdata/fixtures/gitleaks/go-api.golden.json` is itself readable evidence:
+it shows the path, line, credential class and `"redacted": true`, and no value.
+
+This is the unit-level half of v1.0 acceptance criterion 8. The end-to-end half
+(never appears in any report or ticket body) lands in Phases 7 and 8.
+
+### Stubbed / deferred
+
+| Item | To |
+|---|---|
+| Diff-scoped filtering — `RunOpts.Mode`/`ChangedFiles` are defined and semgrep passes `--baseline-commit`, but the code/secret/config vs dependency split (VM-AD §8.5) is applied by the scan worker | Phase 3 |
+| Coverage-gap assembly — adapters distinguish execution failure from findings; building the gap record and its total/partial classification (VM-F-211/212) | Phase 3 |
+| Repository profiling — `RepoProfile` is consumed but nothing populates it from a real checkout (VM-F-208) | Phase 3 |
+| `first_party_path` classification during normalisation (VM-AD §12.2) | Phase 11 |
+| Scanner image + digest — `tools.lock` pins versions; `image` is a placeholder until the image build exists | Phase 3 |
+| `go mod verify`, Go workspace/multi-module handling (VM-F-225) | Phase 3 |
+| gitleaks history scanning on a separate schedule (VM-F-262) | operational, post-Phase 3 |
+
+### Assumptions made
+
+**A6 — Fixtures are hand-authored to each tool's documented JSON schema, not
+captured from real tool runs.** This is the one place Phase 1 departs from the
+letter of VM-AD §8.4, which says to "store real captured tool output", and it is
+worth stating plainly: Phases 0–2 are specified to run with no external infra, so
+there is no scanner image from which to capture. Each fixture reproduces its
+tool's real output shape (govulncheck's NDJSON `config`/`osv`/`finding` stream,
+osv-scanner's `results[].packages[].vulnerabilities[]`, gosec's `Issues[]` with
+string-typed `line`, npm audit's `auditReportVersion: 2` with heterogeneous
+`via[]`, and so on), but they are constructed, not observed. **Action required in
+Phase 3:** once the scanner image exists, re-capture every fixture from a real
+run against the synthetic repositories and regenerate the goldens
+(`go test ./internal/scan/adapters -update`). A golden diff at that point is
+expected and informative — it is the adapters meeting reality.
+
+**A7 — staticcheck's security subset is defined here, not by the specification.**
+VM-AD §8.2 requires filtering "to the security rule subset only" but neither
+enumerates it nor points at one, and staticcheck publishes no security
+categorisation. `securityRelevantChecks` lists 13 checks, each with a stated
+security consequence in the source. Without a filter, staticcheck's correctness
+and style diagnostics would swamp the finding store — the same failure mode
+VM-ADR-05 describes for ticket volume. *Reviewable list; expect it to change
+during VM-OQ-06 calibration in Phase 5.*
+
+**A8 — `RawOutput.Aux` carries auxiliary repository files into normalisation.**
+`npm audit --json` does not record whether a vulnerable package is a
+development-only dependency, but VM-F-242 requires that classification. Rather
+than reading `package.json` inside `Normalize` (which would stop it being a pure
+function of bytes and make the fixture tests meaningless), the file is supplied
+in `RawOutput.Aux`. With no manifest the adapter classifies as `production`:
+under-stating a development dependency is safe, over-stating a production one is
+not.
+
+**A9 — `actions-pin` is a ninth adapter, beyond the eight files listed in VM-AD
+§3.** The §3 layout names eight adapter files, but the §8.2 tool matrix has a
+ninth row — the internal Actions SHA-pinning check — and VM-F-266 is a MUST.
+Implemented as `adapters/actionspin.go`. It is the one adapter with no external
+binary; it satisfies the same interface so the scan worker treats it identically.
+
+**A10 — npm dependency findings carry an empty `ModuleMajor`.** npm packages
+encode no major version in their name and the audit report does not state the
+installed version, so the package name alone locates the finding. Consequence:
+a vulnerability in axios v1 and one in axios v2 would share a fingerprint where
+the advisory id is the same. Acceptable — advisories are version-ranged, so
+distinct majors almost always carry distinct advisory ids. *Revisit if
+osv-scanner's JavaScript findings (which do carry the installed version) and
+npm-audit's disagree in practice.*
+
+**A11 — severity band mappings.** `MODERATE`→`MEDIUM` (OSV, npm);
+semgrep `ERROR`/`WARNING`/`INFO`→`HIGH`/`MEDIUM`/`LOW`; staticcheck
+`error`→`MEDIUM`, `warning`→`LOW`; secrets fixed at `CRITICAL` per VM-AD §9.4.
+None of these mappings is specified.
+
+### Open questions hit
+
+**OQ-P1-02 — two tools, two severities, one fingerprint.** govulncheck and
+osv-scanner produce the same fingerprint with different attributes: severity
+`UNKNOWN` + reachability `true` from one, severity `HIGH` + reachability
+`unknown` from the other. Phase 1 correctly has each adapter report only what its
+tool knows, but **nothing yet specifies the merge rule**. The natural rule —
+strongest reachability evidence wins, highest severity wins, union the tool list
+— is implemented *within* one adapter's output (`mergeReachability`) but the
+cross-adapter merge belongs in the store. **Needs deciding in Phase 2**, and it
+should be written down rather than emerging from whichever adapter happens to
+upsert last.
+
+**OQ-P1-03 — `VM-OQ-06` remains open and now has a concrete surface.** The
+staticcheck subset (A7) and the gosec `-severity/-confidence` defaults are the
+thresholds VM-OQ-06 asks to calibrate. Both are configurable per tier as
+required; only the defaults are guesses. Phase 5 shadow running is where they get
+real numbers.
 
 ---

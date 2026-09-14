@@ -1,0 +1,131 @@
+[
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "gosec",
+    "RuleID": "G104",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "internal/api/server.go",
+    "ResourceKey": "",
+    "Line": 88,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "LOW",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.21.4",
+    "AdvisoryURL": "https://cwe.mitre.org/data/definitions/703.html",
+    "Raw": {
+      "severity": "LOW",
+      "confidence": "LOW",
+      "cwe": {
+        "id": "703",
+        "url": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "rule_id": "G104",
+      "details": "Errors unhandled",
+      "file": "/tmp/scan-7f21a/clone/internal/api/server.go",
+      "line": "88",
+      "column": "2",
+      "nosec": false
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "gosec",
+    "RuleID": "G401",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "internal/crypto/hash.go",
+    "ResourceKey": "",
+    "Line": 17,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.21.4",
+    "AdvisoryURL": "https://cwe.mitre.org/data/definitions/327.html",
+    "Raw": {
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "cwe": {
+        "id": "327",
+        "url": "https://cwe.mitre.org/data/definitions/327.html"
+      },
+      "rule_id": "G401",
+      "details": "Use of weak cryptographic primitive",
+      "file": "/tmp/scan-7f21a/clone/internal/crypto/hash.go",
+      "line": "17",
+      "column": "7",
+      "nosec": false
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "gosec",
+    "RuleID": "G404",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "internal/token/token.go",
+    "ResourceKey": "",
+    "Line": 42,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "HIGH",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.21.4",
+    "AdvisoryURL": "https://cwe.mitre.org/data/definitions/338.html",
+    "Raw": {
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "cwe": {
+        "id": "338",
+        "url": "https://cwe.mitre.org/data/definitions/338.html"
+      },
+      "rule_id": "G404",
+      "details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+      "file": "/tmp/scan-7f21a/clone/internal/token/token.go",
+      "line": "42",
+      "column": "7",
+      "nosec": false
+    }
+  }
+]

@@ -1,0 +1,73 @@
+[
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-8hc4-vh64-cxmj",
+    "Aliases": [
+      "CVE-2024-39338",
+      "GHSA-8hc4-vh64-cxmj"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.7.4"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.9.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-8hc4-vh64-cxmj",
+    "Raw": {
+      "id": "GHSA-8hc4-vh64-cxmj",
+      "aliases": [
+        "CVE-2024-39338"
+      ],
+      "summary": "Server-Side Request Forgery in axios",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.3.2",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.7.4"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/advisories/GHSA-8hc4-vh64-cxmj"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  }
+]

@@ -1,0 +1,78 @@
+[
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "secret",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "gitleaks",
+    "RuleID": "",
+    "DetectorRuleID": "aws-access-token",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "config/settings.yaml",
+    "ResourceKey": "",
+    "Line": 17,
+    "CredentialType": "aws-access-token",
+    "Versions": {},
+    "Classification": {
+      "severity": "CRITICAL",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v8.21.2",
+    "AdvisoryURL": "",
+    "Raw": {
+      "description": "AWS Access Key",
+      "rule_id": "aws-access-token",
+      "file": "config/settings.yaml",
+      "start_line": 17,
+      "end_line": 17,
+      "entropy": 3.6521,
+      "redacted": true
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "secret",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "gitleaks",
+    "RuleID": "",
+    "DetectorRuleID": "github-pat",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "scripts/deploy.sh",
+    "ResourceKey": "",
+    "Line": 4,
+    "CredentialType": "github-pat",
+    "Versions": {},
+    "Classification": {
+      "severity": "CRITICAL",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v8.21.2",
+    "AdvisoryURL": "",
+    "Raw": {
+      "description": "GitHub Personal Access Token",
+      "rule_id": "github-pat",
+      "file": "scripts/deploy.sh",
+      "start_line": 4,
+      "end_line": 4,
+      "entropy": 4.9012,
+      "redacted": true
+    }
+  }
+]

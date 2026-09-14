@@ -1,0 +1,30 @@
+{
+  "results": [
+    {
+      "source": {"path": "/tmp/scan-91c40/clone/package-lock.json", "type": "lockfile"},
+      "packages": [
+        {
+          "package": {"name": "axios", "version": "1.6.2", "ecosystem": "npm"},
+          "vulnerabilities": [
+            {
+              "id": "GHSA-8hc4-vh64-cxmj",
+              "aliases": ["CVE-2024-39338"],
+              "summary": "Server-Side Request Forgery in axios",
+              "details": "axios follows a redirect to an internal host when given a relative URL.",
+              "affected": [
+                {
+                  "package": {"name": "axios", "ecosystem": "npm"},
+                  "ranges": [{"type": "SEMVER", "events": [{"introduced": "1.3.2"}, {"fixed": "1.7.4"}]}]
+                }
+              ],
+              "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"}],
+              "references": [{"type": "ADVISORY", "url": "https://github.com/advisories/GHSA-8hc4-vh64-cxmj"}],
+              "database_specific": {"severity": "HIGH"}
+            }
+          ],
+          "groups": [{"ids": ["GHSA-8hc4-vh64-cxmj"], "aliases": ["CVE-2024-39338", "GHSA-8hc4-vh64-cxmj"], "max_severity": "7.5"}]
+        }
+      ]
+    }
+  ]
+}

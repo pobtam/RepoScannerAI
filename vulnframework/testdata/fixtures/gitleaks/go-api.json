@@ -1,0 +1,42 @@
+[
+  {
+    "Description": "AWS Access Key",
+    "StartLine": 17,
+    "EndLine": 17,
+    "StartColumn": 13,
+    "EndColumn": 52,
+    "Match": "aws_access_key_id = REDACTED-AWS-EXAMPLE-KEY-ID",
+    "Secret": "REDACTED-AWS-EXAMPLE-KEY-ID",
+    "File": "config/settings.yaml",
+    "SymlinkFile": "",
+    "Commit": "",
+    "Entropy": 3.6521,
+    "Author": "",
+    "Email": "",
+    "Date": "",
+    "Message": "",
+    "Tags": [],
+    "RuleID": "aws-access-token",
+    "Fingerprint": "config/settings.yaml:aws-access-token:17"
+  },
+  {
+    "Description": "GitHub Personal Access Token",
+    "StartLine": 4,
+    "EndLine": 4,
+    "StartColumn": 11,
+    "EndColumn": 51,
+    "Match": "token: REDACTED-FAKE-GITHUB-TOKEN",
+    "Secret": "REDACTED-FAKE-GITHUB-TOKEN",
+    "File": "scripts/deploy.sh",
+    "SymlinkFile": "",
+    "Commit": "",
+    "Entropy": 4.9012,
+    "Author": "",
+    "Email": "",
+    "Date": "",
+    "Message": "",
+    "Tags": [],
+    "RuleID": "github-pat",
+    "Fingerprint": "scripts/deploy.sh:github-pat:4"
+  }
+]

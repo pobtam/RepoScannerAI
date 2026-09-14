@@ -1,0 +1,53 @@
+{
+  "results": [
+    {
+      "source": {"path": "/tmp/scan-7f21a/clone/go.mod", "type": "lockfile"},
+      "packages": [
+        {
+          "package": {"name": "golang.org/x/crypto", "version": "v0.35.0", "ecosystem": "Go"},
+          "vulnerabilities": [
+            {
+              "id": "GHSA-hcg3-q754-cr77",
+              "aliases": ["CVE-2025-22869", "GO-2025-3106"],
+              "summary": "Potential denial of service in golang.org/x/crypto",
+              "details": "SSH servers during the key exchange phase may be susceptible to a memory exhaustion denial of service.",
+              "affected": [
+                {
+                  "package": {"name": "golang.org/x/crypto", "ecosystem": "Go"},
+                  "ranges": [{"type": "SEMVER", "events": [{"introduced": "0"}, {"fixed": "0.36.0"}]}]
+                }
+              ],
+              "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"}],
+              "references": [{"type": "ADVISORY", "url": "https://github.com/advisories/GHSA-hcg3-q754-cr77"}],
+              "database_specific": {"severity": "HIGH"}
+            }
+          ],
+          "groups": [
+            {"ids": ["GHSA-hcg3-q754-cr77"], "aliases": ["CVE-2025-22869", "GHSA-hcg3-q754-cr77", "GO-2025-3106"], "max_severity": "7.5"}
+          ]
+        },
+        {
+          "package": {"name": "github.com/go-jose/go-jose/v4", "version": "v4.0.2", "ecosystem": "Go"},
+          "vulnerabilities": [
+            {
+              "id": "GHSA-c5q2-7r4c-mv6g",
+              "aliases": ["CVE-2024-28180"],
+              "summary": "Improper handling of highly compressed JWE data",
+              "details": "Decrypting a maliciously crafted JWE object can consume large amounts of memory.",
+              "affected": [
+                {
+                  "package": {"name": "github.com/go-jose/go-jose/v4", "ecosystem": "Go"},
+                  "ranges": [{"type": "SEMVER", "events": [{"introduced": "0"}, {"fixed": "4.0.5"}]}]
+                }
+              ],
+              "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"}],
+              "references": [{"type": "ADVISORY", "url": "https://github.com/advisories/GHSA-c5q2-7r4c-mv6g"}],
+              "database_specific": {"severity": "MODERATE"}
+            }
+          ],
+          "groups": [{"ids": ["GHSA-c5q2-7r4c-mv6g"], "aliases": ["CVE-2024-28180", "GHSA-c5q2-7r4c-mv6g"], "max_severity": "5.3"}]
+        }
+      ]
+    }
+  ]
+}

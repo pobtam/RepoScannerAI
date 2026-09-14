@@ -1,0 +1,78 @@
+[
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "config",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "actions-pin",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "ACTIONS-UNPINNED",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": ".github/workflows/ci.yml",
+    "ResourceKey": "actions/checkout",
+    "Line": 23,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.0.0",
+    "AdvisoryURL": "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions",
+    "Raw": {
+      "file": ".github/workflows/ci.yml",
+      "line": 23,
+      "job": "build",
+      "step": "Checkout",
+      "uses": "actions/checkout@v4",
+      "ref": "v4",
+      "pinned": false
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "config",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "actions-pin",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "ACTIONS-UNPINNED",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": ".github/workflows/release.yml",
+    "ResourceKey": "docker/login-action",
+    "Line": 41,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.0.0",
+    "AdvisoryURL": "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions",
+    "Raw": {
+      "file": ".github/workflows/release.yml",
+      "line": 41,
+      "job": "publish",
+      "step": "Login to registry",
+      "uses": "docker/login-action@v3",
+      "ref": "v3",
+      "pinned": false
+    }
+  }
+]

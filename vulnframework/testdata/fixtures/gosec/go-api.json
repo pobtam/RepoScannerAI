@@ -1,0 +1,46 @@
+{
+  "Golang errors": {},
+  "Issues": [
+    {
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "cwe": {"id": "338", "url": "https://cwe.mitre.org/data/definitions/338.html"},
+      "rule_id": "G404",
+      "details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+      "file": "/tmp/scan-7f21a/clone/internal/token/token.go",
+      "code": "41: func NewSessionID() string {\n42: \tn := rand.Int63()\n43: \treturn strconv.FormatInt(n, 36)\n",
+      "line": "42",
+      "column": "7",
+      "nosec": false,
+      "suppressions": null
+    },
+    {
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "cwe": {"id": "327", "url": "https://cwe.mitre.org/data/definitions/327.html"},
+      "rule_id": "G401",
+      "details": "Use of weak cryptographic primitive",
+      "file": "/tmp/scan-7f21a/clone/internal/crypto/hash.go",
+      "code": "17: \th := sha1.New()\n",
+      "line": "17",
+      "column": "7",
+      "nosec": false,
+      "suppressions": null
+    },
+    {
+      "severity": "LOW",
+      "confidence": "LOW",
+      "cwe": {"id": "703", "url": "https://cwe.mitre.org/data/definitions/703.html"},
+      "rule_id": "G104",
+      "details": "Errors unhandled",
+      "file": "/tmp/scan-7f21a/clone/internal/api/server.go",
+      "code": "88: \tdefer resp.Body.Close()\n",
+      "line": "88",
+      "column": "2",
+      "nosec": false,
+      "suppressions": null
+    }
+  ],
+  "Stats": {"files": 128, "lines": 15234, "nosec": 0, "found": 3},
+  "GosecVersion": "2.21.4"
+}

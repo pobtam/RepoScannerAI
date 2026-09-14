@@ -1,0 +1,77 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": ".",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "deploy/Dockerfile",
+      "Class": "config",
+      "Type": "dockerfile",
+      "MisconfSummary": {"Successes": 23, "Failures": 2, "Exceptions": 0},
+      "Misconfigurations": [
+        {
+          "Type": "Dockerfile Security Check",
+          "ID": "DS002",
+          "AVDID": "AVD-DS-0002",
+          "Title": "Image user should not be 'root'",
+          "Description": "Running containers with 'root' user can lead to a container escape situation.",
+          "Message": "Specify at least 1 USER command in Dockerfile with non-root user as argument",
+          "Namespace": "builtin.dockerfile.DS002",
+          "Query": "data.builtin.dockerfile.DS002.deny",
+          "Resolution": "Add 'USER <non root user name>' line to the Dockerfile",
+          "Severity": "HIGH",
+          "PrimaryURL": "https://avd.aquasec.com/misconfig/ds002",
+          "References": ["https://docs.docker.com/develop/develop-images/dockerfile_best-practices/"],
+          "Status": "FAIL",
+          "CauseMetadata": {"Provider": "Dockerfile", "Service": "general", "StartLine": 1, "EndLine": 1, "Code": {"Lines": null}}
+        },
+        {
+          "Type": "Dockerfile Security Check",
+          "ID": "DS026",
+          "AVDID": "AVD-DS-0026",
+          "Title": "No HEALTHCHECK defined",
+          "Description": "You should add HEALTHCHECK instruction in your docker container images.",
+          "Message": "Add HEALTHCHECK instruction in your Dockerfile",
+          "Namespace": "builtin.dockerfile.DS026",
+          "Query": "data.builtin.dockerfile.DS026.deny",
+          "Resolution": "Add HEALTHCHECK instruction in Dockerfile",
+          "Severity": "LOW",
+          "PrimaryURL": "https://avd.aquasec.com/misconfig/ds026",
+          "References": [],
+          "Status": "FAIL",
+          "CauseMetadata": {"Provider": "Dockerfile", "Service": "general", "Code": {"Lines": null}}
+        }
+      ]
+    },
+    {
+      "Target": "deploy/base/api-deployment.yaml",
+      "Class": "config",
+      "Type": "kubernetes",
+      "MisconfSummary": {"Successes": 41, "Failures": 1, "Exceptions": 0},
+      "Misconfigurations": [
+        {
+          "Type": "Kubernetes Security Check",
+          "ID": "KSV012",
+          "AVDID": "AVD-KSV-0012",
+          "Title": "Runs as root user",
+          "Description": "Force the running image to run as a non-root user to ensure least privilege.",
+          "Message": "Container 'api' of Deployment 'wanaware-api' should set 'securityContext.runAsNonRoot' to true",
+          "Namespace": "builtin.kubernetes.KSV012",
+          "Query": "data.builtin.kubernetes.KSV012.deny",
+          "Resolution": "Set 'containers[].securityContext.runAsNonRoot' to true",
+          "Severity": "MEDIUM",
+          "PrimaryURL": "https://avd.aquasec.com/misconfig/ksv012",
+          "References": [],
+          "Status": "FAIL",
+          "CauseMetadata": {"Provider": "Kubernetes", "Service": "general", "StartLine": 18, "EndLine": 24, "Resource": "Deployment/wanaware-api/api", "Code": {"Lines": null}}
+        }
+      ]
+    },
+    {
+      "Target": "deploy/base/configmap.yaml",
+      "Class": "config",
+      "Type": "kubernetes",
+      "MisconfSummary": {"Successes": 12, "Failures": 0, "Exceptions": 0}
+    }
+  ]
+}
