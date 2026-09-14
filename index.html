@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Inline favicon so the browser doesn't log a 404 for /favicon.ico -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232E5A8C'/></svg>"
+    />
+    <title>Vulnerability Report Browser</title>
+    <!-- Tailwind Play CDN: supplies the handful of utility classes the prototype uses
+         for layout. Fine for a local demo; the console production warning is expected. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

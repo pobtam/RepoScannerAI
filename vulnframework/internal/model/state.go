@@ -1,0 +1,367 @@
+package model
+
+import (
+	"fmt"
+	"sort"
+	"time"
+)
+
+// State is the lifecycle state of a finding. Closed enumeration (VM-F-151,
+// VM-AD §6).
+type State string
+
+const (
+	Detected        State = "DETECTED"
+	Triaged         State = "TRIAGED"
+	AutoRemediating State = "AUTO_REMEDIATING"
+	PROpen          State = "PR_OPEN"
+	Merged          State = "MERGED"
+	Verified        State = "VERIFIED"
+	BlockedUpstream State = "BLOCKED_UPSTREAM"
+	NeedsHuman      State = "NEEDS_HUMAN"
+	FPCandidate     State = "FALSE_POSITIVE_CANDIDATE"
+	Suppressed      State = "SUPPRESSED"
+	Declined        State = "DECLINED"
+	WontFix         State = "WONT_FIX"
+	Regressed       State = "REGRESSED"
+)
+
+// AllStates is the closed enumeration, in the order declared by VM-AD §6.
+var AllStates = []State{
+	Detected, Triaged, AutoRemediating, PROpen, Merged, Verified,
+	BlockedUpstream, NeedsHuman, FPCandidate, Suppressed, Declined,
+	WontFix, Regressed,
+}
+
+var stateSet = func() map[State]bool {
+	m := make(map[State]bool, len(AllStates))
+	for _, s := range AllStates {
+		m[s] = true
+	}
+	return m
+}()
+
+// Valid reports whether s is a member of the closed enumeration.
+func (s State) Valid() bool { return stateSet[s] }
+
+func (s State) String() string { return string(s) }
+
+// Partition is the resolution bucket a state belongs to (VM-F-159).
+type Partition string
+
+const (
+	// PartitionResolved — the risk is gone or accepted as absent.
+	PartitionResolved Partition = "resolved"
+	// PartitionPendingVerification — the fix shipped but no successful scan has
+	// yet confirmed the finding absent.
+	PartitionPendingVerification Partition = "pending_verification"
+	// PartitionUnresolved — the vulnerability is still present.
+	PartitionUnresolved Partition = "unresolved"
+)
+
+// statePartition defines the partition once (VM-F-159) so that reporting,
+// ticketing, metrics and any user interface cannot disagree about what
+// "resolved" means.
+//
+// DECLINED is unresolved: a reviewer rejecting an automated fix does not remove
+// the vulnerability. MERGED is its own partition because it is genuinely
+// neither — counting it resolved would let a bad patch close the record before
+// verification, and counting it unresolved overstates outstanding work
+// (VM-OQ-09 remains open on how headline figures present it; this partition is
+// the structural answer that keeps the question askable).
+var statePartition = map[State]Partition{
+	Verified:   PartitionResolved,
+	Suppressed: PartitionResolved,
+
+	Merged: PartitionPendingVerification,
+
+	Detected:        PartitionUnresolved,
+	Triaged:         PartitionUnresolved,
+	AutoRemediating: PartitionUnresolved,
+	PROpen:          PartitionUnresolved,
+	BlockedUpstream: PartitionUnresolved,
+	NeedsHuman:      PartitionUnresolved,
+	FPCandidate:     PartitionUnresolved,
+	Regressed:       PartitionUnresolved,
+	Declined:        PartitionUnresolved,
+	WontFix:         PartitionUnresolved,
+}
+
+// PartitionOf returns the resolution partition for s. It panics on an unknown
+// state: a state absent from the partition map is a programming error that must
+// not reach a report, where it would silently vanish from every total.
+func PartitionOf(s State) Partition {
+	p, ok := statePartition[s]
+	if !ok {
+		panic(fmt.Sprintf("model: state %q has no partition; every state must be partitioned (VM-F-159)", s))
+	}
+	return p
+}
+
+// IsResolved reports whether s is in the resolved partition.
+func IsResolved(s State) bool { return PartitionOf(s) == PartitionResolved }
+
+// IsUnresolved reports whether s is in the unresolved partition.
+// MERGED is neither resolved nor unresolved; see PartitionOf.
+func IsUnresolved(s State) bool { return PartitionOf(s) == PartitionUnresolved }
+
+// StatesInPartition returns the states belonging to p, sorted for determinism.
+func StatesInPartition(p Partition) []State {
+	var out []State
+	for _, s := range AllStates {
+		if statePartition[s] == p {
+			out = append(out, s)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
+	return out
+}
+
+// Actor is the party that caused a state change (VM-F-153).
+type Actor string
+
+const (
+	ActorScanWorker   Actor = "scanworker"
+	ActorTriage       Actor = "triage"
+	ActorOrchestrator Actor = "orchestrator"
+	ActorWorker       Actor = "worker"
+	ActorHuman        Actor = "human"
+)
+
+// Trigger names the event that authorises a transition, per the VM-AD §6.1
+// transition table.
+type Trigger string
+
+const (
+	TriggerFirstObservation  Trigger = "first_observation"
+	TriggerTriageComplete    Trigger = "triage_complete"
+	TriggerPolicyAuto        Trigger = "policy_auto_remediate"
+	TriggerPolicyTicket      Trigger = "policy_open_ticket_or_escalate"
+	TriggerPolicyDefer       Trigger = "policy_defer_upstream"
+	TriggerTriageNomination  Trigger = "triage_nomination"
+	TriggerPRCreated         Trigger = "pull_request_created"
+	TriggerAttemptFailed     Trigger = "attempt_failed"
+	TriggerLeaseExpiry       Trigger = "lease_expiry"
+	TriggerMergeWebhook      Trigger = "merge_webhook"
+	TriggerClosedUnmerged    Trigger = "closed_unmerged"
+	TriggerNotObserved       Trigger = "post_merge_scan_absent"
+	TriggerStillObserved     Trigger = "post_merge_scan_present"
+	TriggerUpstreamPublished Trigger = "upstream_published"
+	TriggerHumanApproval     Trigger = "human_approval"
+	TriggerHumanRejection    Trigger = "human_rejection"
+	TriggerObservedAgain     Trigger = "observed_again"
+	TriggerReentry           Trigger = "reentry"
+	TriggerHumanReset        Trigger = "human_reset"
+)
+
+// edge is one legal transition in the normative table.
+type edge struct {
+	Trigger Trigger
+	Actor   Actor
+}
+
+// transitions is the normative transition table (VM-AD §6.1). Every transition
+// absent from this table is illegal and must be rejected with an error and a
+// logged event (VM-F-152).
+//
+// The zero State ("") is the origin for creation: — → DETECTED.
+var transitions = map[State]map[State]edge{
+	"": {
+		Detected: {TriggerFirstObservation, ActorScanWorker},
+	},
+	Detected: {
+		Triaged: {TriggerTriageComplete, ActorTriage},
+	},
+	Triaged: {
+		AutoRemediating: {TriggerPolicyAuto, ActorOrchestrator},
+		NeedsHuman:      {TriggerPolicyTicket, ActorOrchestrator},
+		BlockedUpstream: {TriggerPolicyDefer, ActorOrchestrator},
+		FPCandidate:     {TriggerTriageNomination, ActorTriage},
+	},
+	AutoRemediating: {
+		PROpen:     {TriggerPRCreated, ActorWorker},
+		NeedsHuman: {TriggerAttemptFailed, ActorWorker},
+		Triaged:    {TriggerLeaseExpiry, ActorOrchestrator},
+	},
+	PROpen: {
+		Merged:   {TriggerMergeWebhook, ActorOrchestrator},
+		Declined: {TriggerClosedUnmerged, ActorOrchestrator},
+	},
+	Merged: {
+		Verified: {TriggerNotObserved, ActorScanWorker},
+		Triaged:  {TriggerStillObserved, ActorScanWorker},
+	},
+	BlockedUpstream: {
+		AutoRemediating: {TriggerUpstreamPublished, ActorOrchestrator},
+	},
+	FPCandidate: {
+		Suppressed: {TriggerHumanApproval, ActorHuman},
+		Triaged:    {TriggerHumanRejection, ActorHuman},
+	},
+	Verified: {
+		Regressed: {TriggerObservedAgain, ActorScanWorker},
+	},
+	Regressed: {
+		Triaged: {TriggerReentry, ActorOrchestrator},
+	},
+	NeedsHuman: {
+		AutoRemediating: {TriggerHumanReset, ActorHuman},
+	},
+	Declined: {
+		// Human reset only (VM-F-154). No automated path re-remediates a
+		// finding a reviewer has rejected, in any subsequent run.
+		Triaged: {TriggerHumanReset, ActorHuman},
+	},
+}
+
+// ScanOutcome is the per-repository outcome of the scan that informs a
+// transition (VM-AD §4.2 repo_scan_results.outcome).
+type ScanOutcome string
+
+const (
+	ScanComplete ScanOutcome = "complete"
+	ScanPartial  ScanOutcome = "partial"
+	ScanFailed   ScanOutcome = "failed"
+	// ScanOutcomeUnknown is the zero value: no scan outcome supplied.
+	ScanOutcomeUnknown ScanOutcome = ""
+)
+
+// TransitionContext carries the evidence and provenance for a state change
+// (VM-F-153).
+type TransitionContext struct {
+	Actor Actor
+	Cause string
+	At    time.Time
+
+	// ScanOutcome is the outcome of the scan of this finding's repository in
+	// the run driving the transition. It is required for any transition into
+	// VERIFIED (VM-ADR-12) and ignored otherwise.
+	ScanOutcome ScanOutcome
+}
+
+// IllegalTransitionError reports a transition absent from the normative table.
+//
+// The model does not log — it has no dependencies (VM-AD §3). The error carries
+// the full context VM-F-152 requires to be logged, and the caller (orchestrator,
+// Phase 4) is responsible for emitting it.
+type IllegalTransitionError struct {
+	From  State
+	To    State
+	Actor Actor
+	Cause string
+}
+
+func (e *IllegalTransitionError) Error() string {
+	from := string(e.From)
+	if from == "" {
+		from = "<new>"
+	}
+	return fmt.Sprintf("illegal state transition %s -> %s (actor=%s cause=%q)", from, e.To, e.Actor, e.Cause)
+}
+
+// UnverifiedAbsenceError reports an attempt to verify a finding on the strength
+// of an absence that a successful scan did not establish (VM-ADR-12, VM-F-160).
+//
+// Absence is not resolution. Without this guard a repository that stops scanning
+// marks its entire finding set as verified: the fleet numbers improve, the risk
+// does not, and the failure is invisible precisely because it looks like success.
+type UnverifiedAbsenceError struct {
+	From    State
+	Outcome ScanOutcome
+}
+
+func (e *UnverifiedAbsenceError) Error() string {
+	got := string(e.Outcome)
+	if got == "" {
+		got = "<none supplied>"
+	}
+	return fmt.Sprintf(
+		"refusing %s -> VERIFIED: verification requires a successful scan of the repository, got outcome %s (VM-ADR-12: absence is not resolution)",
+		e.From, got)
+}
+
+// CanTransition reports whether from -> to appears in the normative transition
+// table. It does not evaluate guards; use ValidateTransition for that.
+func CanTransition(from, to State) bool {
+	_, ok := transitions[from][to]
+	return ok
+}
+
+// TransitionEdge returns the trigger and actor the table associates with
+// from -> to.
+func TransitionEdge(from, to State) (Trigger, Actor, bool) {
+	e, ok := transitions[from][to]
+	return e.Trigger, e.Actor, ok
+}
+
+// AllowedTransitions returns the states reachable from s in one legal step,
+// sorted for determinism.
+func AllowedTransitions(s State) []State {
+	var out []State
+	for to := range transitions[s] {
+		out = append(out, to)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
+	return out
+}
+
+// ValidateTransition checks a proposed state change against the normative
+// transition table and the guards that table does not express.
+//
+// It returns *IllegalTransitionError for a transition absent from the table
+// (VM-F-152) and *UnverifiedAbsenceError for a transition into VERIFIED that is
+// not backed by a successful scan (VM-ADR-12).
+func ValidateTransition(from, to State, ctx TransitionContext) error {
+	if to != "" && !to.Valid() {
+		return &IllegalTransitionError{From: from, To: to, Actor: ctx.Actor, Cause: ctx.Cause}
+	}
+	if from != "" && !from.Valid() {
+		return &IllegalTransitionError{From: from, To: to, Actor: ctx.Actor, Cause: ctx.Cause}
+	}
+	if !CanTransition(from, to) {
+		return &IllegalTransitionError{From: from, To: to, Actor: ctx.Actor, Cause: ctx.Cause}
+	}
+	// Guard: absence is not resolution (VM-ADR-12, VM-F-160). A finding reaches
+	// VERIFIED only where the scan that failed to observe it completed
+	// successfully for that repository. A partial scan is not sufficient: the
+	// lost signal may be precisely the one that would have observed it.
+	if to == Verified && ctx.ScanOutcome != ScanComplete {
+		return &UnverifiedAbsenceError{From: from, Outcome: ctx.ScanOutcome}
+	}
+	return nil
+}
+
+// StateTransition is the audit record of an applied state change (VM-F-153).
+type StateTransition struct {
+	Fingerprint string    `json:"fingerprint"`
+	From        State     `json:"from_state,omitempty"`
+	To          State     `json:"to_state"`
+	Actor       Actor     `json:"actor"`
+	Cause       string    `json:"cause,omitempty"`
+	At          time.Time `json:"at"`
+}
+
+// ApplyTransition validates a proposed state change and, on success, returns
+// the audit record the caller must persist (VM-F-153).
+//
+// It never mutates the finding: the orchestrator is the only component
+// permitted to write findings.state (VM-AD §7.1), and keeping the decision pure
+// lets every other component ask whether a transition is legal without being
+// able to perform one.
+func ApplyTransition(fingerprint string, from, to State, ctx TransitionContext) (StateTransition, error) {
+	if err := ValidateTransition(from, to, ctx); err != nil {
+		return StateTransition{}, err
+	}
+	at := ctx.At
+	if at.IsZero() {
+		at = time.Now().UTC()
+	}
+	return StateTransition{
+		Fingerprint: fingerprint,
+		From:        from,
+		To:          to,
+		Actor:       ctx.Actor,
+		Cause:       ctx.Cause,
+		At:          at.UTC(),
+	}, nil
+}

@@ -1,0 +1,14 @@
+# Node / Vite prototype harness
+node_modules/
+dist/
+.vite/
+
+# Go
+*.test
+*.out
+/vulnframework/bin/
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp
