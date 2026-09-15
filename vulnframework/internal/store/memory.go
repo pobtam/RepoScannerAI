@@ -794,3 +794,47 @@ func (m *Memory) RepoNames(_ context.Context) ([]string, error) {
 	sort.Strings(out)
 	return out, nil
 }
+
+// FleetCoverage derives each repository's coverage state from its scan history.
+func (m *Memory) FleetCoverage(_ context.Context, kind RunKind, repos []string) ([]CoverageState, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Runs of the requested kind, newest first. Coverage is a fleet-wide
+	// property, so it is measured against the fleet-wide run kind rather than
+	// against advisory rescans that only ever touch a subset.
+	var runIDs []string
+	for id, r := range m.runs {
+		if r.Kind == kind {
+			runIDs = append(runIDs, id)
+		}
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(runIDs)))
+
+	order := map[string]int{}
+	for i, id := range runIDs {
+		order[id] = i
+	}
+
+	out := make([]CoverageState, 0, len(repos))
+	for _, repo := range repos {
+		var history []RepoScanResult
+		for _, r := range m.scanResults[repo] {
+			if _, ok := order[r.RunID]; ok {
+				history = append(history, r)
+			}
+		}
+		sort.Slice(history, func(i, j int) bool { return order[history[i].RunID] < order[history[j].RunID] })
+
+		c := coverageFromHistory(repo, history)
+		if c.LastQualifyingRun != "" {
+			if run, ok := m.runs[c.LastQualifyingRun]; ok {
+				at := run.StartedAt
+				c.LastQualifyingAt = &at
+			}
+		}
+		out = append(out, c)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Repo < out[j].Repo })
+	return out, nil
+}

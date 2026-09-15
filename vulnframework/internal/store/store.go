@@ -259,6 +259,14 @@ type Store interface {
 	// AUTO_REMEDIATING back to TRIAGED and returns how many it moved.
 	SweepExpiredLeases(ctx context.Context, now time.Time) (int, error)
 
+	// --- Coverage age (OQ-P4-01) ---
+
+	// RepoNames lists every registered repository, sorted.
+	RepoNames(ctx context.Context) ([]string, error)
+	// FleetCoverage returns each repository's coverage state, derived from its
+	// scan history across runs of the given kind.
+	FleetCoverage(ctx context.Context, kind RunKind, repos []string) ([]CoverageState, error)
+
 	// Close releases resources.
 	Close() error
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -937,4 +938,52 @@ func (p *Postgres) RepoNames(ctx context.Context) ([]string, error) {
 		out = append(out, n)
 	}
 	return out, rows.Err()
+}
+
+// FleetCoverage derives each repository's coverage state from its scan history.
+func (p *Postgres) FleetCoverage(ctx context.Context, kind RunKind, repos []string) ([]CoverageState, error) {
+	out := make([]CoverageState, 0, len(repos))
+
+	for _, repo := range repos {
+		rows, err := p.db.QueryContext(ctx, qRepoScanHistory, repo, string(kind))
+		if err != nil {
+			return nil, fmt.Errorf("store: reading scan history for %s: %w", repo, err)
+		}
+
+		var (
+			history   []RepoScanResult
+			startedAt = map[string]time.Time{}
+		)
+		for rows.Next() {
+			var (
+				r       RepoScanResult
+				outcome string
+				cause   sql.NullString
+				started time.Time
+			)
+			if err := rows.Scan(&r.RunID, &outcome, &cause, &started); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			r.Repo = repo
+			r.Outcome = ScanOutcome(outcome)
+			r.FailureCause = cause.String
+			history = append(history, r)
+			startedAt[r.RunID] = started.UTC()
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+
+		c := coverageFromHistory(repo, history)
+		if at, ok := startedAt[c.LastQualifyingRun]; ok && c.LastQualifyingRun != "" {
+			t := at
+			c.LastQualifyingAt = &t
+		}
+		out = append(out, c)
+	}
+
+	sort.Slice(out, func(i, j int) bool { return out[i].Repo < out[j].Repo })
+	return out, nil
 }

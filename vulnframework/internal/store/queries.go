@@ -177,3 +177,12 @@ ORDER BY fingerprint`
 
 // qRepoNames lists the fleet registry.
 const qRepoNames = `SELECT name FROM repos ORDER BY name`
+
+// qRepoScanHistory returns a repository's scan outcomes for one run kind,
+// newest run first, with the run's start time so coverage age is computable.
+const qRepoScanHistory = `
+SELECT r.run_id, r.outcome, r.failure_cause, n.started_at
+FROM repo_scan_results r
+JOIN runs n ON n.id = r.run_id
+WHERE r.repo = $1 AND n.kind = $2
+ORDER BY n.seq DESC`

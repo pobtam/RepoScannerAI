@@ -858,3 +858,98 @@ concurrency; the remediation advisory lock lands with the workers in **Phase 9**
 and the lease is not a substitute — it is per finding, not per repository.
 
 ---
+
+## Decisions taken after Phase 4 (2026-09-15)
+
+**OQ-P4-01 — deferred-repository starvation. → RESOLVED, implemented as a
+Phase 4 amendment.** See the amendment entry below.
+
+**OQ-P4-02 — per-repository remediation serialisation. → Deferral to Phase 9
+confirmed, with two design constraints recorded in VM-AD §7.3 now** so the
+Phase 9 implementation is not free to pick the wrong mechanism later:
+
+1. **A store-level lock with expiry and reclaim, not `pg_advisory_lock`.** An
+   advisory lock lives in a Postgres session, so the in-memory backend could not
+   honour it — the fake would enforce weaker rules than production, which is the
+   failure mode the conformance suite exists to prevent. A lock row with an
+   expiry reuses the §6.2 lease machinery and adds crash safety: a dead worker
+   does not strand the repository, because the sweeper reclaims the lock exactly
+   as it reverts an expired finding lease.
+2. **Acquisition order: repo lock outer, finding leases inner**, with a
+   repository's findings batched under one repo-lock acquisition. Fixed ordering
+   makes deadlock impossible, and batching matches how remediation already works
+   — one pull request per fix group, one wave per module.
+
+**A18 — store-backed fleet registry. → ACCEPTED, with a named precondition.**
+Coverage honesty depends on registry freshness: the OQ-P2-02 guarantee is
+"coverage is measured against planned scope", and planned scope is only as
+truthful as the registry it is planned from. A repository that exists but was
+never registered is invisible to the guarantee — it cannot even be counted as a
+gap.
+
+**VM-OQ-10 (does the organisation have a GitHub App, or is one to be created?)
+is therefore a named precondition of the OQ-P2-02 coverage guarantee**, not
+merely outstanding plumbing. Until the fleet sync lands, the coverage numbers are
+honest about *registered* repositories and silent about unregistered ones, and
+that limitation must be stated wherever coverage is reported.
+
+---
+
+## Phase 4 amendment — coverage-age ordering, staleness metric, unified escalation
+
+**Gate (amending Phase 4):** *over many sweeps of a fleet larger than the
+per-sweep budget, every repository gets a qualifying scan within a bound and no
+repository's coverage age grows without limit; planning order is deterministic
+given (age, deferral-count, id); a repository deferred — not failed — for the
+escalation threshold escalates.*
+
+**Status: green.** Verified by mutation — reverting to fixed-order planning
+starved three of nine repositories across twelve sweeps, which is the defect this
+amendment closes.
+
+### What changed
+
+**Planning order.** `plan` now orders the in-scope set by coverage staleness
+instead of by name, so the longest-uncovered repository is dispatched first and a
+repository deferred this run rises to the front of the next.
+`RunStats.PlanOrder` records the order so it is inspectable rather than merely
+asserted.
+
+**Staleness metric.** `store.Staleness` reports max, p95 and median coverage age
+plus the stalest repository by name, and is returned on every `RunStats`. It is
+reported *alongside* the gap count, never instead of it:
+`TestStalenessSurfacesStarvationAFlatCountHides` builds two fleets with identical
+gap counts, one rotating and one with a repository unscanned for half a year, and
+asserts the metric distinguishes them. Never-scanned repositories are counted
+separately rather than given an invented age, which would either hide them or
+swamp every percentile.
+
+**Unified escalation.** `store.Escalations` counts consecutive runs without a
+qualifying scan **whatever the cause**, carrying the cause as an attribute.
+Counting only failures let a never-dispatched repository escape escalation
+entirely — the hole this closes. `TestEscalationIsCauseAgnostic` covers all four
+causes: build failure, budget deferral, never dispatched, and lost worker.
+
+### Verified by mutation
+
+| Mutation | Caught by |
+|---|---|
+| Fixed-order planning restored | `TestNoRepositoryStarvesUnderABudget` — three repositories starved |
+| Coverage streak counts only failures | `TestDeferredRepoEscalatesLikeAFailedOne` |
+| A partial scan treated as qualifying | `TestCoverageStreakIgnoresNonQualifyingScans` |
+
+### Assumption made
+
+**A19 — "ascending last-qualifying-scan age" is implemented as most-stale-first.**
+The instruction's two halves point opposite ways: taken literally, ascending
+*age* puts the freshest repository first, which contradicts both "never-scanned
+sort first" and the stated purpose of bounding worst-case coverage age. Read as
+ascending last-qualifying *timestamp* — longest-uncovered first, never-scanned
+before everything — which is the only reading consistent with the rest of the
+decision. *Flag if the literal reading was intended; it would invert the guard.*
+
+`ByCoverageStaleness` is a total order on (timestamp asc, consecutive deferrals
+desc, repo asc), proved order-independent over all 720 permutations of a
+six-repository fixture.
+
+---

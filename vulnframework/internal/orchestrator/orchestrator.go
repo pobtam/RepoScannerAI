@@ -45,6 +45,10 @@ type Config struct {
 	// LeaseDuration is how long a remediation claim is held before the sweeper
 	// reclaims it (VM-AD §6.2).
 	LeaseDuration time.Duration
+
+	// EscalationThreshold is how many consecutive runs without a qualifying
+	// scan trigger escalation (VM-F-215, VM-OQ-10's working default of 2).
+	EscalationThreshold int
 }
 
 func (c Config) withDefaults() Config {
@@ -56,6 +60,9 @@ func (c Config) withDefaults() Config {
 	}
 	if c.LeaseDuration <= 0 {
 		c.LeaseDuration = 30 * time.Minute
+	}
+	if c.EscalationThreshold <= 0 {
+		c.EscalationThreshold = 2
 	}
 	return c
 }
@@ -97,6 +104,20 @@ type RunStats struct {
 	Skipped    int
 	Close      store.CloseStats
 	Reconcile  map[string]store.ReconcileStats
+
+	// PlanOrder is the order repositories were planned in, most-stale coverage
+	// first. Retained so the ordering is inspectable rather than merely
+	// asserted (OQ-P4-01).
+	PlanOrder []string
+
+	// Staleness is the coverage-age distribution after the run, reported
+	// alongside the gap count rather than instead of it: a flat gap count with a
+	// growing maximum age is precisely the starvation a count cannot show.
+	Staleness store.StalenessReport
+
+	// Escalations are repositories whose streak without a qualifying scan has
+	// crossed the threshold, whatever the cause (VM-F-215).
+	Escalations []store.Escalation
 }
 
 // Sweep plans, dispatches, closes and reconciles one run.
@@ -118,12 +139,16 @@ func (o *Orchestrator) Sweep(ctx context.Context, kind store.RunKind, trigger st
 	}
 	stats.RunID = run.ID
 
-	// 1. Record the planned scope, with a reason for anything excluded.
-	plan, err := o.plan(ctx, run.ID, repos, sel)
+	// 1. Record the planned scope, with a reason for anything excluded, ordered
+	//    so the longest-uncovered repository is dispatched first.
+	plan, err := o.plan(ctx, run.ID, kind, repos, sel)
 	if err != nil {
 		return stats, err
 	}
 	stats.Planned = len(plan)
+	for _, e := range plan {
+		stats.PlanOrder = append(stats.PlanOrder, e.Repo)
+	}
 
 	// 2. Dispatch what the budget and concurrency cap allow.
 	dispatched, skipped, err := o.dispatch(ctx, run.ID, plan, repos)
@@ -150,6 +175,19 @@ func (o *Orchestrator) Sweep(ctx context.Context, kind store.RunKind, trigger st
 		stats.Reconcile[e.Repo] = rs
 	}
 
+	// 5. Coverage age across the in-scope fleet, and any escalations. Computed
+	//    after close so deferrals and losses are already recorded.
+	inScope := make([]string, 0, len(plan))
+	for _, e := range plan {
+		inScope = append(inScope, e.Repo)
+	}
+	coverage, err := o.Store.FleetCoverage(ctx, kind, inScope)
+	if err != nil {
+		return stats, err
+	}
+	stats.Staleness = store.Staleness(coverage, o.clock())
+	stats.Escalations = store.Escalations(coverage, o.Config.EscalationThreshold)
+
 	failed := closeStats.NotDispatched + closeStats.NoResult
 	if err := o.Store.FinishRun(ctx, run.ID, len(plan), closeStats.Produced, failed); err != nil {
 		return stats, err
@@ -157,11 +195,18 @@ func (o *Orchestrator) Sweep(ctx context.Context, kind store.RunKind, trigger st
 	return stats, nil
 }
 
-// plan records the in-scope set before any work starts.
-func (o *Orchestrator) plan(ctx context.Context, runID string, repos []store.Repo, sel Selector) ([]store.PlanEntry, error) {
+// plan records the in-scope set before any work starts, ordered by coverage
+// staleness.
+//
+// Ordering is the starvation guard (OQ-P4-01). Planning in a fixed order lets a
+// repository at the end of the fleet be deferred indefinitely whenever the
+// budget is short, while the gap *count* stays flat and nothing looks wrong.
+// Planning most-stale-first bounds the worst case instead: a repository deferred
+// this run rises to the front of the next.
+func (o *Orchestrator) plan(ctx context.Context, runID string, kind store.RunKind, repos []store.Repo, sel Selector) ([]store.PlanEntry, error) {
 	now := o.clock()
 
-	var entries []store.PlanEntry
+	var inScope []string
 	var excluded []store.PlanEntry
 	for _, r := range repos {
 		include, reason := sel(r)
@@ -174,18 +219,28 @@ func (o *Orchestrator) plan(ctx context.Context, runID string, repos []store.Rep
 			})
 			continue
 		}
+		inScope = append(inScope, r.Name)
+	}
+
+	coverage, err := o.Store.FleetCoverage(ctx, kind, inScope)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := make([]store.PlanEntry, 0, len(inScope))
+	for _, c := range store.ByCoverageStaleness(coverage) {
 		entries = append(entries, store.PlanEntry{
-			RunID: runID, Repo: r.Name, State: store.DispatchPlanned, PlannedAt: now,
+			RunID: runID, Repo: c.Repo, State: store.DispatchPlanned, PlannedAt: now,
 		})
 	}
 
+	// The stored plan is sorted by name — it is a set, not an order — while the
+	// returned slice carries the dispatch order.
 	all := append(append([]store.PlanEntry{}, entries...), excluded...)
 	sort.Slice(all, func(i, j int) bool { return all[i].Repo < all[j].Repo })
 	if err := o.Store.RecordPlan(ctx, all); err != nil {
 		return nil, err
 	}
-
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Repo < entries[j].Repo })
 	return entries, nil
 }
 

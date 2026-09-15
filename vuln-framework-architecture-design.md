@@ -515,7 +515,13 @@ Implement a central token-bucket lease: a worker requests `n` API call credits b
 ### 7.3 Concurrency
 
 - Scan workers: parallel across repositories, capped by `max_concurrent_scans` (default 20).
-- Remediation workers: parallel across repositories, **serialised within a repository** by an advisory lock keyed on repository name. Two concurrent remediation jobs on one repository produce conflicting branches and duplicate pull requests.
+- Remediation workers: parallel across repositories, **serialised within a repository**. Two concurrent remediation jobs on one repository produce conflicting branches and duplicate pull requests.
+
+**Two design constraints on that serialisation (normative).**
+
+**It is a store-level lock with expiry and reclaim, not `pg_advisory_lock`.** An advisory lock is held by a session, so it exists only in Postgres and cannot be honoured by the in-memory backend — the fake would then enforce weaker rules than production, which makes every test that uses it a statement about the fake. It also dies with its session in ways that are invisible to the store. A lock row with an expiry, reusing the finding-lease machinery of §6.2, gives the same mutual exclusion plus crash safety: a worker that dies does not strand the repository, because the sweeper reclaims the lock exactly as it reverts an expired finding lease.
+
+**Acquisition order is repo lock outer, finding leases inner.** A worker takes the repository lock first, then leases the findings it intends to fix, and a repository's findings are batched under **one** repo-lock acquisition. Fixed ordering makes deadlock impossible, and batching aligns with how remediation already works — one pull request per fix group, one wave per module — so the lock is held once per repository per attempt rather than once per finding.
 
 ### 7.4 API surface
 
