@@ -1,46 +1,77 @@
 {
-  "Golang errors": {},
-  "Issues": [
-    {
-      "severity": "HIGH",
-      "confidence": "HIGH",
-      "cwe": {"id": "338", "url": "https://cwe.mitre.org/data/definitions/338.html"},
-      "rule_id": "G404",
-      "details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
-      "file": "/tmp/scan-7f21a/clone/internal/token/token.go",
-      "code": "41: func NewSessionID() string {\n42: \tn := rand.Int63()\n43: \treturn strconv.FormatInt(n, 36)\n",
-      "line": "42",
-      "column": "7",
-      "nosec": false,
-      "suppressions": null
-    },
-    {
-      "severity": "MEDIUM",
-      "confidence": "HIGH",
-      "cwe": {"id": "327", "url": "https://cwe.mitre.org/data/definitions/327.html"},
-      "rule_id": "G401",
-      "details": "Use of weak cryptographic primitive",
-      "file": "/tmp/scan-7f21a/clone/internal/crypto/hash.go",
-      "code": "17: \th := sha1.New()\n",
-      "line": "17",
-      "column": "7",
-      "nosec": false,
-      "suppressions": null
-    },
-    {
-      "severity": "LOW",
-      "confidence": "LOW",
-      "cwe": {"id": "703", "url": "https://cwe.mitre.org/data/definitions/703.html"},
-      "rule_id": "G104",
-      "details": "Errors unhandled",
-      "file": "/tmp/scan-7f21a/clone/internal/api/server.go",
-      "code": "88: \tdefer resp.Body.Close()\n",
-      "line": "88",
-      "column": "2",
-      "nosec": false,
-      "suppressions": null
-    }
-  ],
-  "Stats": {"files": 128, "lines": 15234, "nosec": 0, "found": 3},
-  "GosecVersion": "2.21.4"
+	"Golang errors": {},
+	"Issues": [
+		{
+			"severity": "HIGH",
+			"confidence": "MEDIUM",
+			"cwe": {
+				"id": "338",
+				"url": "https://cwe.mitre.org/data/definitions/338.html"
+			},
+			"rule_id": "G404",
+			"details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
+			"file": "/tmp/src/go-api/internal/token/token.go",
+			"code": "12: func NewSessionID() string {\n13: \tn := rand.Int63()\n14: \treturn strconv.FormatInt(n, 36)\n",
+			"line": "13",
+			"column": "7",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "328",
+				"url": "https://cwe.mitre.org/data/definitions/328.html"
+			},
+			"rule_id": "G401",
+			"details": "Use of weak cryptographic primitive",
+			"file": "/tmp/src/go-api/internal/crypto/hash.go",
+			"code": "12: func Fingerprint(in []byte) string {\n13: \th := sha1.New()\n14: \th.Write(in)\n",
+			"line": "13",
+			"column": "7",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "/tmp/src/go-api/internal/api/legacy.go",
+			"code": "12: func LoadTemplate(path string) ([]byte, error) {\n13: \treturn ioutil.ReadFile(path)\n14: }\n",
+			"line": "13",
+			"column": "9",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "327",
+				"url": "https://cwe.mitre.org/data/definitions/327.html"
+			},
+			"rule_id": "G505",
+			"details": "Blocklisted import crypto/sha1: weak cryptographic primitive",
+			"file": "/tmp/src/go-api/internal/crypto/hash.go",
+			"code": "3: import (\n4: \t\"crypto/sha1\"\n5: \t\"encoding/hex\"\n",
+			"line": "4",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		}
+	],
+	"Stats": {
+		"files": 6,
+		"lines": 120,
+		"nosec": 0,
+		"found": 4
+	},
+	"GosecVersion": "v2.29.0"
 }

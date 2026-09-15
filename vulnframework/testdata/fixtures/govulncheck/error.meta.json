@@ -1,0 +1,6 @@
+{
+  "tool": "govulncheck",
+  "tool_version": "v1.8.0",
+  "image": "vulnframework-scanner:v1",
+  "captured_from": "error"
+}

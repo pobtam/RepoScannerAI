@@ -1,0 +1,9 @@
+config
+config.db
+config.db_last_modified
+config.go_version
+config.protocol_version
+config.scan_level
+config.scan_mode
+config.scanner_name
+config.scanner_version

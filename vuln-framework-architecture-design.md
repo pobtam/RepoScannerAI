@@ -335,8 +335,13 @@ CREATE TABLE token_usage (
 CREATE TABLE repo_scan_results (
   run_id            TEXT NOT NULL REFERENCES runs(id),
   repo              TEXT NOT NULL REFERENCES repos(name),
+  -- 'not_dispatched' is distinct from 'failed' on purpose. Coverage is measured
+  -- against planned scope, so an in-scope repository that was never started
+  -- must appear as a gap rather than as silently clean — and the gaps view has
+  -- to separate "a tool failed" from "the scan never ran", because the owner
+  -- and the remedy differ.
   outcome           TEXT NOT NULL
-                    CHECK (outcome IN ('complete','partial','failed')),
+                    CHECK (outcome IN ('complete','partial','failed','not_dispatched')),
   tools_ok          TEXT[] NOT NULL DEFAULT '{}',
   tools_failed      TEXT[] NOT NULL DEFAULT '{}',
   failure_cause     TEXT,                      -- 'clone_timeout', 'build_failure', …
@@ -451,6 +456,14 @@ const (
 | `PR_OPEN` | `DECLINED` | Closed unmerged | orchestrator |
 | `MERGED` | `VERIFIED` | Post-merge scan no longer observes | scanworker |
 | `MERGED` | `TRIAGED` | Post-merge scan still observes | scanworker |
+| `TRIAGED` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
+| `NEEDS_HUMAN` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
+| `BLOCKED_UPSTREAM` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
+| `AUTO_REMEDIATING` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
+| `PR_OPEN` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
+| `REGRESSED` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
+| `DECLINED` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
+| `WONT_FIX` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
 | `BLOCKED_UPSTREAM` | `AUTO_REMEDIATING` | Upstream published | orchestrator |
 | `FALSE_POSITIVE_CANDIDATE` | `SUPPRESSED` | Human approval | human |
 | `FALSE_POSITIVE_CANDIDATE` | `TRIAGED` | Human rejection | human |
@@ -460,6 +473,26 @@ const (
 | `DECLINED` | `TRIAGED` | **Human reset only** | human |
 
 Every other transition is illegal and must be rejected with an error and a logged event (VM-F-152).
+
+### 6.1.1 Disappearance is the universal verification trigger (normative)
+
+A vulnerability can stop being present for reasons the framework did not cause: a developer fixes it by hand, a dependency is removed, an upstream release lands. Reaching `VERIFIED` only from `MERGED` leaves every such finding open for ever, flagged not-re-observed but never closed, and the open count drifts permanently away from reality.
+
+**A finding in any unresolved state verifies when a qualifying scan no longer observes it.** There is one `VERIFIED` state; how it got there is recorded as a verification reason so attribution stays honest:
+
+| Reason | Meaning |
+|---|---|
+| `framework_merge` | The finding passed through `MERGED` — this framework's remediation closed it |
+| `upstream` | Closed by a first-party upstream fix, via `BLOCKED_UPSTREAM` |
+| `external` | Disappeared without the framework merging anything. Someone else fixed it, or the code carrying it was deleted |
+
+**Guard.** "Qualifying" is exactly the successful-scan predicate of VM-ADR-12, unchanged. Absence in a `partial` or `failed` scan verifies nothing: the finding retains its prior state and is flagged not re-observed. Absence is not resolution, and this rule must not become a way around that.
+
+**Side effects.** `AUTO_REMEDIATING → VERIFIED` releases the lease. `PR_OPEN → VERIFIED` closes the now-moot pull request — the defect is gone, so the change is no longer wanted.
+
+**`SUPPRESSED` never auto-verifies.** It is already resolved, and a suppression is a human judgement that the finding was never real; silently converting it to `VERIFIED` would overwrite that judgement with a machine's.
+
+**`DECLINED` and `WONT_FIX` do verify on disappearance, with reason `external`.** Both represent a decision not to act, but the decision is about remediation, not about the facts. If the vulnerability is demonstrably gone, reality outranks the earlier decision, and holding a finding open against a successful scan that cannot see it would be recording something untrue.
 
 ### 6.2 Leases
 

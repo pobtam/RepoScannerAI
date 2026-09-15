@@ -1,0 +1,6 @@
+{
+  "tool": "npm-audit",
+  "tool_version": "10.8.2",
+  "image": "vulnframework-scanner:v1",
+  "captured_from": "error"
+}

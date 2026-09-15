@@ -1,0 +1,16 @@
+Golang errors
+Golang errors.
+Golang errors./tmp/broken-go/main.go
+Golang errors./tmp/broken-go/main.go[].column
+Golang errors./tmp/broken-go/main.go[].error
+Golang errors./tmp/broken-go/main.go[].line
+Golang errors.[].column
+Golang errors.[].error
+Golang errors.[].line
+GosecVersion
+Issues
+Stats
+Stats.files
+Stats.found
+Stats.lines
+Stats.nosec

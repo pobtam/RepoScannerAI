@@ -1,0 +1,22 @@
+Golang errors
+GosecVersion
+Issues
+Issues[].autofix
+Issues[].code
+Issues[].column
+Issues[].confidence
+Issues[].cwe
+Issues[].cwe.id
+Issues[].cwe.url
+Issues[].details
+Issues[].file
+Issues[].line
+Issues[].nosec
+Issues[].rule_id
+Issues[].severity
+Issues[].suppressions
+Stats
+Stats.files
+Stats.found
+Stats.lines
+Stats.nosec

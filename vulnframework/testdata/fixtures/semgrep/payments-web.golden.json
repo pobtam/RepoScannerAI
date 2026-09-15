@@ -5,7 +5,7 @@
     "PrimaryID": "",
     "Aliases": null,
     "Tool": "semgrep",
-    "RuleID": "javascript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml",
+    "RuleID": "typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml",
     "DetectorRuleID": "",
     "CheckID": "",
     "Module": "",
@@ -14,7 +14,7 @@
     "Function": "",
     "File": "src/components/Render.jsx",
     "ResourceKey": "",
-    "Line": 24,
+    "Line": 8,
     "CredentialType": "",
     "Versions": {},
     "Classification": {
@@ -25,91 +25,36 @@
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "1.86.0",
-    "AdvisoryURL": "https://reactjs.org/docs/dom-elements.html#dangerouslysetinnerhtml",
+    "ToolVersion": "1.177.0",
+    "AdvisoryURL": "https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html",
     "Raw": {
-      "check_id": "javascript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml",
+      "check_id": "typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml",
       "path": "src/components/Render.jsx",
       "start": {
-        "line": 24,
-        "col": 9
+        "line": 8,
+        "col": 47
       },
       "end": {
-        "line": 24,
-        "col": 60
+        "line": 8,
+        "col": 57
       },
       "extra": {
-        "message": "Setting HTML from code is risky because it's easy to inadvertently expose your users to a cross-site scripting (XSS) attack.",
+        "message": "Detection of dangerouslySetInnerHTML from non-constant definition. This can inadvertently expose users to cross-site scripting (XSS) attacks if this comes from user-provided input. If you have to use dangerouslySetInnerHTML, consider using a sanitization library such as DOMPurify to sanitize your HTML.",
         "severity": "WARNING",
         "metadata": {
           "cwe": [
             "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
           ],
           "owasp": [
-            "A07:2017 - Cross-Site Scripting (XSS)"
+            "A07:2017 - Cross-Site Scripting (XSS)",
+            "A03:2021 - Injection",
+            "A05:2025 - Injection"
           ],
           "category": "security",
           "confidence": "MEDIUM",
           "references": [
-            "https://reactjs.org/docs/dom-elements.html#dangerouslysetinnerhtml"
+            "https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html"
           ]
-        },
-        "is_ignored": false
-      }
-    }
-  },
-  {
-    "Repo": "org/payments-web",
-    "Category": "code",
-    "PrimaryID": "",
-    "Aliases": null,
-    "Tool": "semgrep",
-    "RuleID": "javascript.lang.security.audit.code-string-concat.code-string-concat",
-    "DetectorRuleID": "",
-    "CheckID": "",
-    "Module": "",
-    "ModuleMajor": "",
-    "Package": "",
-    "Function": "",
-    "File": "src/util/url.js",
-    "ResourceKey": "",
-    "Line": 11,
-    "CredentialType": "",
-    "Versions": {},
-    "Classification": {
-      "severity": "HIGH",
-      "kev": false,
-      "reachable": "true",
-      "dep_class": "n/a",
-      "transitive": false,
-      "first_party_path": null
-    },
-    "ToolVersion": "1.86.0",
-    "AdvisoryURL": "",
-    "Raw": {
-      "check_id": "javascript.lang.security.audit.code-string-concat.code-string-concat",
-      "path": "src/util/url.js",
-      "start": {
-        "line": 11,
-        "col": 3
-      },
-      "end": {
-        "line": 11,
-        "col": 48
-      },
-      "extra": {
-        "message": "Detected string concatenation with a non-literal variable in a call to a code-evaluating function.",
-        "severity": "ERROR",
-        "metadata": {
-          "cwe": [
-            "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
-          ],
-          "owasp": [
-            "A03:2021 - Injection"
-          ],
-          "category": "security",
-          "confidence": "HIGH",
-          "references": []
         },
         "is_ignored": false
       }

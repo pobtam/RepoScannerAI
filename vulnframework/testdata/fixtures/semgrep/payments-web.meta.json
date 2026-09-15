@@ -1,0 +1,6 @@
+{
+  "tool": "semgrep",
+  "tool_version": "1.177.0",
+  "image": "vulnframework-scanner:v1",
+  "captured_from": "payments-web"
+}

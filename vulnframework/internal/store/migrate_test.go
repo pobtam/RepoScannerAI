@@ -53,6 +53,7 @@ func TestMigrationChecksumsAreStable(t *testing.T) {
 	want := map[int]string{
 		1: "init",
 		2: "merge_provenance",
+		3: "verification_reason",
 	}
 	migrations, err := store.LoadMigrations()
 	if err != nil {
@@ -125,6 +126,7 @@ func TestMigrationsApplyAndRollBack(t *testing.T) {
 	assertTablePresent(t, db, "finding_observations")
 	assertTablePresent(t, db, "repo_scan_results")
 	assertColumnPresent(t, db, "findings", "reach_conflict")
+	assertColumnPresent(t, db, "findings", "verified_reason")
 
 	// Down, one version at a time.
 	for v := top - 1; v >= 0; v-- {

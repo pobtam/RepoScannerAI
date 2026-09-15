@@ -12,7 +12,8 @@ green.
 | **0** — module scaffold, `internal/model`, `internal/fingerprint` | **Green** | passing |
 | **1** — scanner adapters + `testdata/fixtures` | **Green** | passing |
 | **2** — `internal/store` + migrations | **Green** | passing (both backends) |
-| 3–12 | Not started | |
+| **3** — `cmd/scanworker` + scanner image + `tools.lock` | **Green** | passing (real captured fixtures) |
+| 4–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -508,5 +509,188 @@ VULNFRAMEWORK_TEST_DSN="postgres://vftest:vftest@localhost:55432/vftest?sslmode=
 
 Without the DSN the Postgres backend and the migration-execution tests skip, and
 the suite still passes offline as VM-AD §17 requires of phases 0–2.
+
+---
+
+## Decisions taken between Phase 2 and Phase 3 (2026-09-14)
+
+**OQ-P2-01 — external fixes never verify. → RESOLVED.** Disappearance on a
+qualifying scan is now the **universal** verification trigger, not a
+MERGED-only one. Written into the specification as **VM-AD §6.1.1 (normative)**
+and implemented in Phase 3 reconciliation, not deferred.
+
+- §6.1 gains eight edges into `VERIFIED`: from `TRIAGED`, `NEEDS_HUMAN`,
+  `BLOCKED_UPSTREAM`, `AUTO_REMEDIATING`, `PR_OPEN`, `REGRESSED`, `DECLINED`
+  and `WONT_FIX`, trigger *qualifying scan no longer observes*.
+- One `VERIFIED` state is kept; **how** it verified is recorded as
+  `verified_reason` — `framework_merge` | `upstream` | `external` — so a report
+  cannot claim the framework fixed something it merely watched disappear.
+- **Guard reused exactly**: "qualifying" is the VM-ADR-12 successful-scan
+  predicate, unchanged. Absence in a partial or failed scan verifies nothing.
+- `AUTO_REMEDIATING → VERIFIED` releases the lease; `PR_OPEN → VERIFIED` closes
+  the now-moot pull request.
+- `SUPPRESSED` never auto-verifies. `DECLINED` and `WONT_FIX` do, with reason
+  `external`: the decision was about remediation, not about the facts.
+
+**OQ-P2-02 — undispatched in-scope repositories. → PRINCIPLE RECORDED.**
+Coverage is measured against **planned scope**: an in-scope repository that is
+never dispatched must leave a scan record and show as a gap, never as silently
+clean. VM-AD §4.2 `repo_scan_results.outcome` gains **`not_dispatched`** as a
+distinct value rather than overloading `failed`, so the gaps view separates "a
+tool failed" from "the scan never started" — different owner, different remedy.
+The enum change is in the specification and the migration. **Mechanism
+(planner-at-plan-time vs reconciler-at-close) is Phase 4's call.**
+
+**Watch-item recorded (not blocking): state history has no total order
+independent of wall clock.** `state_transitions` orders by `(at, id)`, and `id`
+is a database sequence rather than a per-finding counter, so history order is
+only as good as the clock. The VM-ADR-11 lesson applies: a per-finding monotonic
+transition sequence, or an explicit `(timestamp, seq)` composite, would make the
+order intrinsic. Not addressed in Phase 3; wanted before the UI renders
+timelines (U2).
+
+---
+
+## Phase 3 — `cmd/scanworker` + scanner image + `tools.lock`
+
+**Gate:** *adapters re-captured against the real pinned scanner image; golden
+value diffs accepted via `-update`, parse failures and newly-seen shapes fail as
+Phase-1 gaps; normal/empty/error envelopes per tool with the pinned version in
+each golden's metadata; reconciliation verifies on disappearance in a COMPLETE
+run with the right reason, and never in a PARTIAL or FAILED one.*
+
+**Status: green.** 122 top-level tests (369 with subtests), vet and gofmt clean,
+passes under `-race`, against a real Postgres and real captured scanner output.
+
+### The scanner image is real
+
+`deploy/scanner/Dockerfile` builds every tool in the VM-AD §8.2 matrix at the
+version pinned in `config/tools.lock`, and the build fails if a tool is missing.
+All fixtures in `testdata/fixtures` are now **real captured output** from that
+image scanning the synthetic repositories in `testdata/repos`, replacing the
+hand-authored approximations of Phase 1 (assumption A6, now discharged).
+
+`testdata/capture.sh` performs the capture and writes a `.meta.json` beside each
+fixture recording the producing tool version;
+`TestEveryFixtureRecordsItsProducingVersion` fails if that version and
+`config/tools.lock` disagree, so a golden can never be read without knowing which
+build produced it.
+
+### Real capture found four things hand-authored fixtures had hidden
+
+This is the entire point of the re-capture, and it is worth being concrete:
+
+1. **`config/tools.lock` pinned versions that do not exist.** trivy `v0.58.1`,
+   osv-scanner `v1.9.2` and others were plausible-looking inventions. The image
+   build 404'd. All nine tools are now pinned to verified releases.
+2. **govulncheck does not emit newline-delimited JSON.** It emits a
+   *concatenation of pretty-printed* JSON objects. The Phase 1 adapter parsed
+   line by line and would have produced **zero findings against every real
+   scan** — indistinguishable from a clean repository. Fixed with a streaming
+   decoder; `TestFixtureNormalisation` now fails loudly on a parse error even
+   under `-update`.
+3. **osv-scanner v2 carries no severity band for Go advisories.** Only the
+   group's numeric `max_severity`. Every Go dependency finding would have
+   normalised to `UNKNOWN`, destroying osv-scanner's entire contribution to the
+   §8.6 merge, which is precisely the severity govulncheck cannot supply. Added a
+   CVSS-score fallback using the §9.4 thresholds.
+4. **gitleaks ignores the AWS documentation key.** The planted secret in the
+   synthetic repository was `REDACTED-AWS-EXAMPLE-KEY-ID`, which gitleaks allowlists, so
+   secret detection found nothing and the redaction test was vacuous. Replaced
+   with fabricated credentials that match no real account.
+
+Also corrected against reality: trivy v0.74 reports hyphenated check ids
+(`KSV-0012`, not `KSV012`); npm in the pinned image is 10.8.2, not the invented
+10.9.4; and staticcheck's module version is `v0.8.1`, which reports itself as
+`2026.2.1`.
+
+### Value diffs and shape gaps are separated, as required
+
+| Drift | Treatment |
+|---|---|
+| Golden **value** diff — the tool reported different findings | Expected on image rebuild; accepted with `-update` |
+| **Parse failure** | Fails in `TestFixtureNormalisation` **even under `-update`** |
+| **Newly-seen field or shape** | Fails in `TestFixtureShapesAreKnown` with the new paths named; `-update` does not touch shape inventories; re-blessing needs the separate `-update-shapes` after a test covers the field |
+
+Each fixture has a committed `.shape.txt` inventory of its JSON key paths, with
+array indices collapsed so a differing *number* of findings is a value diff while
+a new *field* is a shape change. Verified by mutation: removing `SBOM` from
+govulncheck's inventory fails as `NEWLY-SEEN FIELDS`, and re-running with
+`-update` does **not** silence it.
+
+### Envelopes
+
+Normal, empty and error captured per tool where the tool can produce them. Two
+properties the empty and error envelopes exist to prove:
+
+- A clean tree normalises without error and invents nothing — otherwise every
+  clean repository becomes a coverage gap.
+- A failed tool never normalises into findings — otherwise the coverage gap is
+  invisible (VM-F-205).
+
+**govulncheck's empty envelope is the interesting one.** A Go module with no
+dependencies and an empty `main` still reports 28 standard library advisories for
+its toolchain. That is correct and required (VM-F-223), so for that tool the
+assertion is "every finding is a stdlib finding", not "no findings".
+
+### Reconciliation
+
+`PlanReconcile` now verifies from any state with a legal edge to `VERIFIED`,
+attributing via `model.VerificationReasonFor`. `DETECTED` and
+`FALSE_POSITIVE_CANDIDATE` have no such edge and are flagged, never closed.
+
+Verified by mutation, each confirmed failing before restore: parsing reverted to
+line-based; a shape inventory entry removed; the scan-outcome guard disabled; and
+attribution changed to claim framework credit for every verification.
+
+### What landed
+
+- `deploy/scanner/Dockerfile`, `testdata/capture.sh`, `testdata/repos/{go-api,payments-web}`
+- `internal/scan/worker.go` — runs applicable adapters, classifies the outcome
+  (`complete`/`partial`/`failed`), and turns a tool failure into a **coverage
+  gap with an owner** (VM-F-204/205/211/212/214), never a job failure
+- `cmd/scanworker` — the §8.1 execution contract, exiting non-zero only on
+  infrastructure failure
+- Migration `0003_verification_reason`
+
+### Assumptions made
+
+**A15 — `GOTOOLCHAIN=auto` in the scanner image build.** Pinning the builder
+toolchain capped which tool versions could be pinned in `tools.lock`
+(govulncheck v1.8.0 needs Go ≥1.26, osv-scanner v2.6.0 needs ≥1.27). Letting each
+tool pull the toolchain its own `go.mod` declares is the right constraint.
+
+**A16 — gitleaks cannot self-report its version.** Built from source it prints
+"version is set by build process", and the `-ldflags` path that works for gosec
+does not for gitleaks. `config/tools.lock` is the authority for what was
+installed; the image build asserts the binary exists. Worth revisiting if the
+release binary is used instead of `go install`.
+
+### Open questions hit
+
+**OQ-P3-01 — osv-scanner v2 now performs reachability analysis for Go.** Its
+output carries `groups[].experimental_analysis.<id>.called`. The adapter
+deliberately does **not** consume it: VM-AD names govulncheck the reachability
+authority, the field is marked experimental, and adopting it would introduce a
+second determining source — which the §8.6 conflict rule now supports, but which
+is a behavioural change deserving a decision rather than a silent adoption.
+**Wanted before Phase 5**, since it changes scoring inputs.
+
+**OQ-P3-02 — trivy leaves `CauseMetadata.Resource` empty for Kubernetes
+findings.** All 20 config findings in the real capture have an empty resource
+key, so only the check id separates them. No collision today — every finding is a
+different check — but two failures of the *same* check against two containers in
+one manifest would share a fingerprint. The collision-free property is asserted;
+the latent risk needs either a trivy field that is actually populated or a
+documented acceptance.
+
+**OQ-P3-03 — the Phase 1 alias-collapse premise no longer holds for this tool
+pair.** Real osv-scanner v2 reports GO identifiers for Go advisories, so it and
+govulncheck agree outright rather than needing alias resolution; the same is true
+of osv-scanner and npm audit, which both report GHSA. The dedup property is
+verified on real cross-tool data (38 shared Go defects, all collapsing to one
+fingerprint each), but **alias resolution is no longer exercised end to end** —
+it remains unit-tested in `internal/fingerprint` and still matters for CVE-only
+sources. Worth a fixture from a tool that reports CVE identifiers.
 
 ---

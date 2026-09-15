@@ -1,0 +1,6 @@
+{
+  "tool": "gitleaks",
+  "tool_version": "v8.30.1",
+  "image": "vulnframework-scanner:v1",
+  "captured_from": "go-api"
+}

@@ -1,0 +1,10 @@
+tool
+uses
+uses[].file
+uses[].job
+uses[].line
+uses[].pinned
+uses[].ref
+uses[].step
+uses[].uses
+version

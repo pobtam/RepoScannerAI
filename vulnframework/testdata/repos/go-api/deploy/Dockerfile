@@ -1,0 +1,6 @@
+FROM golang:1.24
+WORKDIR /src
+COPY . .
+RUN go build -o /bin/api ./...
+EXPOSE 8080
+CMD ["/bin/api"]

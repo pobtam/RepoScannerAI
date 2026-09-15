@@ -1,0 +1,11 @@
+code
+end
+end.column
+end.file
+end.line
+location
+location.column
+location.file
+location.line
+message
+severity

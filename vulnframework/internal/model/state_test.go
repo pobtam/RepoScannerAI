@@ -39,6 +39,18 @@ var legalTransitions = []struct {
 	{model.Regressed, model.Triaged, model.ActorOrchestrator},
 	{model.NeedsHuman, model.AutoRemediating, model.ActorHuman},
 	{model.Declined, model.Triaged, model.ActorHuman},
+
+	// Disappearance is the universal verification trigger (VM-AD §6.1.1).
+	// SUPPRESSED is deliberately absent: it is already resolved, and a
+	// suppression is a human judgement that the finding was never real.
+	{model.Triaged, model.Verified, model.ActorScanWorker},
+	{model.NeedsHuman, model.Verified, model.ActorScanWorker},
+	{model.BlockedUpstream, model.Verified, model.ActorScanWorker},
+	{model.AutoRemediating, model.Verified, model.ActorScanWorker},
+	{model.PROpen, model.Verified, model.ActorScanWorker},
+	{model.Regressed, model.Verified, model.ActorScanWorker},
+	{model.Declined, model.Verified, model.ActorScanWorker},
+	{model.WontFix, model.Verified, model.ActorScanWorker},
 }
 
 func TestEveryNormativeTransitionIsAccepted(t *testing.T) {
@@ -120,11 +132,11 @@ func TestSpecificIllegalTransitions(t *testing.T) {
 		{"detected straight to verified", model.Detected, model.Verified, "skips triage, remediation and merge"},
 		{"detected straight to merged", model.Detected, model.Merged, "no pull request was ever opened"},
 		{"declined auto-remediated", model.Declined, model.AutoRemediating, "VM-F-154: a declined finding is never automatically re-remediated"},
-		{"declined straight to verified", model.Declined, model.Verified, "VM-F-154"},
 		{"suppressed reopened automatically", model.Suppressed, model.Triaged, "suppression is a human decision to undo"},
+		{"suppressed auto-verified", model.Suppressed, model.Verified, "VM-AD §6.1.1: a suppression is a human judgement the finding was never real; verifying it would overwrite that with a machine's"},
 		{"verified straight back to triaged", model.Verified, model.Triaged, "re-observation must pass through REGRESSED (VM-F-105)"},
-		{"pr open skips merge", model.PROpen, model.Verified, "a fix cannot verify before it merges"},
-		{"blocked upstream self-resolves", model.BlockedUpstream, model.Verified, "VM-F-156: blocked findings stay open"},
+		{"detected verifies before triage", model.Detected, model.Verified, "a finding that has never been triaged has no verifiable claim to close"},
+		{"false positive candidate auto-verified", model.FPCandidate, model.Verified, "it is awaiting a human decision"},
 		{"triaged straight to pr open", model.Triaged, model.PROpen, "dispatch must pass through AUTO_REMEDIATING and take a lease"},
 		{"same-state no-op", model.Triaged, model.Triaged, "a no-op transition would write a spurious audit record"},
 		{"recreating an existing finding", "", model.Triaged, "creation only ever enters DETECTED"},
@@ -341,7 +353,7 @@ func TestStateEnumerationIsClosed(t *testing.T) {
 
 func TestAllowedTransitionsIsSortedAndComplete(t *testing.T) {
 	got := model.AllowedTransitions(model.Triaged)
-	want := []model.State{model.AutoRemediating, model.BlockedUpstream, model.FPCandidate, model.NeedsHuman}
+	want := []model.State{model.AutoRemediating, model.BlockedUpstream, model.FPCandidate, model.NeedsHuman, model.Verified}
 	if len(got) != len(want) {
 		t.Fatalf("AllowedTransitions(TRIAGED) = %v, want %v", got, want)
 	}
@@ -372,6 +384,8 @@ func TestTransitionEdgeCarriesTriggerAndActor(t *testing.T) {
 // but appears in no row of the §6.1 transition table, so no finding can enter
 // it. Recorded as OQ-P0-01 in BUILD-LOG.md.
 func TestWontFixIsUnreachable(t *testing.T) {
+	// Note: WONT_FIX -> VERIFIED exists under §6.1.1, but nothing enters
+	// WONT_FIX. The planned NEEDS_HUMAN -> WONT_FIX edit still has not landed.
 	for _, from := range append([]model.State{""}, model.AllStates...) {
 		if model.CanTransition(from, model.WontFix) {
 			t.Fatalf("WONT_FIX is now reachable from %s — the specification gap (OQ-P0-01) has been resolved; "+

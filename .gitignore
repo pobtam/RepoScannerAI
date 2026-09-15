@@ -12,3 +12,6 @@ dist/
 .DS_Store
 .idea/
 *.swp
+
+# Scanner capture scratch
+/vulnframework/testdata/repos/*/node_modules/

@@ -2,6 +2,635 @@
   {
     "Repo": "org/payments-web",
     "Category": "dependency",
+    "PrimaryID": "GHSA-35jp-ww65-95wh",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.7,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-35jp-ww65-95wh",
+    "Raw": {
+      "source": 1120650,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "axios Vulnerable to Full Man-in-the-Middle via Prototype Pollution Gadget in `config.proxy`",
+      "url": "https://github.com/advisories/GHSA-35jp-ww65-95wh",
+      "severity": "high",
+      "cwe": [
+        "CWE-441",
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 8.7,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.16.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-3g43-6gmg-66jw",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-3g43-6gmg-66jw",
+    "Raw": {
+      "source": 1120649,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "axios Vulnerable to Credential Theft and Response Hijacking via Prototype Pollution Gadget in Config Merge",
+      "url": "https://github.com/advisories/GHSA-3g43-6gmg-66jw",
+      "severity": "high",
+      "cwe": [
+        "CWE-94",
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 7,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:L/A:L"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.2"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-3p68-rc4w-qgx5",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 4.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-3p68-rc4w-qgx5",
+    "Raw": {
+      "source": 1116673,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios has a NO_PROXY Hostname Normalization Bypass that Leads to SSRF",
+      "url": "https://github.com/advisories/GHSA-3p68-rc4w-qgx5",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-441",
+        "CWE-918"
+      ],
+      "cvss": {
+        "score": 4.8,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-3w6x-2g7m-8v23",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-3w6x-2g7m-8v23",
+    "Raw": {
+      "source": 1117577,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Invisible JSON Response Tampering via Prototype Pollution Gadget in `parseReviver`",
+      "url": "https://github.com/advisories/GHSA-3w6x-2g7m-8v23",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-915",
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 6.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:H/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.2"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-42h9-826w-cgv3",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-42h9-826w-cgv3",
+    "Raw": {
+      "source": 1153185,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Excessive recursion in formDataToJSON can cause denial of service",
+      "url": "https://github.com/advisories/GHSA-42h9-826w-cgv3",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-400",
+        "CWE-674"
+      ],
+      "cvss": {
+        "score": 0,
+        "vectorString": ""
+      },
+      "range": "\u003e=1.0.0 \u003c1.18.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-43fc-jf86-j433",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-43fc-jf86-j433",
+    "Raw": {
+      "source": 1117858,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios is Vulnerable to Denial of Service via __proto__ Key in mergeConfig",
+      "url": "https://github.com/advisories/GHSA-43fc-jf86-j433",
+      "severity": "high",
+      "cwe": [
+        "CWE-754",
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "\u003e=1.0.0 \u003c=1.13.4"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-445q-vr5w-6q77",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-445q-vr5w-6q77",
+    "Raw": {
+      "source": 1117581,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: CRLF Injection in multipart/form-data body via unsanitized blob.type in formDataToStream",
+      "url": "https://github.com/advisories/GHSA-445q-vr5w-6q77",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-93"
+      ],
+      "cvss": {
+        "score": 5.3,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-4hjh-wcwx-xvwj",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-4hjh-wcwx-xvwj",
+    "Raw": {
+      "source": 1112195,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios is vulnerable to DoS attack through lack of data size check",
+      "url": "https://github.com/advisories/GHSA-4hjh-wcwx-xvwj",
+      "severity": "high",
+      "cwe": [
+        "CWE-770"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "\u003e=1.0.0 \u003c1.12.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-5c9x-8gcm-mpgx",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-5c9x-8gcm-mpgx",
+    "Raw": {
+      "source": 1117587,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios' HTTP adapter-streamed uploads bypass maxBodyLength when maxRedirects: 0",
+      "url": "https://github.com/advisories/GHSA-5c9x-8gcm-mpgx",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-770"
+      ],
+      "cvss": {
+        "score": 5.3,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-62hf-57xw-28j9",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-62hf-57xw-28j9",
+    "Raw": {
+      "source": 1120125,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: unbounded recursion in toFormData causes DoS via deeply nested request data",
+      "url": "https://github.com/advisories/GHSA-62hf-57xw-28j9",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-674"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-6chq-wfr3-2hj9",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-6chq-wfr3-2hj9",
+    "Raw": {
+      "source": 1117593,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Header Injection via Prototype Pollution",
+      "url": "https://github.com/advisories/GHSA-6chq-wfr3-2hj9",
+      "severity": "high",
+      "cwe": [
+        "CWE-113",
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 7.4,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-7q8q-rj6j-mhjq",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-7q8q-rj6j-mhjq",
+    "Raw": {
+      "source": 1153180,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Nested axios option objects can consume polluted prototype values",
+      "url": "https://github.com/advisories/GHSA-7q8q-rj6j-mhjq",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 0,
+        "vectorString": ""
+      },
+      "range": "\u003e=1.0.0 \u003c1.18.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-898c-q2cr-xwhg",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 4.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-898c-q2cr-xwhg",
+    "Raw": {
+      "source": 1120652,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "axios has DoS \u0026 Header Injection via Prototype Pollution Read-Side Gadgets in axios merge functions",
+      "url": "https://github.com/advisories/GHSA-898c-q2cr-xwhg",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 4.8,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:L"
+      },
+      "range": "\u003e=1.0.0 \u003c1.16.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
     "PrimaryID": "GHSA-8hc4-vh64-cxmj",
     "Aliases": null,
     "Tool": "npm-audit",
@@ -17,18 +646,17 @@
     "Line": 0,
     "CredentialType": "",
     "Versions": {
-      "fixed": "1.7.9"
+      "fixed": "1.20.0"
     },
     "Classification": {
       "severity": "HIGH",
-      "cvss": 7.5,
       "kev": false,
       "reachable": "unknown",
       "dep_class": "production",
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "10.9.2",
+    "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-8hc4-vh64-cxmj",
     "Raw": {
       "source": 1098583,
@@ -41,10 +669,784 @@
         "CWE-918"
       ],
       "cvss": {
+        "score": 0,
+        "vectorString": ""
+      },
+      "range": "\u003e=1.3.2 \u003c=1.7.3"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-fvcv-3m26-pcqx",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 4.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-fvcv-3m26-pcqx",
+    "Raw": {
+      "source": 1119404,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios has Unrestricted Cloud Metadata Exfiltration via Header Injection Chain",
+      "url": "https://github.com/advisories/GHSA-fvcv-3m26-pcqx",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-113",
+        "CWE-444",
+        "CWE-918"
+      ],
+      "cvss": {
+        "score": 4.8,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-hfxv-24rg-xrqf",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-hfxv-24rg-xrqf",
+    "Raw": {
+      "source": 1120547,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Regular Expression Denial of Service (ReDoS) via Cookie Name Injection",
+      "url": "https://github.com/advisories/GHSA-hfxv-24rg-xrqf",
+      "severity": "high",
+      "cwe": [
+        "CWE-400",
+        "CWE-1333"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+      },
+      "range": "\u003e=1.0.0 \u003c1.16.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-j5f8-grm9-p9fc",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-j5f8-grm9-p9fc",
+    "Raw": {
+      "source": 1120647,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Proxy-Authorization header leaks to redirect target when proxy is re-evaluated to direct connection",
+      "url": "https://github.com/advisories/GHSA-j5f8-grm9-p9fc",
+      "severity": "high",
+      "cwe": [
+        "CWE-200"
+      ],
+      "cvss": {
         "score": 7.5,
         "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
       },
-      "range": "\u003c1.7.4"
+      "range": "\u003e=1.0.0 \u003c1.16.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-jr5f-v2jv-69x6",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-jr5f-v2jv-69x6",
+    "Raw": {
+      "source": 1111035,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL",
+      "url": "https://github.com/advisories/GHSA-jr5f-v2jv-69x6",
+      "severity": "high",
+      "cwe": [
+        "CWE-918"
+      ],
+      "cvss": {
+        "score": 0,
+        "vectorString": ""
+      },
+      "range": "\u003e=1.0.0 \u003c1.8.2"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-m7pr-hjqh-92cm",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-m7pr-hjqh-92cm",
+    "Raw": {
+      "source": 1117583,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: no_proxy bypass via IP alias allows SSRF",
+      "url": "https://github.com/advisories/GHSA-m7pr-hjqh-92cm",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-918"
+      ],
+      "cvss": {
+        "score": 6.8,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:N/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-mmx7-hfxf-jppx",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-mmx7-hfxf-jppx",
+    "Raw": {
+      "source": 1147949,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Prototype pollution gadgets can alter axios request construction",
+      "url": "https://github.com/advisories/GHSA-mmx7-hfxf-jppx",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 0,
+        "vectorString": ""
+      },
+      "range": "\u003e=1.0.0 \u003c1.18.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-p92q-9vqr-4j8v",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-p92q-9vqr-4j8v",
+    "Raw": {
+      "source": 1120645,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Proxy-Authorization Credential Leak to Origin Server Across HTTP-to-HTTPS Redirect in Axios Node.js HTTP Adapter",
+      "url": "https://github.com/advisories/GHSA-p92q-9vqr-4j8v",
+      "severity": "high",
+      "cwe": [
+        "CWE-201"
+      ],
+      "cvss": {
+        "score": 0,
+        "vectorString": ""
+      },
+      "range": "\u003e=1.0.0 \u003c1.16.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-pf86-5x62-jrwf",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-pf86-5x62-jrwf",
+    "Raw": {
+      "source": 1117591,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Prototype Pollution Gadgets - Response Tampering, Data Exfiltration, and Request Hijacking",
+      "url": "https://github.com/advisories/GHSA-pf86-5x62-jrwf",
+      "severity": "high",
+      "cwe": [
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 7.4,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-pmv8-rq9r-6j72",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-pmv8-rq9r-6j72",
+    "Raw": {
+      "source": 1147950,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Deep formToJSON Key Recursion Can Cause Denial of Service",
+      "url": "https://github.com/advisories/GHSA-pmv8-rq9r-6j72",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-400",
+        "CWE-770"
+      ],
+      "cvss": {
+        "score": 0,
+        "vectorString": ""
+      },
+      "range": "\u003e=1.0.0 \u003c1.18.0"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-pmwg-cvhr-8vh7",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.2,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-pmwg-cvhr-8vh7",
+    "Raw": {
+      "source": 1117576,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Incomplete Fix for CVE-2025-62718 — NO_PROXY Protection Bypassed via RFC 1122 Loopback Subnet (127.0.0.0/8) in Axios 1.15.0",
+      "url": "https://github.com/advisories/GHSA-pmwg-cvhr-8vh7",
+      "severity": "high",
+      "cwe": [
+        "CWE-183",
+        "CWE-441",
+        "CWE-918"
+      ],
+      "cvss": {
+        "score": 7.2,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:L/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-q8qp-cvcw-x6jj",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-q8qp-cvcw-x6jj",
+    "Raw": {
+      "source": 1118607,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios has prototype pollution read-side gadgets in HTTP adapter that allow credential injection and request hijacking",
+      "url": "https://github.com/advisories/GHSA-q8qp-cvcw-x6jj",
+      "severity": "high",
+      "cwe": [
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 7.4,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.2"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-vf2m-468p-8v99",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-vf2m-468p-8v99",
+    "Raw": {
+      "source": 1117589,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: HTTP adapter streamed responses bypass maxContentLength",
+      "url": "https://github.com/advisories/GHSA-vf2m-468p-8v99",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-770"
+      ],
+      "cvss": {
+        "score": 5.3,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-w9j2-pvgh-6h63",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 4.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-w9j2-pvgh-6h63",
+    "Raw": {
+      "source": 1117574,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Authentication Bypass via Prototype Pollution Gadget in `validateStatus` Merge Strategy",
+      "url": "https://github.com/advisories/GHSA-w9j2-pvgh-6h63",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-287",
+        "CWE-1321"
+      ],
+      "cvss": {
+        "score": 4.8,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:L/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-xhjh-pmcv-23jw",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "LOW",
+      "cvss": 3.7,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-xhjh-pmcv-23jw",
+    "Raw": {
+      "source": 1117580,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: Null Byte Injection via Reverse-Encoding in AxiosURLSearchParams",
+      "url": "https://github.com/advisories/GHSA-xhjh-pmcv-23jw",
+      "severity": "low",
+      "cwe": [
+        "CWE-116",
+        "CWE-626"
+      ],
+      "cvss": {
+        "score": 3.7,
+        "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-xx6v-rp6x-q39c",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "1.20.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-xx6v-rp6x-q39c",
+    "Raw": {
+      "source": 1117595,
+      "name": "axios",
+      "dependency": "axios",
+      "title": "Axios: XSRF Token Cross-Origin Leakage via Prototype Pollution Gadget in `withXSRFToken` Boolean Coercion",
+      "url": "https://github.com/advisories/GHSA-xx6v-rp6x-q39c",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-183",
+        "CWE-201"
+      ],
+      "cvss": {
+        "score": 5.4,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N"
+      },
+      "range": "\u003e=1.0.0 \u003c1.15.1"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-6g55-p6wh-862q",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "8.5.28"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "development",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-6g55-p6wh-862q",
+    "Raw": {
+      "source": 1124252,
+      "name": "postcss",
+      "dependency": "postcss",
+      "title": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
+      "url": "https://github.com/advisories/GHSA-6g55-p6wh-862q",
+      "severity": "high",
+      "cwe": [
+        "CWE-22",
+        "CWE-200"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+      },
+      "range": "\u003c=8.5.11"
     }
   },
   {
@@ -65,7 +1467,7 @@
     "Line": 0,
     "CredentialType": "",
     "Versions": {
-      "fixed": "5.4.11"
+      "fixed": "8.5.28"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -73,26 +1475,171 @@
       "kev": false,
       "reachable": "unknown",
       "dep_class": "development",
-      "transitive": true,
+      "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "10.9.2",
+    "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-7fh5-64p2-3v2j",
     "Raw": {
-      "source": 1094544,
+      "source": 1109574,
       "name": "postcss",
       "dependency": "postcss",
       "title": "PostCSS line return parsing error",
       "url": "https://github.com/advisories/GHSA-7fh5-64p2-3v2j",
       "severity": "moderate",
       "cwe": [
-        "CWE-74"
+        "CWE-74",
+        "CWE-144"
       ],
       "cvss": {
         "score": 5.3,
         "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
       },
       "range": "\u003c8.4.31"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-fxqj-rqcc-2cmp",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "8.5.28"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "development",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
+    "Raw": {
+      "source": 1130709,
+      "name": "postcss",
+      "dependency": "postcss",
+      "title": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
+      "url": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-22",
+        "CWE-200"
+      ],
+      "cvss": {
+        "score": 0,
+        "vectorString": ""
+      },
+      "range": "\u003c=8.5.22"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-qx2v-qp2m-jg93",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "8.5.28"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "development",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
+    "Raw": {
+      "source": 1117015,
+      "name": "postcss",
+      "dependency": "postcss",
+      "title": "PostCSS has XSS via Unescaped \u003c/style\u003e in its CSS Stringify Output",
+      "url": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
+      "severity": "moderate",
+      "cwe": [
+        "CWE-79"
+      ],
+      "cvss": {
+        "score": 6.1,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+      },
+      "range": "\u003c8.5.10"
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-r28c-9q8g-f849",
+    "Aliases": null,
+    "Tool": "npm-audit",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "fixed": "8.5.28"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "development",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "10.8.2",
+    "AdvisoryURL": "https://github.com/advisories/GHSA-r28c-9q8g-f849",
+    "Raw": {
+      "source": 1139510,
+      "name": "postcss",
+      "dependency": "postcss",
+      "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+      "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849",
+      "severity": "high",
+      "cwe": [
+        "CWE-22"
+      ],
+      "cvss": {
+        "score": 7.5,
+        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+      },
+      "range": "\u003c=8.5.17"
     }
   }
 ]

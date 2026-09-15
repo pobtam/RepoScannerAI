@@ -1,0 +1,6 @@
+{
+  "tool": "staticcheck",
+  "tool_version": "0.8.1",
+  "image": "vulnframework-scanner:v1",
+  "captured_from": "go-api"
+}

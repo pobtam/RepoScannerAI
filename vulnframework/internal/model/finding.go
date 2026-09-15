@@ -223,6 +223,15 @@ type Finding struct {
 	Derived        Derived        `json:"derived"`
 	Refs           Refs           `json:"refs"`
 
+	// VerifiedReason records how a VERIFIED finding came to be verified
+	// (VM-AD §6.1.1). Nil unless the finding is verified.
+	//
+	// Disappearance on a qualifying scan is the universal verification trigger,
+	// so VERIFIED no longer implies this framework fixed anything. Reporting
+	// must be able to tell "we fixed it" from "it went away", or it claims
+	// credit it has not earned.
+	VerifiedReason *VerificationReason `json:"verified_reason,omitempty"`
+
 	// CredentialType names the kind of credential for secret findings
 	// (VM-F-263). It describes the class, never the value.
 	CredentialType string `json:"credential_type,omitempty"`

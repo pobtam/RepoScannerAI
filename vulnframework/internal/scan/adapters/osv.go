@@ -139,7 +139,13 @@ func (a *OSVScanner) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 						Fixed:   firstFixed(v),
 					},
 					Classification: model.Classification{
-						Severity: severityFromOSV(v.DatabaseSpecific.Severity),
+						// Go advisories carry no severity band in
+						// database_specific — only the group's numeric score.
+						// Without the fallback every Go dependency finding
+						// normalises to UNKNOWN severity, and osv-scanner's
+						// whole contribution to the cross-source merge (VM-AD
+						// §8.6) is the severity govulncheck cannot supply.
+						Severity: severityFromOSVOrScore(v.DatabaseSpecific.Severity, cvssByID[v.ID]),
 						CVSS:     cvssByID[v.ID],
 						// osv-scanner performs no reachability analysis. Saying
 						// "unknown" rather than assuming is the whole point of

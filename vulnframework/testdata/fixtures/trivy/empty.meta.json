@@ -1,0 +1,6 @@
+{
+  "tool": "trivy",
+  "tool_version": "0.74.0",
+  "image": "vulnframework-scanner:v1",
+  "captured_from": "empty"
+}

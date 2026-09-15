@@ -1,0 +1,6 @@
+{
+  "tool": "actions-pin",
+  "tool_version": "v1.0.0",
+  "image": "n/a (internal check, no external binary)",
+  "captured_from": "go-api"
+}

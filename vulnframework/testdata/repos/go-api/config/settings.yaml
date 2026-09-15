@@ -1,0 +1,9 @@
+# Synthetic configuration for scanner fixtures. The credentials below are
+# fabricated, match no real account, and exist only so secret detection has
+# something to find. They are deliberately NOT the AWS documentation example
+# key, which gitleaks allowlists.
+service: wanaware-api
+region: eu-west-1
+aws_access_key_id: REDACTED-FAKE-AWS-KEY-ID
+aws_secret_access_key: REDACTED-FAKE-AWS-SECRET
+timeout_seconds: 30

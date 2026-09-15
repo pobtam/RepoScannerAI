@@ -1,0 +1,6 @@
+{
+  "tool": "osv-scanner",
+  "tool_version": "2.6.0",
+  "image": "vulnframework-scanner:v1",
+  "captured_from": "error"
+}

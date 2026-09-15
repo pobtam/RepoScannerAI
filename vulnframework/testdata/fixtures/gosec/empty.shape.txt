@@ -1,0 +1,8 @@
+Golang errors
+GosecVersion
+Issues
+Stats
+Stats.files
+Stats.found
+Stats.lines
+Stats.nosec

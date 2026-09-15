@@ -60,6 +60,10 @@ type ReconcileAction struct {
 	// RetainedUnverified marks a finding that would have verified had the scan
 	// succeeded. This is the count VM-F-216 requires reported alongside a gap.
 	RetainedUnverified bool
+
+	// VerificationReason records how the finding verified, for honest
+	// attribution (VM-AD §6.1.1). Only meaningful when Verify is set.
+	VerificationReason model.VerificationReason
 }
 
 // PlanReconcile decides what a run's outcome implies for the findings it did
@@ -85,24 +89,31 @@ func PlanReconcile(outcome ScanOutcome, absent []FindingState) []ReconcileAction
 
 		a := ReconcileAction{Fingerprint: f.Fingerprint}
 
-		switch {
-		case scanSucceeded && f.State == model.Merged:
-			// The only path to VERIFIED in the §6.1 table: a merged fix that a
-			// successful scan no longer observes.
-			a.Verify = true
+		// Disappearance is the universal verification trigger (VM-AD §6.1.1):
+		// any unresolved state with a legal edge to VERIFIED verifies when a
+		// qualifying scan no longer observes the finding. Reaching VERIFIED only
+		// from MERGED would leave every externally fixed finding open for ever,
+		// and the open count would drift permanently away from reality.
+		canVerify := model.CanTransition(f.State, model.Verified)
 
-		case !scanSucceeded && f.State == model.Merged:
-			// The gate clause. The fix may well have worked, but a scan that
-			// did not complete is not evidence of that. The finding is retained
-			// and counted against the gap.
+		switch {
+		case scanSucceeded && canVerify:
+			a.Verify = true
+			a.VerificationReason = model.VerificationReasonFor(f.State)
+
+		case !scanSucceeded && canVerify:
+			// The gate clause, unchanged and now covering every verifiable
+			// state. The defect may well be gone, but a scan that did not
+			// complete is not evidence of that. Retained, flagged, counted
+			// against the gap — never verified.
 			a.NotReobserved = true
 			a.GapRunID = gapRunFor(outcome)
 			a.RetainedUnverified = true
 
 		default:
-			// Any other unresolved state: flag, never close. No finding is
-			// automatically closed, suppressed or removed on the basis of
-			// non-observation alone (VM-F-163).
+			// An unresolved state with no legal edge to VERIFIED — DETECTED,
+			// which has not yet been triaged, and FALSE_POSITIVE_CANDIDATE,
+			// which is awaiting a human. Flag, never close (VM-F-163).
 			a.NotReobserved = true
 			if !scanSucceeded {
 				a.GapRunID = gapRunFor(outcome)

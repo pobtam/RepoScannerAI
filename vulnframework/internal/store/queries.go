@@ -88,8 +88,9 @@ WHERE f.repo = $1
 ORDER BY f.fingerprint`
 
 	qMarkVerified = `
-UPDATE findings SET resolved_at = $1, not_reobserved = FALSE, gap_run_id = NULL
-WHERE fingerprint = $2`
+UPDATE findings
+SET resolved_at = $1, verified_reason = $2, not_reobserved = FALSE, gap_run_id = NULL
+WHERE fingerprint = $3`
 
 	qMarkNotReobserved = `
 UPDATE findings SET not_reobserved = $1, gap_run_id = $2 WHERE fingerprint = $3`
@@ -111,7 +112,7 @@ FROM state_transitions WHERE fingerprint = $1 ORDER BY at, id`
 
 	qListFindingsBase = `
 SELECT f.fingerprint, f.repo, f.category, f.data, f.state, f.reason_code, f.priority,
-       f.first_seen_run, f.last_seen_run, f.not_reobserved, f.gap_run_id
+       f.first_seen_run, f.last_seen_run, f.not_reobserved, f.gap_run_id, f.verified_reason
 FROM findings f`
 
 	qGetFinding = qListFindingsBase + ` WHERE f.fingerprint = $1`

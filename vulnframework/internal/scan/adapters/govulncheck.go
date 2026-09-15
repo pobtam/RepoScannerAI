@@ -1,11 +1,12 @@
 package adapters
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/scan"
@@ -52,11 +53,22 @@ func (a *Govulncheck) Run(ctx context.Context, dir string, opts scan.RunOpts) (s
 	}, nil
 }
 
-// govulncheck -json emits a stream of single-key JSON objects.
+// gvcMessage is one message in govulncheck's JSON stream.
+//
+// The stream is a *concatenation of JSON objects*, not newline-delimited JSON:
+// govulncheck pretty-prints each message across many lines. Parsing it a line
+// at a time yields zero findings, which is indistinguishable from a clean
+// repository — the exact failure mode fixture tests exist to prevent. See
+// TestGovulncheckParsesPrettyPrintedStream.
+//
+// SBOM is accepted and ignored. It appeared in the v1.8.0 output and an
+// unknown top-level key must not be an error, or every tool upgrade breaks the
+// adapter; it must also not be silently treated as a finding.
 type gvcMessage struct {
-	Config  *gvcConfig  `json:"config,omitempty"`
-	OSV     *gvcOSV     `json:"osv,omitempty"`
-	Finding *gvcFinding `json:"finding,omitempty"`
+	Config  *gvcConfig       `json:"config,omitempty"`
+	OSV     *gvcOSV          `json:"osv,omitempty"`
+	Finding *gvcFinding      `json:"finding,omitempty"`
+	SBOM    *json.RawMessage `json:"SBOM,omitempty"`
 }
 
 type gvcConfig struct {
@@ -93,16 +105,17 @@ func (a *Govulncheck) Normalize(out scan.RawOutput) ([]model.RawFinding, error) 
 	advisories := map[string]gvcOSV{}
 	var findings []gvcFinding
 
-	sc := bufio.NewScanner(bytes.NewReader(out.Stdout))
-	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
-	for sc.Scan() {
-		line := bytes.TrimSpace(sc.Bytes())
-		if len(line) == 0 {
-			continue
-		}
+	// A streaming decoder consumes the concatenated-object form govulncheck
+	// actually emits, and handles newline-delimited output identically.
+	dec := json.NewDecoder(bytes.NewReader(out.Stdout))
+	for {
 		var msg gvcMessage
-		if err := json.Unmarshal(line, &msg); err != nil {
-			return nil, fmt.Errorf("govulncheck: parsing message: %w", err)
+		err := dec.Decode(&msg)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("govulncheck: parsing message stream: %w", err)
 		}
 		switch {
 		case msg.OSV != nil:
@@ -110,9 +123,6 @@ func (a *Govulncheck) Normalize(out scan.RawOutput) ([]model.RawFinding, error) 
 		case msg.Finding != nil:
 			findings = append(findings, *msg.Finding)
 		}
-	}
-	if err := sc.Err(); err != nil {
-		return nil, fmt.Errorf("govulncheck: reading output: %w", err)
 	}
 
 	var raw []model.RawFinding

@@ -1,0 +1,7 @@
+ArtifactName
+ArtifactType
+CreatedAt
+ReportID
+SchemaVersion
+Trivy
+Trivy.Version

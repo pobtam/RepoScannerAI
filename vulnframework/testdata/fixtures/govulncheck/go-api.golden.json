@@ -2,10 +2,10 @@
   {
     "Repo": "org/wanaware-api",
     "Category": "dependency",
-    "PrimaryID": "GO-2025-3106",
+    "PrimaryID": "GO-2023-2402",
     "Aliases": [
-      "CVE-2025-22869",
-      "GHSA-hcg3-q754-cr77"
+      "CVE-2023-48795",
+      "GHSA-45x7-px36-x8w8"
     ],
     "Tool": "govulncheck",
     "RuleID": "",
@@ -20,8 +20,8 @@
     "Line": 0,
     "CredentialType": "",
     "Versions": {
-      "current": "v0.35.0",
-      "fixed": "v0.36.0"
+      "current": "v0.16.0",
+      "fixed": "v0.17.0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -31,15 +31,15 @@
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v1.1.4",
-    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2025-3106",
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2023-2402",
     "Raw": {
-      "osv": "GO-2025-3106",
-      "fixed_version": "v0.36.0",
+      "osv": "GO-2023-2402",
+      "fixed_version": "v0.17.0",
       "trace": [
         {
           "module": "golang.org/x/crypto",
-          "version": "v0.35.0",
+          "version": "v0.16.0",
           "package": "",
           "function": ""
         }
@@ -49,7 +49,1022 @@
   {
     "Repo": "org/wanaware-api",
     "Category": "dependency",
-    "PrimaryID": "GO-2024-2611",
+    "PrimaryID": "GO-2024-3321",
+    "Aliases": [
+      "CVE-2024-45337",
+      "GHSA-v778-237x-gjrc"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.31.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2024-3321",
+    "Raw": {
+      "osv": "GO-2024-3321",
+      "fixed_version": "v0.31.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-3487",
+    "Aliases": [
+      "CVE-2025-22869"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.35.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2025-3487",
+    "Raw": {
+      "osv": "GO-2025-3487",
+      "fixed_version": "v0.35.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-4116",
+    "Aliases": [
+      "CVE-2025-47913"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.43.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2025-4116",
+    "Raw": {
+      "osv": "GO-2025-4116",
+      "fixed_version": "v0.43.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-4134",
+    "Aliases": [
+      "CVE-2025-58181",
+      "GHSA-j5w8-q4qc-rx2x"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.45.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2025-4134",
+    "Raw": {
+      "osv": "GO-2025-4134",
+      "fixed_version": "v0.45.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-4135",
+    "Aliases": [
+      "CVE-2025-47914",
+      "GHSA-f6x5-jh6r-wrfv"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.45.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2025-4135",
+    "Raw": {
+      "osv": "GO-2025-4135",
+      "fixed_version": "v0.45.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5005",
+    "Aliases": [
+      "CVE-2026-39833",
+      "GHSA-jppx-rxg9-jmrx"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5005",
+    "Raw": {
+      "osv": "GO-2026-5005",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5006",
+    "Aliases": [
+      "CVE-2026-39832",
+      "GHSA-f5wc-c3c7-36mc"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5006",
+    "Raw": {
+      "osv": "GO-2026-5006",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5013",
+    "Aliases": [
+      "CVE-2026-46597"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5013",
+    "Raw": {
+      "osv": "GO-2026-5013",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5014",
+    "Aliases": [
+      "CVE-2026-39828"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5014",
+    "Raw": {
+      "osv": "GO-2026-5014",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5015",
+    "Aliases": [
+      "CVE-2026-39835"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5015",
+    "Raw": {
+      "osv": "GO-2026-5015",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5016",
+    "Aliases": [
+      "CVE-2026-39827"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5016",
+    "Raw": {
+      "osv": "GO-2026-5016",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5017",
+    "Aliases": [
+      "CVE-2026-39830"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5017",
+    "Raw": {
+      "osv": "GO-2026-5017",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5018",
+    "Aliases": [
+      "CVE-2026-39829"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5018",
+    "Raw": {
+      "osv": "GO-2026-5018",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5019",
+    "Aliases": [
+      "CVE-2026-39831"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5019",
+    "Raw": {
+      "osv": "GO-2026-5019",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5020",
+    "Aliases": [
+      "CVE-2026-39834"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5020",
+    "Raw": {
+      "osv": "GO-2026-5020",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5021",
+    "Aliases": [
+      "CVE-2026-42508",
+      "GHSA-5cgq-3rg8-m6cv"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5021",
+    "Raw": {
+      "osv": "GO-2026-5021",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5023",
+    "Aliases": [
+      "CVE-2026-46595"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5023",
+    "Raw": {
+      "osv": "GO-2026-5023",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5033",
+    "Aliases": [
+      "CVE-2026-46598"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.52.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5033",
+    "Raw": {
+      "osv": "GO-2026-5033",
+      "fixed_version": "v0.52.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5932",
+    "Aliases": null,
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5932",
+    "Raw": {
+      "osv": "GO-2026-5932",
+      "fixed_version": "",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6303",
+    "Aliases": [
+      "CVE-2026-56854"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6303",
+    "Raw": {
+      "osv": "GO-2026-6303",
+      "fixed_version": "v0.55.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6354",
+    "Aliases": [
+      "CVE-2026-78662"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.56.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6354",
+    "Raw": {
+      "osv": "GO-2026-6354",
+      "fixed_version": "v0.56.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6355",
+    "Aliases": [
+      "CVE-2026-56855"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "v0.56.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6355",
+    "Raw": {
+      "osv": "GO-2026-6355",
+      "fixed_version": "v0.56.0",
+      "trace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.16.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2024-2687",
     "Aliases": [
       "CVE-2023-45288",
       "GHSA-4v7x-pqxf-cx7m"
@@ -73,15 +1088,15 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
-      "reachable": "false",
+      "reachable": "true",
       "dep_class": "production",
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v1.1.4",
-    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2024-2611",
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2024-2687",
     "Raw": {
-      "osv": "GO-2024-2611",
+      "osv": "GO-2024-2687",
       "fixed_version": "v0.23.0",
       "trace": [
         {
@@ -96,10 +1111,655 @@
   {
     "Repo": "org/wanaware-api",
     "Category": "dependency",
-    "PrimaryID": "GO-2024-2687",
+    "PrimaryID": "GO-2024-3333",
     "Aliases": [
-      "CVE-2023-45288",
-      "GHSA-4v7x-pqxf-cx7m"
+      "CVE-2024-45338",
+      "GHSA-w32m-9786-jp63"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.33.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2024-3333",
+    "Raw": {
+      "osv": "GO-2024-3333",
+      "fixed_version": "v0.33.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-3503",
+    "Aliases": [
+      "CVE-2025-22870",
+      "GHSA-qxp5-gwg8-xv66"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.36.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2025-3503",
+    "Raw": {
+      "osv": "GO-2025-3503",
+      "fixed_version": "v0.36.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-3595",
+    "Aliases": [
+      "CVE-2025-22872"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.38.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2025-3595",
+    "Raw": {
+      "osv": "GO-2025-3595",
+      "fixed_version": "v0.38.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4440",
+    "Aliases": [
+      "CVE-2025-47911"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.45.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4440",
+    "Raw": {
+      "osv": "GO-2026-4440",
+      "fixed_version": "v0.45.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4441",
+    "Aliases": [
+      "CVE-2025-58190"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.45.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4441",
+    "Raw": {
+      "osv": "GO-2026-4441",
+      "fixed_version": "v0.45.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4918",
+    "Aliases": [
+      "CVE-2026-33814"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.53.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4918",
+    "Raw": {
+      "osv": "GO-2026-4918",
+      "fixed_version": "v0.53.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5025",
+    "Aliases": [
+      "CVE-2026-42506"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5025",
+    "Raw": {
+      "osv": "GO-2026-5025",
+      "fixed_version": "v0.55.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5026",
+    "Aliases": [
+      "CVE-2026-39821"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5026",
+    "Raw": {
+      "osv": "GO-2026-5026",
+      "fixed_version": "v0.55.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5027",
+    "Aliases": [
+      "CVE-2026-42502"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5027",
+    "Raw": {
+      "osv": "GO-2026-5027",
+      "fixed_version": "v0.55.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5028",
+    "Aliases": [
+      "CVE-2026-25680"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5028",
+    "Raw": {
+      "osv": "GO-2026-5028",
+      "fixed_version": "v0.55.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5029",
+    "Aliases": [
+      "CVE-2026-25681"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5029",
+    "Raw": {
+      "osv": "GO-2026-5029",
+      "fixed_version": "v0.55.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5030",
+    "Aliases": [
+      "CVE-2026-27136"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5030",
+    "Raw": {
+      "osv": "GO-2026-5030",
+      "fixed_version": "v0.55.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5942",
+    "Aliases": [
+      "CVE-2026-46600"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "v0.56.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5942",
+    "Raw": {
+      "osv": "GO-2026-5942",
+      "fixed_version": "v0.56.0",
+      "trace": [
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.17.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5970",
+    "Aliases": [
+      "CVE-2026-56852"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/text",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.14.0",
+      "fixed": "v0.39.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5970",
+    "Raw": {
+      "osv": "GO-2026-5970",
+      "fixed_version": "v0.39.0",
+      "trace": [
+        {
+          "module": "golang.org/x/text",
+          "version": "v0.14.0",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4864",
+    "Aliases": [
+      "CVE-2026-32282"
     ],
     "Tool": "govulncheck",
     "RuleID": "",
@@ -114,8 +1774,100 @@
     "Line": 0,
     "CredentialType": "",
     "Versions": {
-      "current": "go1.22.0",
-      "fixed": "go1.22.2"
+      "current": "v1.26.1",
+      "fixed": "v1.26.2"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4864",
+    "Raw": {
+      "osv": "GO-2026-4864",
+      "fixed_version": "v1.26.2",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4865",
+    "Aliases": [
+      "CVE-2026-32289"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.2"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4865",
+    "Raw": {
+      "osv": "GO-2026-4865",
+      "fixed_version": "v1.26.2",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4866",
+    "Aliases": [
+      "CVE-2026-33810"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.2"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -125,17 +1877,1167 @@
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v1.1.4",
-    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2024-2687",
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4866",
     "Raw": {
-      "osv": "GO-2024-2687",
-      "fixed_version": "go1.22.2",
+      "osv": "GO-2026-4866",
+      "fixed_version": "v1.26.2",
       "trace": [
         {
           "module": "stdlib",
-          "version": "go1.22.0",
-          "package": "net/http",
-          "function": "http2serverConn.processHeaders"
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4869",
+    "Aliases": [
+      "CVE-2026-32288"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.2"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4869",
+    "Raw": {
+      "osv": "GO-2026-4869",
+      "fixed_version": "v1.26.2",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4870",
+    "Aliases": [
+      "CVE-2026-32283"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.2"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4870",
+    "Raw": {
+      "osv": "GO-2026-4870",
+      "fixed_version": "v1.26.2",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4918",
+    "Aliases": [
+      "CVE-2026-33814"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.3"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4918",
+    "Raw": {
+      "osv": "GO-2026-4918",
+      "fixed_version": "v1.26.3",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4946",
+    "Aliases": [
+      "CVE-2026-32281"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.2"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4946",
+    "Raw": {
+      "osv": "GO-2026-4946",
+      "fixed_version": "v1.26.2",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4947",
+    "Aliases": [
+      "CVE-2026-32280"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.2"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4947",
+    "Raw": {
+      "osv": "GO-2026-4947",
+      "fixed_version": "v1.26.2",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4970",
+    "Aliases": [
+      "CVE-2026-39822"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.5"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4970",
+    "Raw": {
+      "osv": "GO-2026-4970",
+      "fixed_version": "v1.26.5",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4971",
+    "Aliases": [
+      "CVE-2026-39836"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.3"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4971",
+    "Raw": {
+      "osv": "GO-2026-4971",
+      "fixed_version": "v1.26.3",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4976",
+    "Aliases": [
+      "CVE-2026-39825"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.3"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4976",
+    "Raw": {
+      "osv": "GO-2026-4976",
+      "fixed_version": "v1.26.3",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4977",
+    "Aliases": [
+      "CVE-2026-42499"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.3"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4977",
+    "Raw": {
+      "osv": "GO-2026-4977",
+      "fixed_version": "v1.26.3",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4980",
+    "Aliases": [
+      "CVE-2026-39826"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.3"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4980",
+    "Raw": {
+      "osv": "GO-2026-4980",
+      "fixed_version": "v1.26.3",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4981",
+    "Aliases": [
+      "CVE-2026-33811"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.3"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4981",
+    "Raw": {
+      "osv": "GO-2026-4981",
+      "fixed_version": "v1.26.3",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4982",
+    "Aliases": [
+      "CVE-2026-39823"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.3"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4982",
+    "Raw": {
+      "osv": "GO-2026-4982",
+      "fixed_version": "v1.26.3",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4986",
+    "Aliases": [
+      "CVE-2026-39820"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.3"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4986",
+    "Raw": {
+      "osv": "GO-2026-4986",
+      "fixed_version": "v1.26.3",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5026",
+    "Aliases": [
+      "CVE-2026-39821"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.6"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5026",
+    "Raw": {
+      "osv": "GO-2026-5026",
+      "fixed_version": "v1.26.6",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5037",
+    "Aliases": [
+      "CVE-2026-27145"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.4"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5037",
+    "Raw": {
+      "osv": "GO-2026-5037",
+      "fixed_version": "v1.26.4",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5038",
+    "Aliases": [
+      "CVE-2026-42504"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.4"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5038",
+    "Raw": {
+      "osv": "GO-2026-5038",
+      "fixed_version": "v1.26.4",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5039",
+    "Aliases": [
+      "CVE-2026-42507"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.4"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5039",
+    "Raw": {
+      "osv": "GO-2026-5039",
+      "fixed_version": "v1.26.4",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5856",
+    "Aliases": [
+      "CVE-2026-42505"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.5"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5856",
+    "Raw": {
+      "osv": "GO-2026-5856",
+      "fixed_version": "v1.26.5",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5942",
+    "Aliases": [
+      "CVE-2026-46600"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.6"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5942",
+    "Raw": {
+      "osv": "GO-2026-5942",
+      "fixed_version": "v1.26.6",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5972",
+    "Aliases": [
+      "CVE-2026-33818"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.6"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5972",
+    "Raw": {
+      "osv": "GO-2026-5972",
+      "fixed_version": "v1.26.6",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6088",
+    "Aliases": [
+      "CVE-2026-56859"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.6"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6088",
+    "Raw": {
+      "osv": "GO-2026-6088",
+      "fixed_version": "v1.26.6",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6089",
+    "Aliases": [
+      "CVE-2026-56853"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.6"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6089",
+    "Raw": {
+      "osv": "GO-2026-6089",
+      "fixed_version": "v1.26.6",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6090",
+    "Aliases": [
+      "CVE-2026-56862"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.6"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6090",
+    "Raw": {
+      "osv": "GO-2026-6090",
+      "fixed_version": "v1.26.6",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6091",
+    "Aliases": [
+      "CVE-2026-56858"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.6"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6091",
+    "Raw": {
+      "osv": "GO-2026-6091",
+      "fixed_version": "v1.26.6",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
+        }
+      ]
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6218",
+    "Aliases": [
+      "CVE-2026-56860"
+    ],
+    "Tool": "govulncheck",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "stdlib",
+    "ModuleMajor": "go1",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v1.26.1",
+      "fixed": "v1.26.6"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "false",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v1.8.0",
+    "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6218",
+    "Raw": {
+      "osv": "GO-2026-6218",
+      "fixed_version": "v1.26.6",
+      "trace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.1",
+          "package": "",
+          "function": ""
         }
       ]
     }

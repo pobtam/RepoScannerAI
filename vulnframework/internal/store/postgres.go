@@ -333,17 +333,22 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 	actions := resolveGapLinks(PlanReconcile(ScanOutcome(outcome), absent), runID)
 	now := p.clock()
 
+	stateOf := map[string]model.State{}
+	for _, f := range absent {
+		stateOf[f.Fingerprint] = f.State
+	}
+
 	for _, a := range actions {
 		if a.Verify {
-			if err := transitionTx(ctx, tx, a.Fingerprint, model.Merged, model.Verified, model.TransitionContext{
+			if err := transitionTx(ctx, tx, a.Fingerprint, stateOf[a.Fingerprint], model.Verified, model.TransitionContext{
 				Actor:       model.ActorScanWorker,
-				Cause:       "not observed by successful scan in " + runID,
+				Cause:       "not observed by successful scan in " + runID + " (" + string(a.VerificationReason) + ")",
 				At:          now,
 				ScanOutcome: ScanOutcome(outcome),
 			}); err != nil {
 				return stats, err
 			}
-			if _, err := tx.ExecContext(ctx, qMarkVerified, now, a.Fingerprint); err != nil {
+			if _, err := tx.ExecContext(ctx, qMarkVerified, now, string(a.VerificationReason), a.Fingerprint); err != nil {
 				return stats, err
 			}
 			stats.Verified++
@@ -442,9 +447,10 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 			lastRun       sql.NullString
 			notReobserved bool
 			gapRun        sql.NullString
+			verifiedBy    sql.NullString
 		)
 		if err := rows.Scan(&f.Fingerprint, &f.Repo, &category, &data, &state,
-			&reason, &priority, &firstRun, &lastRun, &notReobserved, &gapRun); err != nil {
+			&reason, &priority, &firstRun, &lastRun, &notReobserved, &gapRun, &verifiedBy); err != nil {
 			return nil, err
 		}
 
@@ -469,6 +475,10 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 		if gapRun.Valid {
 			g := gapRun.String
 			projected.Derived.GapRepoScan = &g
+		}
+		if verifiedBy.Valid {
+			vr := model.VerificationReason(verifiedBy.String)
+			projected.VerifiedReason = &vr
 		}
 		out = append(out, projected)
 	}

@@ -78,6 +78,31 @@ func severityFromOSV(s string) model.Severity {
 	}
 }
 
+// severityFromOSVOrScore maps an OSV severity band, falling back to the CVSS
+// base score where the advisory carries no band.
+//
+// The Go vulnerability database publishes no severity band, so for Go findings
+// the group's max_severity is the only signal there is. The thresholds match
+// the priority bands of VM-AD §9.4 so that a severity derived here and a
+// priority computed there do not tell different stories.
+func severityFromOSVOrScore(band string, score float64) model.Severity {
+	if s := severityFromOSV(band); s != model.SeverityUnknown {
+		return s
+	}
+	switch {
+	case score >= 9.0:
+		return model.SeverityCritical
+	case score >= 7.0:
+		return model.SeverityHigh
+	case score >= 4.0:
+		return model.SeverityMedium
+	case score > 0:
+		return model.SeverityLow
+	default:
+		return model.SeverityUnknown
+	}
+}
+
 // severityFromBand maps a plain CRITICAL/HIGH/MEDIUM/LOW band.
 func severityFromBand(s string) model.Severity {
 	switch strings.ToUpper(strings.TrimSpace(s)) {

@@ -5,40 +5,40 @@
     "PrimaryID": "",
     "Aliases": null,
     "Tool": "gosec",
-    "RuleID": "G104",
+    "RuleID": "G304",
     "DetectorRuleID": "",
     "CheckID": "",
     "Module": "",
     "ModuleMajor": "",
     "Package": "",
     "Function": "",
-    "File": "internal/api/server.go",
+    "File": "tmp/src/go-api/internal/api/legacy.go",
     "ResourceKey": "",
-    "Line": 88,
+    "Line": 13,
     "CredentialType": "",
     "Versions": {},
     "Classification": {
-      "severity": "LOW",
+      "severity": "MEDIUM",
       "kev": false,
       "reachable": "true",
       "dep_class": "n/a",
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v2.21.4",
-    "AdvisoryURL": "https://cwe.mitre.org/data/definitions/703.html",
+    "ToolVersion": "v2.29.0",
+    "AdvisoryURL": "https://cwe.mitre.org/data/definitions/22.html",
     "Raw": {
-      "severity": "LOW",
-      "confidence": "LOW",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
       "cwe": {
-        "id": "703",
-        "url": "https://cwe.mitre.org/data/definitions/703.html"
+        "id": "22",
+        "url": "https://cwe.mitre.org/data/definitions/22.html"
       },
-      "rule_id": "G104",
-      "details": "Errors unhandled",
-      "file": "/tmp/scan-7f21a/clone/internal/api/server.go",
-      "line": "88",
-      "column": "2",
+      "rule_id": "G304",
+      "details": "Potential file inclusion via variable",
+      "file": "/tmp/src/go-api/internal/api/legacy.go",
+      "line": "13",
+      "column": "9",
       "nosec": false
     }
   },
@@ -55,9 +55,9 @@
     "ModuleMajor": "",
     "Package": "",
     "Function": "",
-    "File": "internal/crypto/hash.go",
+    "File": "tmp/src/go-api/internal/crypto/hash.go",
     "ResourceKey": "",
-    "Line": 17,
+    "Line": 13,
     "CredentialType": "",
     "Versions": {},
     "Classification": {
@@ -68,7 +68,50 @@
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v2.21.4",
+    "ToolVersion": "v2.29.0",
+    "AdvisoryURL": "https://cwe.mitre.org/data/definitions/328.html",
+    "Raw": {
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "cwe": {
+        "id": "328",
+        "url": "https://cwe.mitre.org/data/definitions/328.html"
+      },
+      "rule_id": "G401",
+      "details": "Use of weak cryptographic primitive",
+      "file": "/tmp/src/go-api/internal/crypto/hash.go",
+      "line": "13",
+      "column": "7",
+      "nosec": false
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "gosec",
+    "RuleID": "G505",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/internal/crypto/hash.go",
+    "ResourceKey": "",
+    "Line": 4,
+    "CredentialType": "",
+    "Versions": {},
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.29.0",
     "AdvisoryURL": "https://cwe.mitre.org/data/definitions/327.html",
     "Raw": {
       "severity": "MEDIUM",
@@ -77,11 +120,11 @@
         "id": "327",
         "url": "https://cwe.mitre.org/data/definitions/327.html"
       },
-      "rule_id": "G401",
-      "details": "Use of weak cryptographic primitive",
-      "file": "/tmp/scan-7f21a/clone/internal/crypto/hash.go",
-      "line": "17",
-      "column": "7",
+      "rule_id": "G505",
+      "details": "Blocklisted import crypto/sha1: weak cryptographic primitive",
+      "file": "/tmp/src/go-api/internal/crypto/hash.go",
+      "line": "4",
+      "column": "2",
       "nosec": false
     }
   },
@@ -98,9 +141,9 @@
     "ModuleMajor": "",
     "Package": "",
     "Function": "",
-    "File": "internal/token/token.go",
+    "File": "tmp/src/go-api/internal/token/token.go",
     "ResourceKey": "",
-    "Line": 42,
+    "Line": 13,
     "CredentialType": "",
     "Versions": {},
     "Classification": {
@@ -111,19 +154,19 @@
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v2.21.4",
+    "ToolVersion": "v2.29.0",
     "AdvisoryURL": "https://cwe.mitre.org/data/definitions/338.html",
     "Raw": {
       "severity": "HIGH",
-      "confidence": "HIGH",
+      "confidence": "MEDIUM",
       "cwe": {
         "id": "338",
         "url": "https://cwe.mitre.org/data/definitions/338.html"
       },
       "rule_id": "G404",
       "details": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
-      "file": "/tmp/scan-7f21a/clone/internal/token/token.go",
-      "line": "42",
+      "file": "/tmp/src/go-api/internal/token/token.go",
+      "line": "13",
       "column": "7",
       "nosec": false
     }

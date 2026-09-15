@@ -2,44 +2,48 @@
   {
     "Repo": "org/wanaware-api",
     "Category": "dependency",
-    "PrimaryID": "GHSA-c5q2-7r4c-mv6g",
+    "PrimaryID": "GO-2023-2402",
     "Aliases": [
-      "CVE-2024-28180",
-      "GHSA-c5q2-7r4c-mv6g"
+      "CVE-2023-48795",
+      "GHSA-45x7-px36-x8w8",
+      "GO-2023-2402",
+      "PYSEC-2026-1758"
     ],
     "Tool": "osv-scanner",
     "RuleID": "",
     "DetectorRuleID": "",
     "CheckID": "",
-    "Module": "github.com/go-jose/go-jose/v4",
-    "ModuleMajor": "v4",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
     "Package": "",
     "Function": "",
-    "File": "go.mod",
+    "File": "tmp/src/go-api/go.mod",
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
     "Versions": {
-      "current": "v4.0.2",
-      "fixed": "4.0.5"
+      "current": "0.16.0",
+      "fixed": "0.17.0"
     },
     "Classification": {
       "severity": "MEDIUM",
-      "cvss": 5.3,
+      "cvss": 5.9,
       "kev": false,
       "reachable": "unknown",
       "dep_class": "production",
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v1.9.2",
-    "AdvisoryURL": "https://github.com/advisories/GHSA-c5q2-7r4c-mv6g",
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/64784",
     "Raw": {
-      "id": "GHSA-c5q2-7r4c-mv6g",
+      "id": "GO-2023-2402",
       "aliases": [
-        "CVE-2024-28180"
+        "CVE-2023-48795",
+        "GHSA-45x7-px36-x8w8",
+        "PYSEC-2026-1758"
       ],
-      "summary": "Improper handling of highly compressed JWE data",
+      "summary": "Man-in-the-middle attacker can compromise integrity of secure channel in golang.org/x/crypto",
       "affected": [
         {
           "ranges": [
@@ -52,7 +56,7 @@
                 },
                 {
                   "introduced": "",
-                  "fixed": "4.0.5"
+                  "fixed": "0.17.0"
                 }
               ]
             }
@@ -61,23 +65,39 @@
       ],
       "references": [
         {
-          "type": "ADVISORY",
-          "url": "https://github.com/advisories/GHSA-c5q2-7r4c-mv6g"
+          "type": "REPORT",
+          "url": "https://go.dev/issue/64784"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/550715"
+        },
+        {
+          "type": "FIX",
+          "url": "https://github.com/golang/crypto/commit/9d2ee975ef9fe627bf0a6f01c1f69e8ef1d4f05d"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/qA3XtxvMUyg"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.openssh.com/txt/release-9.6"
         }
       ],
       "database_specific": {
-        "severity": "MODERATE"
+        "severity": ""
       }
     }
   },
   {
     "Repo": "org/wanaware-api",
     "Category": "dependency",
-    "PrimaryID": "GHSA-hcg3-q754-cr77",
+    "PrimaryID": "GO-2024-3321",
     "Aliases": [
-      "CVE-2025-22869",
-      "GHSA-hcg3-q754-cr77",
-      "GO-2025-3106"
+      "CVE-2024-45337",
+      "GHSA-v778-237x-gjrc",
+      "GO-2024-3321"
     ],
     "Tool": "osv-scanner",
     "RuleID": "",
@@ -87,13 +107,98 @@
     "ModuleMajor": "v0",
     "Package": "",
     "Function": "",
-    "File": "go.mod",
+    "File": "tmp/src/go-api/go.mod",
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
     "Versions": {
-      "current": "v0.35.0",
-      "fixed": "0.36.0"
+      "current": "0.16.0",
+      "fixed": "0.31.0"
+    },
+    "Classification": {
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://github.com/golang/crypto/commit/b4f1988a35dee11ec3e05d6bf3e90b695fbd8909",
+    "Raw": {
+      "id": "GO-2024-3321",
+      "aliases": [
+        "CVE-2024-45337",
+        "GHSA-v778-237x-gjrc"
+      ],
+      "summary": "Misuse of connection.serverAuthenticate may cause authorization bypass in golang.org/x/crypto",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://github.com/golang/crypto/commit/b4f1988a35dee11ec3e05d6bf3e90b695fbd8909"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/635315"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/70779"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/-nPEi39gI4Q/m/cGVPJCqdAQAJ"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-3487",
+    "Aliases": [
+      "CVE-2025-22869",
+      "GHSA-hcg3-q754-cr77",
+      "GO-2025-3487"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.35.0"
     },
     "Classification": {
       "severity": "HIGH",
@@ -104,16 +209,1905 @@
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v1.9.2",
-    "AdvisoryURL": "https://github.com/advisories/GHSA-hcg3-q754-cr77",
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/652135",
     "Raw": {
-      "id": "GHSA-hcg3-q754-cr77",
+      "id": "GO-2025-3487",
       "aliases": [
         "CVE-2025-22869",
-        "GO-2025-3106"
+        "GHSA-hcg3-q754-cr77"
       ],
       "summary": "Potential denial of service in golang.org/x/crypto",
       "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.35.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/652135"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/71931"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-4116",
+    "Aliases": [
+      "CVE-2025-47913",
+      "GHSA-56w8-48fp-6mgv",
+      "GO-2025-4116"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.43.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/700295",
+    "Raw": {
+      "id": "GO-2025-4116",
+      "aliases": [
+        "CVE-2025-47913",
+        "GHSA-56w8-48fp-6mgv"
+      ],
+      "summary": "Potential denial of service in golang.org/x/crypto/ssh/agent",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.43.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/700295"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/75178"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/advisories/GHSA-56w8-48fp-6mgv"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-4134",
+    "Aliases": [
+      "CVE-2025-58181",
+      "GHSA-j5w8-q4qc-rx2x",
+      "GO-2025-4134"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.45.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://groups.google.com/g/golang-announce/c/w-oX3UxNcZA",
+    "Raw": {
+      "id": "GO-2025-4134",
+      "aliases": [
+        "CVE-2025-58181",
+        "GHSA-j5w8-q4qc-rx2x"
+      ],
+      "summary": "Unbounded memory consumption in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.45.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://groups.google.com/g/golang-announce/c/w-oX3UxNcZA"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/721961"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/76363"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-4135",
+    "Aliases": [
+      "CVE-2025-47914",
+      "GHSA-f6x5-jh6r-wrfv",
+      "GO-2025-4135"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.45.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://groups.google.com/g/golang-announce/c/w-oX3UxNcZA",
+    "Raw": {
+      "id": "GO-2025-4135",
+      "aliases": [
+        "CVE-2025-47914",
+        "GHSA-f6x5-jh6r-wrfv"
+      ],
+      "summary": "Malformed constraint may cause denial of service in golang.org/x/crypto/ssh/agent",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.45.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://groups.google.com/g/golang-announce/c/w-oX3UxNcZA"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/721960"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/76364"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5005",
+    "Aliases": [
+      "CVE-2026-39833",
+      "GHSA-jppx-rxg9-jmrx",
+      "GO-2026-5005"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79436",
+    "Raw": {
+      "id": "GO-2026-5005",
+      "aliases": [
+        "CVE-2026-39833",
+        "GHSA-jppx-rxg9-jmrx"
+      ],
+      "summary": "Invoking key constraints not enforced in golang.org/x/crypto/ssh/agent",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79436"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/778642"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5006",
+    "Aliases": [
+      "CVE-2026-39832",
+      "GHSA-f5wc-c3c7-36mc",
+      "GO-2026-5006"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79435",
+    "Raw": {
+      "id": "GO-2026-5006",
+      "aliases": [
+        "CVE-2026-39832",
+        "GHSA-f5wc-c3c7-36mc"
+      ],
+      "summary": "Invoking agent constraints dropped when forwarding keys in golang.org/x/crypto/ssh/agent",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79435"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/778640"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/778641"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5013",
+    "Aliases": [
+      "CVE-2026-46597",
+      "GHSA-q4h4-gmj2-qvw2",
+      "GO-2026-5013"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79561",
+    "Raw": {
+      "id": "GO-2026-5013",
+      "aliases": [
+        "CVE-2026-46597",
+        "GHSA-q4h4-gmj2-qvw2"
+      ],
+      "summary": "Invoking byte arithmetic causes underflow and panic in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79561"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781620"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5014",
+    "Aliases": [
+      "CVE-2026-39828",
+      "GHSA-45gg-vh54-h5m9",
+      "GO-2026-5014"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79562",
+    "Raw": {
+      "id": "GO-2026-5014",
+      "aliases": [
+        "CVE-2026-39828",
+        "GHSA-45gg-vh54-h5m9"
+      ],
+      "summary": "Invoking bypass of certificate restrictions in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79562"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781621"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5015",
+    "Aliases": [
+      "CVE-2026-39835",
+      "GHSA-78mq-xcr3-xm33",
+      "GO-2026-5015"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79563",
+    "Raw": {
+      "id": "GO-2026-5015",
+      "aliases": [
+        "CVE-2026-39835",
+        "GHSA-78mq-xcr3-xm33"
+      ],
+      "summary": "Invoking server panic during CheckHostKey/Authenticate in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79563"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781660"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5016",
+    "Aliases": [
+      "CVE-2026-39827",
+      "GHSA-qpw4-5x99-6vjp",
+      "GO-2026-5016"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/35127",
+    "Raw": {
+      "id": "GO-2026-5016",
+      "aliases": [
+        "CVE-2026-39827",
+        "GHSA-qpw4-5x99-6vjp"
+      ],
+      "summary": "Invoking memory leak when rejecting channels can lead to DoS in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/35127"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781320"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5017",
+    "Aliases": [
+      "CVE-2026-39830",
+      "GHSA-vgwf-h737-ff37",
+      "GO-2026-5017"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79564",
+    "Raw": {
+      "id": "GO-2026-5017",
+      "aliases": [
+        "CVE-2026-39830",
+        "GHSA-vgwf-h737-ff37"
+      ],
+      "summary": "Invoking client can cause server deadlock on unexpected responses in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79564"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781640"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781664"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5018",
+    "Aliases": [
+      "CVE-2026-39829",
+      "GHSA-w879-237q-wc7r",
+      "GO-2026-5018"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79565",
+    "Raw": {
+      "id": "GO-2026-5018",
+      "aliases": [
+        "CVE-2026-39829",
+        "GHSA-w879-237q-wc7r"
+      ],
+      "summary": "Invoking pathological RSA/DSA parameters may cause DoS in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79565"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781641"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781661"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5019",
+    "Aliases": [
+      "CVE-2026-39831",
+      "GHSA-89gr-r52h-f8rx",
+      "GO-2026-5019"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79566",
+    "Raw": {
+      "id": "GO-2026-5019",
+      "aliases": [
+        "CVE-2026-39831",
+        "GHSA-89gr-r52h-f8rx"
+      ],
+      "summary": "Invoking bypass of FIDO/U2F security keys physical interaction in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79566"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781662"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5020",
+    "Aliases": [
+      "CVE-2026-39834",
+      "GHSA-rm3j-f69w-wqmq",
+      "GO-2026-5020"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79567",
+    "Raw": {
+      "id": "GO-2026-5020",
+      "aliases": [
+        "CVE-2026-39834",
+        "GHSA-rm3j-f69w-wqmq"
+      ],
+      "summary": "Invoking infinite loop on large channel writes in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79567"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781663"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5021",
+    "Aliases": [
+      "CVE-2026-42508",
+      "GHSA-5cgq-3rg8-m6cv",
+      "GO-2026-5021"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "CRITICAL",
+      "cvss": 9.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79568",
+    "Raw": {
+      "id": "GO-2026-5021",
+      "aliases": [
+        "CVE-2026-42508",
+        "GHSA-5cgq-3rg8-m6cv"
+      ],
+      "summary": "Invoking auth bypass via unenforced @revoked status in golang.org/x/crypto/ssh/knownhosts",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79568"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781220"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5023",
+    "Aliases": [
+      "CVE-2026-46595",
+      "GHSA-x527-x647-q7gg",
+      "GO-2026-5023"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "CRITICAL",
+      "cvss": 10,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79570",
+    "Raw": {
+      "id": "GO-2026-5023",
+      "aliases": [
+        "CVE-2026-46595",
+        "GHSA-x527-x647-q7gg"
+      ],
+      "summary": "Invoking VerifiedPublicKeyCallback permissions skip enforcement in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79570"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781642"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5033",
+    "Aliases": [
+      "CVE-2026-46598",
+      "GHSA-9m57-25v3-79x9",
+      "GO-2026-5033"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79596",
+    "Raw": {
+      "id": "GO-2026-5033",
+      "aliases": [
+        "CVE-2026-46598",
+        "GHSA-9m57-25v3-79x9"
+      ],
+      "summary": "Invoking pathological inputs can lead to client panic in golang.org/x/crypto/ssh/agent",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.52.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79596"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781360"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/a082jnz-LvI"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5932",
+    "Aliases": [
+      "GO-2026-5932"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/44226",
+    "Raw": {
+      "id": "GO-2026-5932",
+      "aliases": null,
+      "summary": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/44226"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6303",
+    "Aliases": [
+      "CVE-2026-56854",
+      "GO-2026-6303"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/80213",
+    "Raw": {
+      "id": "GO-2026-6303",
+      "aliases": [
+        "CVE-2026-56854"
+      ],
+      "summary": "Source-address critical option not enforced for non-public-key auth callbacks in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.55.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/80213"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/797040"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6354",
+    "Aliases": [
+      "CVE-2026-78662",
+      "GO-2026-6354"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.56.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/81316",
+    "Raw": {
+      "id": "GO-2026-6354",
+      "aliases": [
+        "CVE-2026-78662"
+      ],
+      "summary": "Prevent DoS on deadlocked undecided channel in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.56.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/81316"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/826504"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/1y3fb2np35U"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-6355",
+    "Aliases": [
+      "CVE-2026-56855",
+      "GO-2026-6355"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.16.0",
+      "fixed": "0.56.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/81317",
+    "Raw": {
+      "id": "GO-2026-6355",
+      "aliases": [
+        "CVE-2026-56855"
+      ],
+      "summary": "Prevent DoS on deadlocked established channel in golang.org/x/crypto/ssh",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.56.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/81317"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/826524"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/1y3fb2np35U"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2024-2687",
+    "Aliases": [
+      "BIT-golang-2023-45288",
+      "CVE-2023-45288",
+      "GHSA-4v7x-pqxf-cx7m",
+      "GO-2024-2687"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "1.21.9"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/65051",
+    "Raw": {
+      "id": "GO-2024-2687",
+      "aliases": [
+        "BIT-golang-2023-45288",
+        "CVE-2023-45288",
+        "GHSA-4v7x-pqxf-cx7m"
+      ],
+      "summary": "HTTP/2 CONTINUATION flood in net/http",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.21.9"
+                },
+                {
+                  "introduced": "1.22.0-0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.22.2"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.23.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/65051"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/576155"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/YgW0sx8mN3M"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2024-3333",
+    "Aliases": [
+      "CVE-2024-45338",
+      "GHSA-w32m-9786-jp63",
+      "GO-2024-3333"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.33.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/637536",
+    "Raw": {
+      "id": "GO-2024-3333",
+      "aliases": [
+        "CVE-2024-45338",
+        "GHSA-w32m-9786-jp63"
+      ],
+      "summary": "Non-linear parsing of case-insensitive content in golang.org/x/net/html",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.33.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/637536"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/70906"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/wSCRmFnNmPA/m/Lvcd0mRMAwAJ"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-3503",
+    "Aliases": [
+      "CVE-2025-22870",
+      "GHSA-qxp5-gwg8-xv66",
+      "GO-2025-3503"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "1.23.7"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 4.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/654697",
+    "Raw": {
+      "id": "GO-2025-3503",
+      "aliases": [
+        "CVE-2025-22870",
+        "GHSA-qxp5-gwg8-xv66"
+      ],
+      "summary": "HTTP Proxy bypass using IPv6 Zone IDs in golang.org/x/net",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.23.7"
+                },
+                {
+                  "introduced": "1.24.0-0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.24.1"
+                }
+              ]
+            }
+          ]
+        },
         {
           "ranges": [
             {
@@ -134,12 +2128,1133 @@
       ],
       "references": [
         {
-          "type": "ADVISORY",
-          "url": "https://github.com/advisories/GHSA-hcg3-q754-cr77"
+          "type": "FIX",
+          "url": "https://go.dev/cl/654697"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/71984"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/4t3lzH3I0eI/m/b42ImqrBAQAJ"
         }
       ],
       "database_specific": {
-        "severity": "HIGH"
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2025-3595",
+    "Aliases": [
+      "CVE-2025-22872",
+      "GHSA-vvgc-356p-c3xw",
+      "GO-2025-3595"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.38.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/662715",
+    "Raw": {
+      "id": "GO-2025-3595",
+      "aliases": [
+        "CVE-2025-22872",
+        "GHSA-vvgc-356p-c3xw"
+      ],
+      "summary": "Incorrect Neutralization of Input During Web Page Generation in x/net in golang.org/x/net",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.38.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/662715"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/73070"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/ezSKR9vqbqA"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4440",
+    "Aliases": [
+      "CVE-2025-47911",
+      "GHSA-w4gw-w5jq-g9jh",
+      "GO-2026-4440"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.45.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/709876",
+    "Raw": {
+      "id": "GO-2026-4440",
+      "aliases": [
+        "CVE-2025-47911",
+        "GHSA-w4gw-w5jq-g9jh"
+      ],
+      "summary": "Quadratic parsing complexity in golang.org/x/net/html",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.45.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/709876"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://github.com/golang/vulndb/issues/4440"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/jnQcOYpiR2c"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4441",
+    "Aliases": [
+      "CVE-2025-58190",
+      "GO-2026-4441"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.45.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://groups.google.com/g/golang-announce/c/jnQcOYpiR2c",
+    "Raw": {
+      "id": "GO-2026-4441",
+      "aliases": [
+        "CVE-2025-58190"
+      ],
+      "summary": "Infinite parsing loop in golang.org/x/net",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.45.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/jnQcOYpiR2c"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://github.com/golang/vulndb/issues/4441"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/709875"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-4918",
+    "Aliases": [
+      "BIT-golang-2026-33814",
+      "CVE-2026-33814",
+      "GO-2026-4918"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.53.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/761581",
+    "Raw": {
+      "id": "GO-2026-4918",
+      "aliases": [
+        "BIT-golang-2026-33814",
+        "CVE-2026-33814"
+      ],
+      "summary": "Infinite loop in HTTP/2 transport when given bad SETTINGS_MAX_FRAME_SIZE in net/http/internal/http2 in golang.org/x/net",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.53.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.25.10"
+                },
+                {
+                  "introduced": "1.26.0-0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.26.3"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/761581"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/761640"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/78476"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/qcCIEXso47M"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5025",
+    "Aliases": [
+      "CVE-2026-42506",
+      "GO-2026-5025"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79571",
+    "Raw": {
+      "id": "GO-2026-5025",
+      "aliases": [
+        "CVE-2026-42506"
+      ],
+      "summary": "Invoking incorrect handling of namespaced elements in foreign content in golang.org/x/net/html",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.55.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79571"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/iI-mYSI0lu8"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781700"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5026",
+    "Aliases": [
+      "CVE-2026-39821",
+      "GO-2026-5026"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "1.25.13"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/767220",
+    "Raw": {
+      "id": "GO-2026-5026",
+      "aliases": [
+        "CVE-2026-39821"
+      ],
+      "summary": "Invoking failure to reject ASCII-only Punycode-encoded labels in golang.org/x/net/idna",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.25.13"
+                },
+                {
+                  "introduced": "1.26.0-0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.26.6"
+                },
+                {
+                  "introduced": "1.27.0-0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.27.0-rc.3"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.55.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/767220"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/78760"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/iI-mYSI0lu8"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/94pEornpRlI"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5027",
+    "Aliases": [
+      "CVE-2026-42502",
+      "GO-2026-5027"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79572",
+    "Raw": {
+      "id": "GO-2026-5027",
+      "aliases": [
+        "CVE-2026-42502"
+      ],
+      "summary": "Invoking incorrect handling of HTML elements in foreign content in golang.org/x/net/html",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.55.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79572"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/iI-mYSI0lu8"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781701"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5028",
+    "Aliases": [
+      "CVE-2026-25680",
+      "GHSA-5cv4-jp36-h3mw",
+      "GO-2026-5028"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/781702",
+    "Raw": {
+      "id": "GO-2026-5028",
+      "aliases": [
+        "CVE-2026-25680",
+        "GHSA-5cv4-jp36-h3mw"
+      ],
+      "summary": "Invoking denial of service when parsing arbitrary HTML in golang.org/x/net/html",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.55.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781702"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79573"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/iI-mYSI0lu8"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5029",
+    "Aliases": [
+      "CVE-2026-25681",
+      "GO-2026-5029"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79574",
+    "Raw": {
+      "id": "GO-2026-5029",
+      "aliases": [
+        "CVE-2026-25681"
+      ],
+      "summary": "Invoking incorrect handling of character references in DOCTYPE nodes in golang.org/x/net/html",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.55.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79574"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/iI-mYSI0lu8"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781703"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5030",
+    "Aliases": [
+      "CVE-2026-27136",
+      "GO-2026-5030"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/79575",
+    "Raw": {
+      "id": "GO-2026-5030",
+      "aliases": [
+        "CVE-2026-27136"
+      ],
+      "summary": "Invoking duplicate attributes can cause XSS in golang.org/x/net/html",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.55.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79575"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/iI-mYSI0lu8"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/781685"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5942",
+    "Aliases": [
+      "BIT-golang-2026-46600",
+      "CVE-2026-46600",
+      "GO-2026-5942"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.17.0",
+      "fixed": "1.26.6"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/cl/786345",
+    "Raw": {
+      "id": "GO-2026-5942",
+      "aliases": [
+        "BIT-golang-2026-46600",
+        "CVE-2026-46600"
+      ],
+      "summary": "Parsing an invalid SVCB or HTTPS RR can panic in golang.org/x/net/dns/dnsmessage",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.26.0-0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.26.6"
+                },
+                {
+                  "introduced": "1.27.0-0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.27.0-rc.3"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.56.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/786345"
+        },
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/79795"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/94pEornpRlI"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5024",
+    "Aliases": [
+      "CVE-2026-39824",
+      "GO-2026-5024"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/sys",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.15.0",
+      "fixed": "0.44.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/78916",
+    "Raw": {
+      "id": "GO-2026-5024",
+      "aliases": [
+        "CVE-2026-39824"
+      ],
+      "summary": "Invoking integer overflow in NewNTUnicodeString in golang.org/x/sys/windows",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.44.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/78916"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/770080"
+        },
+        {
+          "type": "WEB",
+          "url": "https://groups.google.com/g/golang-announce/c/6MMI8Lj-Atg"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5970",
+    "Aliases": [
+      "CVE-2026-56852",
+      "GO-2026-5970"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/text",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/go-api/go.mod",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "0.14.0",
+      "fixed": "0.39.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://go.dev/issue/80142",
+    "Raw": {
+      "id": "GO-2026-5970",
+      "aliases": [
+        "CVE-2026-56852"
+      ],
+      "summary": "Infinite loop on invalid input in golang.org/x/text",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.39.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "REPORT",
+          "url": "https://go.dev/issue/80142"
+        },
+        {
+          "type": "FIX",
+          "url": "https://go.dev/cl/794100"
+        }
+      ],
+      "database_specific": {
+        "severity": ""
       }
     }
   }

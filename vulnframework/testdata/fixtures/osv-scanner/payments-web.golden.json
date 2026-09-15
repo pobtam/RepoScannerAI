@@ -2,6 +2,1367 @@
   {
     "Repo": "org/payments-web",
     "Category": "dependency",
+    "PrimaryID": "GHSA-35jp-ww65-95wh",
+    "Aliases": [
+      "CVE-2026-44494",
+      "GHSA-35jp-ww65-95wh"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.16.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.7,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-44494",
+    "Raw": {
+      "id": "GHSA-35jp-ww65-95wh",
+      "aliases": [
+        "CVE-2026-44494"
+      ],
+      "summary": "axios Vulnerable to Full Man-in-the-Middle via Prototype Pollution Gadget in `config.proxy`",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.16.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-35jp-ww65-95wh"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-44494"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://github.com/advisories/GHSA-fvcv-3m26-pcqx"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-3g43-6gmg-66jw",
+    "Aliases": [
+      "CVE-2026-44495",
+      "GHSA-3g43-6gmg-66jw"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.2"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-44495",
+    "Raw": {
+      "id": "GHSA-3g43-6gmg-66jw",
+      "aliases": [
+        "CVE-2026-44495"
+      ],
+      "summary": "axios Vulnerable to Credential Theft and Response Hijacking via Prototype Pollution Gadget in Config Merge",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.2"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0.19.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-3g43-6gmg-66jw"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-44495"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-3p68-rc4w-qgx5",
+    "Aliases": [
+      "CVE-2025-62718",
+      "GHSA-3p68-rc4w-qgx5"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2025-62718",
+    "Raw": {
+      "id": "GHSA-3p68-rc4w-qgx5",
+      "aliases": [
+        "CVE-2025-62718"
+      ],
+      "summary": "Axios has a NO_PROXY Hostname Normalization Bypass that Leads to SSRF",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-3p68-rc4w-qgx5"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-62718"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/10661"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/10688"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/03cdfc99e8db32a390e12128208b6778492cee9c"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/fb3befb6daac6cad26b2e54094d0f2d9e47f24df"
+        },
+        {
+          "type": "WEB",
+          "url": "https://datatracker.ietf.org/doc/html/rfc1034#section-3.1"
+        },
+        {
+          "type": "WEB",
+          "url": "https://datatracker.ietf.org/doc/html/rfc3986#section-3.2.2"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.31.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.15.0"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-3w6x-2g7m-8v23",
+    "Aliases": [
+      "CVE-2026-42044",
+      "GHSA-3w6x-2g7m-8v23"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.2"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42044",
+    "Raw": {
+      "id": "GHSA-3w6x-2g7m-8v23",
+      "aliases": [
+        "CVE-2026-42044"
+      ],
+      "summary": "Axios: Invisible JSON Response Tampering via Prototype Pollution Gadget in `parseReviver`",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.2"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-3w6x-2g7m-8v23"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42044"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-42h9-826w-cgv3",
+    "Aliases": [
+      "CVE-2026-67313",
+      "GHSA-42h9-826w-cgv3"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "0.33.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-67313",
+    "Raw": {
+      "id": "GHSA-42h9-826w-cgv3",
+      "aliases": [
+        "CVE-2026-67313"
+      ],
+      "summary": "Axios: Excessive recursion in formDataToJSON can cause denial of service",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0.28.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.33.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.18.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-42h9-826w-cgv3"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-67313"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-68942"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/11000"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/11001"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/1417285c69344bbcc6420a021f67dee0c6fedb2d"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/32fc489632377d214db55bfa4e2c48486a7d7ce2"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.33.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.18.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/axios-before-denial-of-service-via-formdatatojson"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-43fc-jf86-j433",
+    "Aliases": [
+      "CVE-2026-25639",
+      "GHSA-43fc-jf86-j433"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.13.5"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-25639",
+    "Raw": {
+      "id": "GHSA-43fc-jf86-j433",
+      "aliases": [
+        "CVE-2026-25639"
+      ],
+      "summary": "Axios is Vulnerable to Denial of Service via __proto__ Key in mergeConfig",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.13.5"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.30.3"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-43fc-jf86-j433"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-25639"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/7369"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/7388"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/28c721588c7a77e7503d0a434e016f852c597b57"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/d7ff1409c68168d3057fc3891f911b2b92616f9e"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.30.3"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.13.5"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-445q-vr5w-6q77",
+    "Aliases": [
+      "CVE-2026-42037",
+      "GHSA-445q-vr5w-6q77"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42037",
+    "Raw": {
+      "id": "GHSA-445q-vr5w-6q77",
+      "aliases": [
+        "CVE-2026-42037"
+      ],
+      "summary": "Axios: CRLF Injection in multipart/form-data body via unsanitized blob.type in formDataToStream",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-445q-vr5w-6q77"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42037"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-4hjh-wcwx-xvwj",
+    "Aliases": [
+      "CVE-2025-58754",
+      "GHSA-4hjh-wcwx-xvwj"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.12.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2025-58754",
+    "Raw": {
+      "id": "GHSA-4hjh-wcwx-xvwj",
+      "aliases": [
+        "CVE-2025-58754"
+      ],
+      "summary": "Axios is vulnerable to DoS attack through lack of data size check",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.12.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0.28.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.30.2"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-4hjh-wcwx-xvwj"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-58754"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/7011"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/7034"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/945435fc51467303768202250debb8d4ae892593"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/a1b1d3f073a988601583a604f5f9f5d05a3d0b67"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/c30252f685e8f4326722de84923fcbc8cf557f06"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.30.2"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.12.0"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-5c9x-8gcm-mpgx",
+    "Aliases": [
+      "CVE-2026-42034",
+      "GHSA-5c9x-8gcm-mpgx"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42034",
+    "Raw": {
+      "id": "GHSA-5c9x-8gcm-mpgx",
+      "aliases": [
+        "CVE-2026-42034"
+      ],
+      "summary": "Axios' HTTP adapter-streamed uploads bypass maxBodyLength when maxRedirects: 0",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-5c9x-8gcm-mpgx"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42034"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-62hf-57xw-28j9",
+    "Aliases": [
+      "CVE-2026-42039",
+      "GHSA-62hf-57xw-28j9"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42039",
+    "Raw": {
+      "id": "GHSA-62hf-57xw-28j9",
+      "aliases": [
+        "CVE-2026-42039"
+      ],
+      "summary": "Axios: unbounded recursion in toFormData causes DoS via deeply nested request data",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-62hf-57xw-28j9"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42039"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/85132ffba1a77609ea5d101c8a413dea7174932f"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.15.1"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-6chq-wfr3-2hj9",
+    "Aliases": [
+      "CVE-2026-42035",
+      "GHSA-6chq-wfr3-2hj9"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42035",
+    "Raw": {
+      "id": "GHSA-6chq-wfr3-2hj9",
+      "aliases": [
+        "CVE-2026-42035"
+      ],
+      "summary": "Axios: Header Injection via Prototype Pollution",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-6chq-wfr3-2hj9"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42035"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-7q8q-rj6j-mhjq",
+    "Aliases": [
+      "CVE-2026-67319",
+      "GHSA-7q8q-rj6j-mhjq"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "0.33.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-67319",
+    "Raw": {
+      "id": "GHSA-7q8q-rj6j-mhjq",
+      "aliases": [
+        "CVE-2026-67319"
+      ],
+      "summary": "Axios: Nested axios option objects can consume polluted prototype values",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0.8.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.33.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.18.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-7q8q-rj6j-mhjq"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-67319"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-69123"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/11000"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/11001"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/1417285c69344bbcc6420a021f67dee0c6fedb2d"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/32fc489632377d214db55bfa4e2c48486a7d7ce2"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.33.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.18.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/axios-before-prototype-pollution-via-nested-option-objects"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-898c-q2cr-xwhg",
+    "Aliases": [
+      "CVE-2026-44490",
+      "GHSA-898c-q2cr-xwhg"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.16.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 4.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2018-16487",
+    "Raw": {
+      "id": "GHSA-898c-q2cr-xwhg",
+      "aliases": [
+        "CVE-2026-44490"
+      ],
+      "summary": "axios has DoS \u0026 Header Injection via Prototype Pollution Read-Side Gadgets in axios merge functions",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.16.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.32.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-898c-q2cr-xwhg"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2018-16487"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-44490"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
     "PrimaryID": "GHSA-8hc4-vh64-cxmj",
     "Aliases": [
       "CVE-2024-39338",
@@ -15,7 +1376,7 @@
     "ModuleMajor": "v1",
     "Package": "",
     "Function": "",
-    "File": "package-lock.json",
+    "File": "tmp/src/payments-web/package-lock.json",
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
@@ -25,15 +1386,14 @@
     },
     "Classification": {
       "severity": "HIGH",
-      "cvss": 7.5,
       "kev": false,
       "reachable": "unknown",
       "dep_class": "production",
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v1.9.2",
-    "AdvisoryURL": "https://github.com/advisories/GHSA-8hc4-vh64-cxmj",
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2024-39338",
     "Raw": {
       "id": "GHSA-8hc4-vh64-cxmj",
       "aliases": [
@@ -62,7 +1422,2049 @@
       "references": [
         {
           "type": "ADVISORY",
-          "url": "https://github.com/advisories/GHSA-8hc4-vh64-cxmj"
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2024-39338"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/issues/6463"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/6539"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/6543"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/6b6b605eaf73852fb2dae033f1e786155959de3a"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.7.4"
+        },
+        {
+          "type": "WEB",
+          "url": "https://jeffhacks.com/advisories/2024/06/24/CVE-2024-39338.html"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-fvcv-3m26-pcqx",
+    "Aliases": [
+      "CVE-2026-40175",
+      "GHSA-fvcv-3m26-pcqx"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 4.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-40175",
+    "Raw": {
+      "id": "GHSA-fvcv-3m26-pcqx",
+      "aliases": [
+        "CVE-2026-40175"
+      ],
+      "summary": "Axios has Unrestricted Cloud Metadata Exfiltration via Header Injection Chain",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-fvcv-3m26-pcqx"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-40175"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/10660"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/10660#issuecomment-4224168081"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/10688"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/03cdfc99e8db32a390e12128208b6778492cee9c"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/363185461b90b1b78845dc8a99a1f103d9b122a1"
+        },
+        {
+          "type": "WEB",
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-876049.html"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.31.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.15.0"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-hfxv-24rg-xrqf",
+    "Aliases": [
+      "CVE-2026-44496",
+      "GHSA-hfxv-24rg-xrqf"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.16.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://github.com/axios/axios/security/advisories/GHSA-hfxv-24rg-xrqf",
+    "Raw": {
+      "id": "GHSA-hfxv-24rg-xrqf",
+      "aliases": [
+        "CVE-2026-44496"
+      ],
+      "summary": "Axios: Regular Expression Denial of Service (ReDoS) via Cookie Name Injection",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.16.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.32.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-hfxv-24rg-xrqf"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.32.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.16.0"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-j5f8-grm9-p9fc",
+    "Aliases": [
+      "CVE-2026-44486",
+      "GHSA-j5f8-grm9-p9fc"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.16.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-44486",
+    "Raw": {
+      "id": "GHSA-j5f8-grm9-p9fc",
+      "aliases": [
+        "CVE-2026-44486"
+      ],
+      "summary": "Axios: Proxy-Authorization header leaks to redirect target when proxy is re-evaluated to direct connection",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.16.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.32.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-j5f8-grm9-p9fc"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-44486"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/10794"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/afca61a070728e717203c2bc21e7b589b59b858b"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.32.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.16.0"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-jr5f-v2jv-69x6",
+    "Aliases": [
+      "CVE-2025-27152",
+      "GHSA-jr5f-v2jv-69x6"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.8.2"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.7,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2025-27152",
+    "Raw": {
+      "id": "GHSA-jr5f-v2jv-69x6",
+      "aliases": [
+        "CVE-2025-27152"
+      ],
+      "summary": "axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.8.2"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.30.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-jr5f-v2jv-69x6"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-27152"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/issues/6463"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/6829"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/02c3c69ced0f8fd86407c23203835892313d7fde"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/fb8eec214ce7744b5ca787f2c3b8339b2f54b00f"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.8.2"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-m7pr-hjqh-92cm",
+    "Aliases": [
+      "CVE-2026-42038",
+      "GHSA-m7pr-hjqh-92cm"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42038",
+    "Raw": {
+      "id": "GHSA-m7pr-hjqh-92cm",
+      "aliases": [
+        "CVE-2026-42038"
+      ],
+      "summary": "Axios: no_proxy bypass via IP alias allows SSRF",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-m7pr-hjqh-92cm"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42038"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-mmx7-hfxf-jppx",
+    "Aliases": [
+      "CVE-2026-67316",
+      "GHSA-mmx7-hfxf-jppx"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.18.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-67316",
+    "Raw": {
+      "id": "GHSA-mmx7-hfxf-jppx",
+      "aliases": [
+        "CVE-2026-67316"
+      ],
+      "summary": "Axios: Prototype pollution gadgets can alter axios request construction",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.18.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.33.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-mmx7-hfxf-jppx"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-67316"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-68944"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/11000"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/11001"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/1417285c69344bbcc6420a021f67dee0c6fedb2d"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/32fc489632377d214db55bfa4e2c48486a7d7ce2"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.33.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.18.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/axios-before-prototype-pollution-via-bodyless-methods"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-p92q-9vqr-4j8v",
+    "Aliases": [
+      "CVE-2026-44487",
+      "GHSA-p92q-9vqr-4j8v"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.16.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.2,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-44487",
+    "Raw": {
+      "id": "GHSA-p92q-9vqr-4j8v",
+      "aliases": [
+        "CVE-2026-44487"
+      ],
+      "summary": "Axios: Proxy-Authorization Credential Leak to Origin Server Across HTTP-to-HTTPS Redirect in Axios Node.js HTTP Adapter",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.16.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.32.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-p92q-9vqr-4j8v"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-44487"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.32.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.16.0"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-pf86-5x62-jrwf",
+    "Aliases": [
+      "CVE-2026-42033",
+      "GHSA-pf86-5x62-jrwf"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42033",
+    "Raw": {
+      "id": "GHSA-pf86-5x62-jrwf",
+      "aliases": [
+        "CVE-2026-42033"
+      ],
+      "summary": "Axios: Prototype Pollution Gadgets - Response Tampering, Data Exfiltration, and Request Hijacking",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-pf86-5x62-jrwf"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42033"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-pmv8-rq9r-6j72",
+    "Aliases": [
+      "CVE-2026-67312",
+      "GHSA-pmv8-rq9r-6j72"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "0.33.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-67312",
+    "Raw": {
+      "id": "GHSA-pmv8-rq9r-6j72",
+      "aliases": [
+        "CVE-2026-67312"
+      ],
+      "summary": "Axios: Deep formToJSON Key Recursion Can Cause Denial of Service",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0.28.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.33.0"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.18.0"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-pmv8-rq9r-6j72"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-67312"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-68941"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/11000"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/11001"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/1417285c69344bbcc6420a021f67dee0c6fedb2d"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/32fc489632377d214db55bfa4e2c48486a7d7ce2"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v0.33.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.18.0"
+        },
+        {
+          "type": "WEB",
+          "url": "https://www.vulncheck.com/advisories/axios-before-denial-of-service-via-formtojson"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-pmwg-cvhr-8vh7",
+    "Aliases": [
+      "CVE-2026-42043",
+      "GHSA-pmwg-cvhr-8vh7"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.2,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42043",
+    "Raw": {
+      "id": "GHSA-pmwg-cvhr-8vh7",
+      "aliases": [
+        "CVE-2026-42043"
+      ],
+      "summary": "Axios: Incomplete Fix for CVE-2025-62718 — NO_PROXY Protection Bypassed via RFC 1122 Loopback Subnet (127.0.0.0/8) in Axios 1.15.0",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-pmwg-cvhr-8vh7"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42043"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-q8qp-cvcw-x6jj",
+    "Aliases": [
+      "CVE-2026-42264",
+      "GHSA-q8qp-cvcw-x6jj"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.2"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42264",
+    "Raw": {
+      "id": "GHSA-q8qp-cvcw-x6jj",
+      "aliases": [
+        "CVE-2026-42264"
+      ],
+      "summary": "Axios has prototype pollution read-side gadgets in HTTP adapter that allow credential injection and request hijacking",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.2"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-q8qp-cvcw-x6jj"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42264"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/pull/10779"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/commit/47915144662f2733e6c051bdcb895a8c8f0586aa"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/releases/tag/v1.15.2"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-vf2m-468p-8v99",
+    "Aliases": [
+      "CVE-2026-42036",
+      "GHSA-vf2m-468p-8v99"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42036",
+    "Raw": {
+      "id": "GHSA-vf2m-468p-8v99",
+      "aliases": [
+        "CVE-2026-42036"
+      ],
+      "summary": "Axios: HTTP adapter streamed responses bypass maxContentLength",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-vf2m-468p-8v99"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42036"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-w9j2-pvgh-6h63",
+    "Aliases": [
+      "CVE-2026-42041",
+      "GHSA-w9j2-pvgh-6h63"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 4.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42041",
+    "Raw": {
+      "id": "GHSA-w9j2-pvgh-6h63",
+      "aliases": [
+        "CVE-2026-42041"
+      ],
+      "summary": "Axios: Authentication Bypass via Prototype Pollution Gadget in `validateStatus` Merge Strategy",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-w9j2-pvgh-6h63"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42041"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-xhjh-pmcv-23jw",
+    "Aliases": [
+      "CVE-2026-42040",
+      "GHSA-xhjh-pmcv-23jw"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "LOW",
+      "cvss": 3.7,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42040",
+    "Raw": {
+      "id": "GHSA-xhjh-pmcv-23jw",
+      "aliases": [
+        "CVE-2026-42040"
+      ],
+      "summary": "Axios: Null Byte Injection via Reverse-Encoding in AxiosURLSearchParams",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-xhjh-pmcv-23jw"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42040"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "LOW"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-xx6v-rp6x-q39c",
+    "Aliases": [
+      "CVE-2026-42042",
+      "GHSA-xx6v-rp6x-q39c"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "axios",
+    "ModuleMajor": "v1",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "1.6.2",
+      "fixed": "1.15.1"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-42042",
+    "Raw": {
+      "id": "GHSA-xx6v-rp6x-q39c",
+      "aliases": [
+        "CVE-2026-42042"
+      ],
+      "summary": "Axios: XSRF Token Cross-Origin Leakage via Prototype Pollution Gadget in `withXSRFToken` Boolean Coercion",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "1.0.0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "1.15.1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "0.31.1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/axios/axios/security/advisories/GHSA-xx6v-rp6x-q39c"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-42042"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/axios/axios"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-6g55-p6wh-862q",
+    "Aliases": [
+      "CVE-2026-45623",
+      "GHSA-6g55-p6wh-862q"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "v8",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "8.4.20",
+      "fixed": "8.5.12"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://github.com/postcss/postcss/security/advisories/GHSA-6g55-p6wh-862q",
+    "Raw": {
+      "id": "GHSA-6g55-p6wh-862q",
+      "aliases": [
+        "CVE-2026-45623"
+      ],
+      "summary": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "8.5.12"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/security/advisories/GHSA-6g55-p6wh-862q"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/commit/aaec7b78b3ce2792585b4b300ef1bd5dd5b3e8ad"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/commit/c64b7488d2731dfa16213739b42c34faf5a9eba3"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/postcss/postcss"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/releases/tag/8.5.12"
+        }
+      ],
+      "database_specific": {
+        "severity": "HIGH"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-7fh5-64p2-3v2j",
+    "Aliases": [
+      "CVE-2023-44270",
+      "GHSA-7fh5-64p2-3v2j"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "v8",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "8.4.20",
+      "fixed": "8.4.31"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2023-44270",
+    "Raw": {
+      "id": "GHSA-7fh5-64p2-3v2j",
+      "aliases": [
+        "CVE-2023-44270"
+      ],
+      "summary": "PostCSS line return parsing error",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "8.4.31"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2023-44270"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/github/advisory-database/issues/2820"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/commit/58cc860b4c1707510c9cd1bc1fa30b423a9ad6c5"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/postcss/postcss"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/blob/main/lib/tokenize.js#L25"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/releases/tag/8.4.31"
+        },
+        {
+          "type": "WEB",
+          "url": "https://lists.debian.org/debian-lts-announce/2024/12/msg00025.html"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-fxqj-rqcc-2cmp",
+    "Aliases": [
+      "CVE-2026-69153",
+      "GHSA-fxqj-rqcc-2cmp"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "v8",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "8.4.20",
+      "fixed": "8.5.23"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://github.com/postcss/postcss/security/advisories/GHSA-fxqj-rqcc-2cmp",
+    "Raw": {
+      "id": "GHSA-fxqj-rqcc-2cmp",
+      "aliases": [
+        "CVE-2026-69153"
+      ],
+      "summary": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "8.5.23"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/security/advisories/GHSA-fxqj-rqcc-2cmp"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/commit/7beca139e70f9075c6b19700fcb00dd8033e5da8"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/postcss/postcss"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/releases/tag/8.5.19"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-qx2v-qp2m-jg93",
+    "Aliases": [
+      "CVE-2026-41305",
+      "GHSA-qx2v-qp2m-jg93"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "v8",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "8.4.20",
+      "fixed": "8.5.10"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://nvd.nist.gov/vuln/detail/CVE-2026-41305",
+    "Raw": {
+      "id": "GHSA-qx2v-qp2m-jg93",
+      "aliases": [
+        "CVE-2026-41305"
+      ],
+      "summary": "PostCSS has XSS via Unescaped \u003c/style\u003e in its CSS Stringify Output",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "8.5.10"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/security/advisories/GHSA-qx2v-qp2m-jg93"
+        },
+        {
+          "type": "ADVISORY",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-41305"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/postcss/postcss"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/releases/tag/8.5.10"
+        }
+      ],
+      "database_specific": {
+        "severity": "MODERATE"
+      }
+    }
+  },
+  {
+    "Repo": "org/payments-web",
+    "Category": "dependency",
+    "PrimaryID": "GHSA-r28c-9q8g-f849",
+    "Aliases": [
+      "CVE-2026-73646",
+      "GHSA-r28c-9q8g-f849"
+    ],
+    "Tool": "osv-scanner",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "postcss",
+    "ModuleMajor": "v8",
+    "Package": "",
+    "Function": "",
+    "File": "tmp/src/payments-web/package-lock.json",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "8.4.20",
+      "fixed": "8.5.18"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v2.6.0",
+    "AdvisoryURL": "https://github.com/postcss/postcss/security/advisories/GHSA-r28c-9q8g-f849",
+    "Raw": {
+      "id": "GHSA-r28c-9q8g-f849",
+      "aliases": [
+        "CVE-2026-73646"
+      ],
+      "summary": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "0",
+                  "fixed": ""
+                },
+                {
+                  "introduced": "",
+                  "fixed": "8.5.18"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/security/advisories/GHSA-r28c-9q8g-f849"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/commit/95663d3eb7ba26f4854dd19d3b4f4425760cf56c"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/postcss/postcss"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/postcss/postcss/releases/tag/8.5.18"
         }
       ],
       "database_specific": {

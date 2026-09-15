@@ -34,22 +34,23 @@ type Memory struct {
 }
 
 type memFinding struct {
-	Fingerprint   string
-	Repo          string
-	Category      model.Category
-	State         model.State
-	ReasonCode    *model.ReasonCode
-	Priority      model.Priority
-	FirstSeenAt   time.Time
-	LastSeenAt    time.Time
-	ResolvedAt    *time.Time
-	NotReobserved bool
-	GapRunID      string
-	FirstSeenRun  string
-	LastSeenRun   string
-	Location      model.Location
-	Module        string
-	ModuleMajor   string
+	Fingerprint    string
+	Repo           string
+	Category       model.Category
+	State          model.State
+	ReasonCode     *model.ReasonCode
+	Priority       model.Priority
+	FirstSeenAt    time.Time
+	LastSeenAt     time.Time
+	ResolvedAt     *time.Time
+	NotReobserved  bool
+	GapRunID       string
+	VerifiedReason model.VerificationReason
+	FirstSeenRun   string
+	LastSeenRun    string
+	Location       model.Location
+	Module         string
+	ModuleMajor    string
 }
 
 // NewMemory builds an empty in-memory store.
@@ -320,7 +321,7 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 		if a.Verify {
 			if err := m.transitionLocked(a.Fingerprint, model.Verified, model.TransitionContext{
 				Actor:       model.ActorScanWorker,
-				Cause:       "not observed by successful scan in " + runID,
+				Cause:       "not observed by successful scan in " + runID + " (" + string(a.VerificationReason) + ")",
 				At:          now,
 				ScanOutcome: outcome,
 			}); err != nil {
@@ -328,6 +329,7 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 			}
 			resolved := now
 			f.ResolvedAt = &resolved
+			f.VerifiedReason = a.VerificationReason
 			f.NotReobserved = false
 			f.GapRunID = ""
 			stats.Verified++
@@ -511,9 +513,10 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 			FirstSeenRun: f.FirstSeenRun,
 			LastSeenRun:  f.LastSeenRun,
 		},
-		State:      f.State,
-		ReasonCode: f.ReasonCode,
-		Priority:   f.Priority,
+		State:          f.State,
+		ReasonCode:     f.ReasonCode,
+		Priority:       f.Priority,
+		VerifiedReason: optionalReason(f.VerifiedReason),
 		Derived: model.Derived{
 			NotReobserved: f.NotReobserved,
 			GapRepoScan:   optionalString(f.GapRunID),
@@ -546,6 +549,13 @@ func locationOf(raw model.RawFinding) model.Location {
 		loc.Line = &line
 	}
 	return loc
+}
+
+func optionalReason(r model.VerificationReason) *model.VerificationReason {
+	if r == "" {
+		return nil
+	}
+	return &r
 }
 
 func optionalString(s string) *string {

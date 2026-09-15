@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wanaware-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: wanaware-api}
+  template:
+    metadata:
+      labels: {app: wanaware-api}
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/org/wanaware-api:latest
+          ports:
+            - containerPort: 8080

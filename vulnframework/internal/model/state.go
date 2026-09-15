@@ -152,7 +152,59 @@ const (
 	TriggerObservedAgain     Trigger = "observed_again"
 	TriggerReentry           Trigger = "reentry"
 	TriggerHumanReset        Trigger = "human_reset"
+
+	// TriggerQualifyingScanAbsent is the universal verification trigger
+	// (VM-AD §6.1.1): a qualifying scan no longer observes the finding.
+	TriggerQualifyingScanAbsent Trigger = "qualifying_scan_absent"
 )
+
+// VerificationReason records how a finding came to be verified (VM-AD §6.1.1).
+//
+// There is one VERIFIED state; this keeps attribution honest, so a fleet report
+// cannot claim the framework fixed something it merely watched disappear.
+type VerificationReason string
+
+const (
+	// VerifiedByFrameworkMerge — the finding passed through MERGED: this
+	// framework's remediation closed it.
+	VerifiedByFrameworkMerge VerificationReason = "framework_merge"
+	// VerifiedByUpstream — closed by a first-party upstream fix, via
+	// BLOCKED_UPSTREAM.
+	VerifiedByUpstream VerificationReason = "upstream"
+	// VerifiedExternal — disappeared without the framework merging anything.
+	// Someone else fixed it, or the code carrying it was deleted.
+	VerifiedExternal VerificationReason = "external"
+)
+
+// AllVerificationReasons is the closed enumeration.
+var AllVerificationReasons = []VerificationReason{
+	VerifiedByFrameworkMerge, VerifiedByUpstream, VerifiedExternal,
+}
+
+// Valid reports whether r is a member of the closed enumeration.
+func (r VerificationReason) Valid() bool {
+	return r == VerifiedByFrameworkMerge || r == VerifiedByUpstream || r == VerifiedExternal
+}
+
+func (r VerificationReason) String() string { return string(r) }
+
+// VerificationReasonFor returns the reason a finding in state `from` verifies
+// by disappearance (VM-AD §6.1.1).
+//
+// Attribution follows the path the finding actually took: MERGED means this
+// framework's pull request closed it; BLOCKED_UPSTREAM means an upstream
+// first-party fix did; anything else means it went away without the framework
+// merging anything, and claiming credit for that would be false.
+func VerificationReasonFor(from State) VerificationReason {
+	switch from {
+	case Merged:
+		return VerifiedByFrameworkMerge
+	case BlockedUpstream:
+		return VerifiedByUpstream
+	default:
+		return VerifiedExternal
+	}
+}
 
 // edge is one legal transition in the normative table.
 type edge struct {
@@ -177,15 +229,22 @@ var transitions = map[State]map[State]edge{
 		NeedsHuman:      {TriggerPolicyTicket, ActorOrchestrator},
 		BlockedUpstream: {TriggerPolicyDefer, ActorOrchestrator},
 		FPCandidate:     {TriggerTriageNomination, ActorTriage},
+		Verified:        {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	AutoRemediating: {
 		PROpen:     {TriggerPRCreated, ActorWorker},
 		NeedsHuman: {TriggerAttemptFailed, ActorWorker},
 		Triaged:    {TriggerLeaseExpiry, ActorOrchestrator},
+		// Verifying from here releases the lease: the work it was held for is
+		// no longer needed (VM-AD §6.1.1).
+		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	PROpen: {
 		Merged:   {TriggerMergeWebhook, ActorOrchestrator},
 		Declined: {TriggerClosedUnmerged, ActorOrchestrator},
+		// Verifying from here closes the now-moot pull request: the defect is
+		// gone, so the change is no longer wanted (VM-AD §6.1.1).
+		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	Merged: {
 		Verified: {TriggerNotObserved, ActorScanWorker},
@@ -193,6 +252,7 @@ var transitions = map[State]map[State]edge{
 	},
 	BlockedUpstream: {
 		AutoRemediating: {TriggerUpstreamPublished, ActorOrchestrator},
+		Verified:        {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	FPCandidate: {
 		Suppressed: {TriggerHumanApproval, ActorHuman},
@@ -202,16 +262,32 @@ var transitions = map[State]map[State]edge{
 		Regressed: {TriggerObservedAgain, ActorScanWorker},
 	},
 	Regressed: {
-		Triaged: {TriggerReentry, ActorOrchestrator},
+		Triaged:  {TriggerReentry, ActorOrchestrator},
+		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	NeedsHuman: {
 		AutoRemediating: {TriggerHumanReset, ActorHuman},
+		Verified:        {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	Declined: {
-		// Human reset only (VM-F-154). No automated path re-remediates a
-		// finding a reviewer has rejected, in any subsequent run.
+		// Human reset only for *remediation* (VM-F-154). No automated path
+		// re-remediates a finding a reviewer has rejected.
 		Triaged: {TriggerHumanReset, ActorHuman},
+		// Disappearance is different: the decline was a decision about
+		// remediation, not about the facts. If a qualifying scan can no longer
+		// see the defect, reality outranks the earlier decision, and holding
+		// the finding open would record something untrue (VM-AD §6.1.1).
+		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
+	WontFix: {
+		// Accepted risk, same reasoning as DECLINED: the acceptance was about
+		// not acting, not about the vulnerability still being there.
+		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
+	},
+	// SUPPRESSED is deliberately absent. It is already resolved, and a
+	// suppression is a human judgement that the finding was never real;
+	// silently converting it to VERIFIED would overwrite that judgement with a
+	// machine's (VM-AD §6.1.1).
 }
 
 // ScanOutcome is the per-repository outcome of the scan that informs a

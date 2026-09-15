@@ -1,0 +1,4 @@
+error
+error.code
+error.detail
+error.summary

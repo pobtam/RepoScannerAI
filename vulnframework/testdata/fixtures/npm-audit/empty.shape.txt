@@ -1,0 +1,17 @@
+auditReportVersion
+metadata
+metadata.dependencies
+metadata.dependencies.dev
+metadata.dependencies.optional
+metadata.dependencies.peer
+metadata.dependencies.peerOptional
+metadata.dependencies.prod
+metadata.dependencies.total
+metadata.vulnerabilities
+metadata.vulnerabilities.critical
+metadata.vulnerabilities.high
+metadata.vulnerabilities.info
+metadata.vulnerabilities.low
+metadata.vulnerabilities.moderate
+metadata.vulnerabilities.total
+vulnerabilities

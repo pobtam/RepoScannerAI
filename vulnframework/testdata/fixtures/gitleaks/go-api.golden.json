@@ -14,7 +14,7 @@
     "Function": "",
     "File": "config/settings.yaml",
     "ResourceKey": "",
-    "Line": 17,
+    "Line": 7,
     "CredentialType": "aws-access-token",
     "Versions": {},
     "Classification": {
@@ -25,15 +25,15 @@
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v8.21.2",
+    "ToolVersion": "v8.30.1",
     "AdvisoryURL": "",
     "Raw": {
-      "description": "AWS Access Key",
+      "description": "Identified a pattern that may indicate AWS credentials, risking unauthorized cloud resource access and data breaches on AWS platforms.",
       "rule_id": "aws-access-token",
       "file": "config/settings.yaml",
-      "start_line": 17,
-      "end_line": 17,
-      "entropy": 3.6521,
+      "start_line": 7,
+      "end_line": 7,
+      "entropy": 4.121928,
       "redacted": true
     }
   },
@@ -44,16 +44,16 @@
     "Aliases": null,
     "Tool": "gitleaks",
     "RuleID": "",
-    "DetectorRuleID": "github-pat",
+    "DetectorRuleID": "generic-api-key",
     "CheckID": "",
     "Module": "",
     "ModuleMajor": "",
     "Package": "",
     "Function": "",
-    "File": "scripts/deploy.sh",
+    "File": "config/settings.yaml",
     "ResourceKey": "",
-    "Line": 4,
-    "CredentialType": "github-pat",
+    "Line": 8,
+    "CredentialType": "generic-api-key",
     "Versions": {},
     "Classification": {
       "severity": "CRITICAL",
@@ -63,15 +63,15 @@
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "v8.21.2",
+    "ToolVersion": "v8.30.1",
     "AdvisoryURL": "",
     "Raw": {
-      "description": "GitHub Personal Access Token",
-      "rule_id": "github-pat",
-      "file": "scripts/deploy.sh",
-      "start_line": 4,
-      "end_line": 4,
-      "entropy": 4.9012,
+      "description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+      "rule_id": "generic-api-key",
+      "file": "config/settings.yaml",
+      "start_line": 8,
+      "end_line": 8,
+      "entropy": 5.321928,
       "redacted": true
     }
   }

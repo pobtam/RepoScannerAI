@@ -12,48 +12,9 @@
     "ModuleMajor": "",
     "Package": "",
     "Function": "",
-    "File": "internal/api/client.go",
+    "File": "tmp/src/go-api/internal/api/legacy.go",
     "ResourceKey": "",
-    "Line": 88,
-    "CredentialType": "",
-    "Versions": {},
-    "Classification": {
-      "severity": "LOW",
-      "kev": false,
-      "reachable": "true",
-      "dep_class": "n/a",
-      "transitive": false,
-      "first_party_path": null
-    },
-    "ToolVersion": "2024.1.1",
-    "AdvisoryURL": "",
-    "Raw": {
-      "code": "SA1019",
-      "severity": "warning",
-      "location": {
-        "file": "/tmp/scan-7f21a/clone/internal/api/client.go",
-        "line": 88,
-        "col": 2
-      },
-      "message": "crypto/tls.Config.NameToCertificate is deprecated: NameToCertificate only allows associating a single certificate with a given name."
-    }
-  },
-  {
-    "Repo": "org/wanaware-api",
-    "Category": "code",
-    "PrimaryID": "",
-    "Aliases": null,
-    "Tool": "staticcheck",
-    "RuleID": "SA1000",
-    "DetectorRuleID": "",
-    "CheckID": "",
-    "Module": "",
-    "ModuleMajor": "",
-    "Package": "",
-    "Function": "",
-    "File": "internal/validate/rules.go",
-    "ResourceKey": "",
-    "Line": 23,
+    "Line": 4,
     "CredentialType": "",
     "Versions": {},
     "Classification": {
@@ -64,17 +25,17 @@
       "transitive": false,
       "first_party_path": null
     },
-    "ToolVersion": "2024.1.1",
+    "ToolVersion": "v0.8.1",
     "AdvisoryURL": "",
     "Raw": {
-      "code": "SA1000",
+      "code": "SA1019",
       "severity": "error",
       "location": {
-        "file": "/tmp/scan-7f21a/clone/internal/validate/rules.go",
-        "line": 23,
-        "col": 14
+        "file": "/tmp/src/go-api/internal/api/legacy.go",
+        "line": 4,
+        "col": 0
       },
-      "message": "invalid regular expression: error parsing regexp: missing closing ]"
+      "message": "io/ioutil has been deprecated since Go 1.19: As of Go 1.16, the same functionality is now provided by package [io] or package [os], and those implementations should be preferred in new code. See the specific function documentation for details. "
     }
   }
 ]
