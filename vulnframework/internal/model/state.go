@@ -298,9 +298,40 @@ const (
 	ScanComplete ScanOutcome = "complete"
 	ScanPartial  ScanOutcome = "partial"
 	ScanFailed   ScanOutcome = "failed"
+
+	// ScanNotDispatched — the scan never started, either because the planner
+	// deliberately skipped the repository (budget, quota, filter) or because it
+	// was never picked up. Coverage is measured against planned scope, so an
+	// in-scope repository that never ran must appear as a gap rather than as
+	// silently clean (OQ-P2-02).
+	ScanNotDispatched ScanOutcome = "not_dispatched"
+
+	// ScanNoResult — a worker was dispatched and produced nothing. The scan
+	// started and its result was lost, which is a different operational problem
+	// from never starting, and from a tool failing.
+	ScanNoResult ScanOutcome = "no_result"
+
 	// ScanOutcomeUnknown is the zero value: no scan outcome supplied.
 	ScanOutcomeUnknown ScanOutcome = ""
 )
+
+// AllScanOutcomes is the closed enumeration.
+var AllScanOutcomes = []ScanOutcome{
+	ScanComplete, ScanPartial, ScanFailed, ScanNotDispatched, ScanNoResult,
+}
+
+// Succeeded reports whether an outcome qualifies a scan to verify findings by
+// their absence (VM-ADR-12, VM-AD §6.1.1).
+//
+// Only a complete scan qualifies. This is the single predicate every caller
+// must use: defining "successful" in more than one place is how the guard comes
+// to mean different things in reconciliation and in reporting.
+func (o ScanOutcome) Succeeded() bool { return o == ScanComplete }
+
+// IsGap reports whether an outcome represents lost coverage.
+func (o ScanOutcome) IsGap() bool {
+	return o == ScanPartial || o == ScanFailed || o == ScanNotDispatched || o == ScanNoResult
+}
 
 // TransitionContext carries the evidence and provenance for a state change
 // (VM-F-153).

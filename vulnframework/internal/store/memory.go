@@ -31,6 +31,7 @@ type Memory struct {
 	findings     map[string]*memFinding
 	observations map[string][]SourceObservation // keyed by fingerprint
 	transitions  map[string][]model.StateTransition
+	plan         map[string]map[string]PlanEntry // run id -> repo -> entry
 }
 
 type memFinding struct {
@@ -46,6 +47,8 @@ type memFinding struct {
 	NotReobserved  bool
 	GapRunID       string
 	VerifiedReason model.VerificationReason
+	LeaseOwner     string
+	LeaseExpiresAt *time.Time
 	FirstSeenRun   string
 	LastSeenRun    string
 	Location       model.Location
@@ -64,10 +67,14 @@ func NewMemory() *Memory {
 		findings:     map[string]*memFinding{},
 		observations: map[string][]SourceObservation{},
 		transitions:  map[string][]model.StateTransition{},
+		plan:         map[string]map[string]PlanEntry{},
 	}
 }
 
 // SetClock overrides the clock, for deterministic tests.
+//
+// The clock may be called concurrently: a sweep records results from many
+// dispatch goroutines at once. Any replacement must be safe for concurrent use.
 func (m *Memory) SetClock(f func() time.Time) { m.clock = f }
 
 func (m *Memory) Migrate(ctx context.Context) error {
@@ -96,6 +103,7 @@ func (m *Memory) MigrateTo(_ context.Context, version int) error {
 		m.findings = map[string]*memFinding{}
 		m.observations = map[string][]SourceObservation{}
 		m.transitions = map[string][]model.StateTransition{}
+		m.plan = map[string]map[string]PlanEntry{}
 	}
 	m.schemaVersion = version
 	return nil
@@ -332,6 +340,11 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 			f.VerifiedReason = a.VerificationReason
 			f.NotReobserved = false
 			f.GapRunID = ""
+			// A finding that verified while remediation was in flight must not
+			// leave its lease behind: the lease sweeper would otherwise keep
+			// finding it, and the worker's slot would never be returned
+			// (VM-AD §6.1.1).
+			f.LeaseOwner, f.LeaseExpiresAt = "", nil
 			stats.Verified++
 			continue
 		}
@@ -581,4 +594,203 @@ func containsCategory(list []model.Category, c model.Category) bool {
 		}
 	}
 	return false
+}
+
+// --- Planned scope (OQ-P2-02) ----------------------------------------------
+
+func (m *Memory) RecordPlan(_ context.Context, entries []PlanEntry) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, e := range entries {
+		if _, ok := m.runs[e.RunID]; !ok {
+			return fmt.Errorf("%w: run %q", ErrNotFound, e.RunID)
+		}
+		if !e.State.Valid() {
+			return fmt.Errorf("store: invalid dispatch state %q", e.State)
+		}
+		if e.PlannedAt.IsZero() {
+			e.PlannedAt = m.clock()
+		}
+		if m.plan[e.RunID] == nil {
+			m.plan[e.RunID] = map[string]PlanEntry{}
+		}
+		m.plan[e.RunID][e.Repo] = e
+	}
+	return nil
+}
+
+func (m *Memory) MarkDispatched(_ context.Context, runID, repo string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	e, err := m.planEntry(runID, repo)
+	if err != nil {
+		return err
+	}
+	at := m.clock()
+	e.State, e.DispatchedAt, e.SkipReason = DispatchDispatched, &at, ""
+	m.plan[runID][repo] = e
+	return nil
+}
+
+func (m *Memory) MarkSkipped(_ context.Context, runID, repo, reason string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	e, err := m.planEntry(runID, repo)
+	if err != nil {
+		return err
+	}
+	if reason == "" {
+		// A skip with no reason is indistinguishable from a bug, and the gaps
+		// view would have nothing to group by.
+		return fmt.Errorf("store: skipping %s in %s requires a reason", repo, runID)
+	}
+	e.State, e.SkipReason = DispatchSkipped, reason
+	m.plan[runID][repo] = e
+	return nil
+}
+
+func (m *Memory) planEntry(runID, repo string) (PlanEntry, error) {
+	entries, ok := m.plan[runID]
+	if !ok {
+		return PlanEntry{}, fmt.Errorf("%w: no plan for run %q", ErrNotFound, runID)
+	}
+	e, ok := entries[repo]
+	if !ok {
+		return PlanEntry{}, fmt.Errorf("%w: repo %q is not in the planned scope of %q", ErrNotFound, repo, runID)
+	}
+	return e, nil
+}
+
+func (m *Memory) PlanEntries(_ context.Context, runID string) ([]PlanEntry, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []PlanEntry
+	for _, e := range m.plan[runID] {
+		out = append(out, e)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Repo < out[j].Repo })
+	return out, nil
+}
+
+func (m *Memory) CloseRun(ctx context.Context, runID string) (CloseStats, error) {
+	m.mu.Lock()
+	stats := CloseStats{SkipReasons: map[string]int{}}
+
+	produced := map[string]bool{}
+	for repo, results := range m.scanResults {
+		for _, r := range results {
+			if r.RunID == runID {
+				produced[repo] = true
+			}
+		}
+	}
+
+	var missing []PlanEntry
+	for _, e := range m.plan[runID] {
+		if produced[e.Repo] {
+			stats.Produced++
+			continue
+		}
+		missing = append(missing, e)
+	}
+	sort.Slice(missing, func(i, j int) bool { return missing[i].Repo < missing[j].Repo })
+	m.mu.Unlock()
+
+	for _, e := range missing {
+		outcome, cause := planCloseAction(e)
+		if err := m.RecordScanResult(ctx, RepoScanResult{
+			RunID: runID, Repo: e.Repo, Outcome: outcome,
+			FailureCause: cause,
+			// Never starting a scan, and losing a worker, are both the
+			// platform's to answer for.
+			FailureOwner: "platform",
+		}); err != nil {
+			return stats, err
+		}
+		switch outcome {
+		case model.ScanNoResult:
+			stats.NoResult++
+		default:
+			stats.NotDispatched++
+		}
+		stats.SkipReasons[cause]++
+	}
+	return stats, nil
+}
+
+// --- Leases (VM-AD §6.2) ----------------------------------------------------
+
+func (m *Memory) AcquireLease(_ context.Context, fp, owner string, expiresAt time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, ok := m.findings[fp]
+	if !ok {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	if owner == "" {
+		return fmt.Errorf("store: a lease requires an owner")
+	}
+	at := expiresAt.UTC()
+	f.LeaseOwner, f.LeaseExpiresAt = owner, &at
+	return nil
+}
+
+func (m *Memory) ReleaseLease(_ context.Context, fp string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, ok := m.findings[fp]
+	if !ok {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	f.LeaseOwner, f.LeaseExpiresAt = "", nil
+	return nil
+}
+
+func (m *Memory) GetLease(_ context.Context, fp string) (Lease, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, ok := m.findings[fp]
+	if !ok {
+		return Lease{}, fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	return Lease{Fingerprint: fp, Owner: f.LeaseOwner, ExpiresAt: f.LeaseExpiresAt}, nil
+}
+
+func (m *Memory) SweepExpiredLeases(_ context.Context, now time.Time) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var expired []string
+	for fp, f := range m.findings {
+		l := Lease{Owner: f.LeaseOwner, ExpiresAt: f.LeaseExpiresAt}
+		if f.State == model.AutoRemediating && l.Expired(now) {
+			expired = append(expired, fp)
+		}
+	}
+	sort.Strings(expired)
+
+	for _, fp := range expired {
+		if err := m.transitionLocked(fp, model.Triaged, model.TransitionContext{
+			Actor: model.ActorOrchestrator,
+			Cause: "lease expired; reverting so a crashed worker cannot strand the finding (VM-F-158)",
+			At:    now,
+		}); err != nil {
+			return 0, err
+		}
+		f := m.findings[fp]
+		f.LeaseOwner, f.LeaseExpiresAt = "", nil
+	}
+	return len(expired), nil
+}
+
+// RepoNames lists every registered repository, sorted.
+func (m *Memory) RepoNames(_ context.Context) ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]string, 0, len(m.repos))
+	for n := range m.repos {
+		out = append(out, n)
+	}
+	sort.Strings(out)
+	return out, nil
 }

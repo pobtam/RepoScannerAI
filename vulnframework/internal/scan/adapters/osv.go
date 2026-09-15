@@ -66,6 +66,15 @@ type osvReport struct {
 				IDs         []string `json:"ids"`
 				Aliases     []string `json:"aliases"`
 				MaxSeverity string   `json:"max_severity"`
+				// ExperimentalAnalysis carries osv-scanner v2's own Go
+				// reachability verdict. It is recorded as a non-determining
+				// annotation and never consumed as a determination: govulncheck
+				// is the reachability authority (VM-AD §8.2), and this field is
+				// marked experimental by the tool itself.
+				ExperimentalAnalysis map[string]struct {
+					Called      bool `json:"called"`
+					Unimportant bool `json:"unimportant"`
+				} `json:"experimental_analysis"`
 			} `json:"groups"`
 		} `json:"packages"`
 	} `json:"results"`
@@ -108,11 +117,17 @@ func (a *OSVScanner) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 			// across the vulnerabilities it covers.
 			cvssByID := map[string]float64{}
 			aliasByID := map[string][]string{}
+			calledByID := map[string]bool{}
+			analysedByID := map[string]bool{}
 			for _, g := range pkg.Groups {
 				score, _ := strconv.ParseFloat(g.MaxSeverity, 64)
 				for _, id := range g.IDs {
 					cvssByID[id] = score
 					aliasByID[id] = g.Aliases
+				}
+				for id, a := range g.ExperimentalAnalysis {
+					analysedByID[id] = true
+					calledByID[id] = a.Called
 				}
 			}
 
@@ -156,6 +171,7 @@ func (a *OSVScanner) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 					},
 					ToolVersion: a.Version(),
 					AdvisoryURL: advisoryURL(v),
+					Annotations: a.annotate(analysedByID[v.ID], calledByID[v.ID]),
 					Raw:         mustRaw(v),
 				}
 				raw = append(raw, rf)
@@ -166,6 +182,22 @@ func (a *OSVScanner) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 	raw = dedupe(raw)
 	sortFindings(raw)
 	return raw, nil
+}
+
+// annotate records osv-scanner's experimental reachability verdict as
+// non-determining provenance (OQ-P3-01).
+//
+// The key is version-tagged so that when the verdict is eventually compared
+// against govulncheck's, it is always clear which osv-scanner produced it. It is
+// deliberately not written to Classification.Reachable; see
+// TestOSVExperimentalAnalysisNeverDeterminesReachability.
+func (a *OSVScanner) annotate(analysed, called bool) map[string]string {
+	if !analysed {
+		return nil
+	}
+	return map[string]string{
+		"osv-scanner/" + a.Version() + "/experimental_called": strconv.FormatBool(called),
+	}
 }
 
 // firstFixed returns the first fixed version across the advisory's ranges,

@@ -36,6 +36,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/64784",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2023-2402",
       "aliases": [
@@ -126,6 +129,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://github.com/golang/crypto/commit/b4f1988a35dee11ec3e05d6bf3e90b695fbd8909",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2024-3321",
       "aliases": [
@@ -211,6 +217,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/652135",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2025-3487",
       "aliases": [
@@ -287,6 +296,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/700295",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2025-4116",
       "aliases": [
@@ -368,6 +380,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://groups.google.com/g/golang-announce/c/w-oX3UxNcZA",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2025-4134",
       "aliases": [
@@ -449,6 +464,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://groups.google.com/g/golang-announce/c/w-oX3UxNcZA",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2025-4135",
       "aliases": [
@@ -530,6 +548,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79436",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5005",
       "aliases": [
@@ -611,6 +632,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79435",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5006",
       "aliases": [
@@ -696,6 +720,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79561",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-5013",
       "aliases": [
@@ -777,6 +804,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79562",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-5014",
       "aliases": [
@@ -858,6 +888,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79563",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5015",
       "aliases": [
@@ -939,6 +972,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/35127",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5016",
       "aliases": [
@@ -1020,6 +1056,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79564",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-5017",
       "aliases": [
@@ -1105,6 +1144,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79565",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-5018",
       "aliases": [
@@ -1190,6 +1232,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79566",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-5019",
       "aliases": [
@@ -1271,6 +1316,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79567",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-5020",
       "aliases": [
@@ -1352,6 +1400,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79568",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5021",
       "aliases": [
@@ -1433,6 +1484,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79570",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-5023",
       "aliases": [
@@ -1514,6 +1568,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79596",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5033",
       "aliases": [
@@ -1591,6 +1648,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/44226",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5932",
       "aliases": null,
@@ -1655,6 +1715,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/80213",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-6303",
       "aliases": [
@@ -1729,6 +1792,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/81316",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-6354",
       "aliases": [
@@ -1807,6 +1873,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/81317",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2026-6355",
       "aliases": [
@@ -1888,6 +1957,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/65051",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "true"
+    },
     "Raw": {
       "id": "GO-2024-2687",
       "aliases": [
@@ -1994,6 +2066,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/637536",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2024-3333",
       "aliases": [
@@ -2075,6 +2150,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/654697",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2025-3503",
       "aliases": [
@@ -2181,6 +2259,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/662715",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2025-3595",
       "aliases": [
@@ -2261,6 +2342,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/709876",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-4440",
       "aliases": [
@@ -2340,6 +2424,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://groups.google.com/g/golang-announce/c/jnQcOYpiR2c",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-4441",
       "aliases": [
@@ -2419,6 +2506,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/761581",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-4918",
       "aliases": [
@@ -2527,6 +2617,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79571",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5025",
       "aliases": [
@@ -2605,6 +2698,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/767220",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5026",
       "aliases": [
@@ -2720,6 +2816,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79572",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5027",
       "aliases": [
@@ -2800,6 +2899,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/781702",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5028",
       "aliases": [
@@ -2879,6 +2981,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79574",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5029",
       "aliases": [
@@ -2957,6 +3062,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/79575",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5030",
       "aliases": [
@@ -3036,6 +3144,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/cl/786345",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5942",
       "aliases": [
@@ -3140,6 +3251,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/78916",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5024",
       "aliases": [
@@ -3218,6 +3332,9 @@
     },
     "ToolVersion": "v2.6.0",
     "AdvisoryURL": "https://go.dev/issue/80142",
+    "Annotations": {
+      "osv-scanner/v2.6.0/experimental_called": "false"
+    },
     "Raw": {
       "id": "GO-2026-5970",
       "aliases": [

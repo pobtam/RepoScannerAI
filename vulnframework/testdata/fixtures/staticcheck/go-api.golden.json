@@ -27,6 +27,7 @@
     },
     "ToolVersion": "v0.8.1",
     "AdvisoryURL": "",
+    "Annotations": null,
     "Raw": {
       "code": "SA1019",
       "severity": "error",

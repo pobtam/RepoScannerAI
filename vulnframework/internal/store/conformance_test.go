@@ -2,11 +2,11 @@ package store_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"math/rand"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,6 +15,7 @@ import (
 	"github.com/wanaware/vulnframework/internal/fingerprint"
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/store"
+	"github.com/wanaware/vulnframework/internal/store/storetest"
 )
 
 // The conformance suite runs against every Store implementation.
@@ -49,19 +50,15 @@ func backends(t *testing.T) []backend {
 		},
 	}}
 
-	dsn := os.Getenv("VULNFRAMEWORK_TEST_DSN")
-	if dsn == "" {
-		t.Log("VULNFRAMEWORK_TEST_DSN not set: skipping the Postgres backend")
+	if os.Getenv(storetest.EnvDSN) == "" {
+		t.Logf("%s not set: skipping the Postgres backend", storetest.EnvDSN)
 		return out
 	}
 	out = append(out, backend{
 		name: "postgres",
 		open: func(t *testing.T) store.Store {
 			t.Helper()
-			db, err := sql.Open("pgx", dsn)
-			if err != nil {
-				t.Fatalf("open postgres: %v", err)
-			}
+			db := storetest.OpenDB(t, "store")
 			ctx := context.Background()
 			// Each test gets a clean schema: roll all the way down, then up.
 			if err := store.NewPostgres(db).MigrateTo(ctx, 0); err != nil {
@@ -72,19 +69,24 @@ func backends(t *testing.T) []backend {
 			if err := s.Migrate(ctx); err != nil {
 				t.Fatalf("migrate: %v", err)
 			}
-			t.Cleanup(func() { db.Close() })
 			return s
 		},
 	})
 	return out
 }
 
-// fixedClock advances a deterministic clock one second per call, so ordering is
-// stable without any test depending on wall time.
+// fixedClock advances a deterministic clock one second per call.
+//
+// It is mutex-guarded because the store calls its clock from concurrent
+// dispatch goroutines; an unsynchronised counter here races under -race and the
+// failure looks like a production bug rather than a test one.
 func fixedClock() func() time.Time {
 	base := time.Date(2026, 9, 2, 3, 0, 0, 0, time.UTC)
+	var mu sync.Mutex
 	n := 0
 	return func() time.Time {
+		mu.Lock()
+		defer mu.Unlock()
 		n++
 		return base.Add(time.Duration(n) * time.Second)
 	}

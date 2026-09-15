@@ -27,6 +27,7 @@
     },
     "ToolVersion": "1.177.0",
     "AdvisoryURL": "https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html",
+    "Annotations": null,
     "Raw": {
       "check_id": "typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml",
       "path": "src/components/Render.jsx",

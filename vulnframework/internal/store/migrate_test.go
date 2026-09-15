@@ -3,13 +3,13 @@ package store_test
 import (
 	"context"
 	"database/sql"
-	"os"
 	"strings"
 	"testing"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/wanaware/vulnframework/internal/store"
+	"github.com/wanaware/vulnframework/internal/store/storetest"
 )
 
 // --- Structural checks, offline --------------------------------------------
@@ -54,6 +54,7 @@ func TestMigrationChecksumsAreStable(t *testing.T) {
 		1: "init",
 		2: "merge_provenance",
 		3: "verification_reason",
+		4: "run_plan",
 	}
 	migrations, err := store.LoadMigrations()
 	if err != nil {
@@ -79,16 +80,7 @@ func TestMigrationChecksumsAreStable(t *testing.T) {
 // testDB opens the Postgres test database, skipping when none is configured.
 func testDB(t *testing.T) *sql.DB {
 	t.Helper()
-	dsn := os.Getenv("VULNFRAMEWORK_TEST_DSN")
-	if dsn == "" {
-		t.Skip("VULNFRAMEWORK_TEST_DSN not set: skipping migration execution against Postgres")
-	}
-	db, err := sql.Open("pgx", dsn)
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
-	t.Cleanup(func() { db.Close() })
-	return db
+	return storetest.OpenDB(t, "store_migrations")
 }
 
 // TestMigrationsApplyAndRollBack is the first gate clause, executed against a
@@ -127,6 +119,7 @@ func TestMigrationsApplyAndRollBack(t *testing.T) {
 	assertTablePresent(t, db, "repo_scan_results")
 	assertColumnPresent(t, db, "findings", "reach_conflict")
 	assertColumnPresent(t, db, "findings", "verified_reason")
+	assertTablePresent(t, db, "run_plan")
 
 	// Down, one version at a time.
 	for v := top - 1; v >= 0; v-- {
@@ -137,6 +130,7 @@ func TestMigrationsApplyAndRollBack(t *testing.T) {
 	}
 	assertTableAbsent(t, db, "findings")
 	assertTableAbsent(t, db, "finding_observations")
+	assertTableAbsent(t, db, "run_plan")
 
 	// And up again: a down migration that leaves residue fails here.
 	if err := s.Migrate(ctx); err != nil {

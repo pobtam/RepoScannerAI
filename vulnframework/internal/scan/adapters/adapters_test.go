@@ -652,10 +652,25 @@ func TestTrivyReportsOnlyFailures(t *testing.T) {
 	if len(got) == 0 {
 		t.Fatal("trivy produced no findings from a repository with a root-user Dockerfile")
 	}
+	// Trivy now runs both scanners, so it produces dependency findings as well
+	// as misconfigurations (VM-AD §8.2 "trivy config / trivy fs"). Only those
+	// two categories may appear.
+	var config, dependency int
 	for _, f := range got {
-		if f.Category != model.CategoryConfig {
-			t.Errorf("category = %q, want config", f.Category)
+		switch f.Category {
+		case model.CategoryConfig:
+			config++
+		case model.CategoryDependency:
+			dependency++
+		default:
+			t.Errorf("category = %q, want config or dependency", f.Category)
 		}
+	}
+	if config == 0 {
+		t.Error("no misconfiguration findings from a repository with a root-user Dockerfile")
+	}
+	if dependency == 0 {
+		t.Error("no dependency findings; the CVE-namespace source for alias resolution is missing (OQ-P3-03)")
 	}
 }
 

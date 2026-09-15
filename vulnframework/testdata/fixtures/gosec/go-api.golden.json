@@ -27,6 +27,7 @@
     },
     "ToolVersion": "v2.29.0",
     "AdvisoryURL": "https://cwe.mitre.org/data/definitions/22.html",
+    "Annotations": null,
     "Raw": {
       "severity": "MEDIUM",
       "confidence": "HIGH",
@@ -70,6 +71,7 @@
     },
     "ToolVersion": "v2.29.0",
     "AdvisoryURL": "https://cwe.mitre.org/data/definitions/328.html",
+    "Annotations": null,
     "Raw": {
       "severity": "MEDIUM",
       "confidence": "HIGH",
@@ -113,6 +115,7 @@
     },
     "ToolVersion": "v2.29.0",
     "AdvisoryURL": "https://cwe.mitre.org/data/definitions/327.html",
+    "Annotations": null,
     "Raw": {
       "severity": "MEDIUM",
       "confidence": "HIGH",
@@ -156,6 +159,7 @@
     },
     "ToolVersion": "v2.29.0",
     "AdvisoryURL": "https://cwe.mitre.org/data/definitions/338.html",
+    "Annotations": null,
     "Raw": {
       "severity": "HIGH",
       "confidence": "MEDIUM",

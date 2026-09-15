@@ -27,6 +27,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ds-0002",
+    "Annotations": null,
     "Raw": {
       "Type": "Dockerfile Security Check",
       "ID": "DS-0002",
@@ -74,6 +75,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ds-0026",
+    "Annotations": null,
     "Raw": {
       "Type": "Dockerfile Security Check",
       "ID": "DS-0026",
@@ -121,6 +123,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0001",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0001",
@@ -168,6 +171,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0003",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0003",
@@ -215,6 +219,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0004",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0004",
@@ -262,6 +267,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0011",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0011",
@@ -309,6 +315,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0012",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0012",
@@ -356,6 +363,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0013",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0013",
@@ -403,6 +411,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0014",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0014",
@@ -450,6 +459,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0015",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0015",
@@ -497,6 +507,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0016",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0016",
@@ -544,6 +555,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0018",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0018",
@@ -591,6 +603,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0020",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0020",
@@ -638,6 +651,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0021",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0021",
@@ -685,6 +699,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0030",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0030",
@@ -732,6 +747,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0104",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0104",
@@ -779,6 +795,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0106",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0106",
@@ -826,6 +843,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0110",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0110",
@@ -873,6 +891,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0118",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0118",
@@ -920,6 +939,7 @@
     },
     "ToolVersion": "v0.74.0",
     "AdvisoryURL": "https://avd.aquasec.com/misconfig/ksv-0125",
+    "Annotations": null,
     "Raw": {
       "Type": "Kubernetes Security Check",
       "ID": "KSV-0125",
@@ -936,6 +956,1933 @@
         "StartLine": 14,
         "EndLine": 17,
         "Resource": ""
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2023-48795",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.17.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.9,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2023-48795",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2023-48795",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.17.0",
+      "Severity": "MEDIUM",
+      "Title": "ssh: Prefix truncation attack on Binary Packet Protocol (BPP)",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2023-48795",
+      "Status": "fixed",
+      "CVSS": {
+        "ghsa": {
+          "V3Score": 5.9
+        },
+        "julia": {
+          "V3Score": 5.9
+        },
+        "nvd": {
+          "V3Score": 5.9
+        },
+        "redhat": {
+          "V3Score": 5.9
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2024-45337",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.31.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.2,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2024-45337",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2024-45337",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.31.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: Misuse of ServerConfig.PublicKeyCallback may cause authorization bypass in golang.org/x/crypto",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-45337",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 8.2
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2025-22869",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.35.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2025-22869",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2025-22869",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.35.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: Denial of Service in the Key Exchange of golang.org/x/crypto/ssh",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-22869",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2025-47913",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.43.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2025-47913",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2025-47913",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.43.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh/agent: golang.org/x/crypto/ssh/agent: SSH client panic due to unexpected SSH_AGENT_SUCCESS",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-47913",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2025-47914",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.45.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2025-47914",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2025-47914",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.45.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/crypto/ssh/agent: SSH Agent servers: Denial of Service due to malformed messages",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-47914",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 5.3
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2025-58181",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.45.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2025-58181",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2025-58181",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.45.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via unbounded memory consumption in GSSAPI authentication",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-58181",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 5.3
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39827",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39827",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39827",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/crypto/ssh: golang: golang.org/x/crypto/ssh: Denial of Service via repeated rejected channel openings",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39827",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 6.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39828",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39828",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39828",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Unauthorized command execution via discarded SSH permissions",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39828",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 8.8
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39829",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39829",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39829",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via crafted public key with excessive parameters",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39829",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39830",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39830",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39830",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via resource leak from unsolicited SSH responses",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39830",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39831",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39831",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39831",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Security key bypass due to missing user presence check",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39831",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 8.1
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39832",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.7,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39832",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39832",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh/agent: golang.org/x/crypto/ssh/agent: Security bypass due to improper handling of key restrictions",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39832",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 8.7
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39833",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39833",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39833",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/crypto/ssh/agent: golang.org/x/crypto/ssh/agent: Security bypass due to unenforced key confirmation",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39833",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 5.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39834",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39834",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39834",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/crypto/ssh: golang: golang.org/x/crypto/ssh: Denial of Service due to integer overflow in SSH channel write",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39834",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 6.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39835",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39835",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39835",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: golang: golang.org/x/crypto/ssh: Denial of Service via crafted SSH certificate",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39835",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-42508",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-42508",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-42508",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh/knownhosts: golang: golang.org/x/crypto/ssh/knownhosts: Revocation bypass via unchecked SignatureKey",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-42508",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.4
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-46595",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-46595",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-46595",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Authorization bypass due to skipped source-address validation",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-46595",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.1
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-46597",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-46597",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-46597",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via crafted AES-GCM packet decoder inputs",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-46597",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-46598",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.52.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-46598",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-46598",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.52.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/crypto/ssh/agent: golang: golang.org/x/crypto/ssh/agent: Denial of Service via malformed input",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-46598",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 5.3
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-56854",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 6.8,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-56854",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-56854",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.55.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Authentication bypass due to unenforced source-address restrictions",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56854",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 6.8
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-56855",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.56.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-56855",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-56855",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.56.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via crafted messages",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56855",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 5.3
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-78662",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0",
+      "fixed": "0.56.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-78662",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-78662",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "0.56.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via channel request flooding",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78662",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 5.3
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "GO-2026-5932",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/crypto",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.16.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "GO-2026-5932",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.16.0",
+      "FixedVersion": "",
+      "Severity": "UNKNOWN",
+      "Title": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
+      "PrimaryURL": "",
+      "Status": "affected",
+      "CVSS": null
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2023-45288",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.23.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2023-45288",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2023-45288",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.23.0",
+      "Severity": "HIGH",
+      "Title": "golang: net/http, x/net/http2: unlimited number of CONTINUATION frames causes DoS",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2023-45288",
+      "Status": "fixed",
+      "CVSS": {
+        "bitnami": {
+          "V3Score": 7.5
+        },
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2024-45338",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.33.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2024-45338",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2024-45338",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.33.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/net/html: Non-linear parsing of case-insensitive content in golang.org/x/net/html",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-45338",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2025-22870",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.36.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 4.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2025-22870",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2025-22870",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.36.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/net/proxy: golang.org/x/net/http/httpproxy: HTTP Proxy bypass using IPv6 Zone IDs in golang.org/x/net",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-22870",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 4.4
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2025-22872",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.38.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2025-22872",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2025-22872",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.38.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/net/html: Incorrect Neutralization of Input During Web Page Generation in x/net in golang.org/x/net",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-22872",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 6.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2025-47911",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.45.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2025-47911",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2025-47911",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.45.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/net/html: Quadratic parsing complexity in golang.org/x/net/html",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-47911",
+      "Status": "fixed",
+      "CVSS": {
+        "nvd": {
+          "V3Score": 5.3
+        },
+        "redhat": {
+          "V3Score": 5.3
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2025-58190",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.45.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.3,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2025-58190",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2025-58190",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.45.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/net/html: Infinite parsing loop in golang.org/x/net",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-58190",
+      "Status": "fixed",
+      "CVSS": {
+        "nvd": {
+          "V3Score": 5.3
+        },
+        "redhat": {
+          "V3Score": 4.3
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-25680",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-25680",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-25680",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.55.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/net/html: golang.org/x/net/html: Denial of Service due to excessive HTML parsing",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-25680",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 6.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-25681",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-25681",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-25681",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.55.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/net/html: golang.org/x/net/html: Arbitrary code execution via Cross-Site Scripting",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-25681",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 8.1
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-27136",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-27136",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-27136",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.55.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/net/html: golang: golang.org/x/net/html: Cross-Site Scripting via HTML parsing bypass",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-27136",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 8.1
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-33814",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.53.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-33814",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-33814",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.53.0",
+      "Severity": "HIGH",
+      "Title": "net/http/internal/http2: golang: golang.org/x/net: Go HTTP/2: Denial of Service via malformed SETTINGS_MAX_FRAME_SIZE frame",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-33814",
+      "Status": "fixed",
+      "CVSS": {
+        "bitnami": {
+          "V3Score": 7.5
+        },
+        "nvd": {
+          "V3Score": 7.5
+        },
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39821",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 8.2,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39821",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39821",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.55.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/net/idna: golang: net/http: golang.org/x/net/idna: Privilege escalation via incorrect Punycode label processing",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39821",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 8.2
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-42502",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 6.1,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-42502",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-42502",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.55.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/net/html: golang: golang.org/x/net/html: Cross-Site Scripting via unexpected HTML tree rendering",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-42502",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 6.1
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-42506",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.55.0"
+    },
+    "Classification": {
+      "severity": "MEDIUM",
+      "cvss": 5.4,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-42506",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-42506",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.55.0",
+      "Severity": "MEDIUM",
+      "Title": "golang.org/x/net/html: golang.org/x/net/html: Cross-Site Scripting (XSS) via arbitrary HTML parsing",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-42506",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 5.4
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-46600",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/net",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.17.0",
+      "fixed": "0.56.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-46600",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-46600",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.17.0",
+      "FixedVersion": "0.56.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/net/dns/dnsmessage: golang.org/x/net/dns/dnsmessage: Denial of Service via invalid DNS record parsing",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-46600",
+      "Status": "fixed",
+      "CVSS": {
+        "bitnami": {
+          "V3Score": 7.5
+        },
+        "redhat": {
+          "V3Score": 7.5
+        }
+      }
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-39824",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/sys",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.15.0",
+      "fixed": "0.44.0"
+    },
+    "Classification": {
+      "severity": "UNKNOWN",
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-39824",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-39824",
+      "PkgName": "golang.org/x/sys",
+      "InstalledVersion": "v0.15.0",
+      "FixedVersion": "0.44.0",
+      "Severity": "UNKNOWN",
+      "Title": "Invoking integer overflow in NewNTUnicodeString in golang.org/x/sys/windows",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39824",
+      "Status": "fixed",
+      "CVSS": null
+    }
+  },
+  {
+    "Repo": "org/wanaware-api",
+    "Category": "dependency",
+    "PrimaryID": "CVE-2026-56852",
+    "Aliases": null,
+    "Tool": "trivy",
+    "RuleID": "",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "golang.org/x/text",
+    "ModuleMajor": "v0",
+    "Package": "",
+    "Function": "",
+    "File": "",
+    "ResourceKey": "",
+    "Line": 0,
+    "CredentialType": "",
+    "Versions": {
+      "current": "v0.14.0",
+      "fixed": "0.39.0"
+    },
+    "Classification": {
+      "severity": "HIGH",
+      "cvss": 7.5,
+      "kev": false,
+      "reachable": "unknown",
+      "dep_class": "production",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "v0.74.0",
+    "AdvisoryURL": "https://avd.aquasec.com/nvd/cve-2026-56852",
+    "Annotations": null,
+    "Raw": {
+      "VulnerabilityID": "CVE-2026-56852",
+      "PkgName": "golang.org/x/text",
+      "InstalledVersion": "v0.14.0",
+      "FixedVersion": "0.39.0",
+      "Severity": "HIGH",
+      "Title": "golang.org/x/text: golang.org/x/text: Denial of Service via invalid UTF-8 input",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56852",
+      "Status": "fixed",
+      "CVSS": {
+        "redhat": {
+          "V3Score": 7.5
+        }
       }
     }
   }

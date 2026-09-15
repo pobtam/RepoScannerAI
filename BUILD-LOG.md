@@ -13,7 +13,8 @@ green.
 | **1** — scanner adapters + `testdata/fixtures` | **Green** | passing |
 | **2** — `internal/store` + migrations | **Green** | passing (both backends) |
 | **3** — `cmd/scanworker` + scanner image + `tools.lock` | **Green** | passing (real captured fixtures) |
-| 4–12 | Not started | |
+| **4** — `cmd/orchestrator` — registry, planning, dispatch, leases, rate budget | **Green** | passing (extended gate) |
+| 5–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -692,5 +693,168 @@ verified on real cross-tool data (38 shared Go defects, all collapsing to one
 fingerprint each), but **alias resolution is no longer exercised end to end** —
 it remains unit-tested in `internal/fingerprint` and still matters for CVE-only
 sources. Worth a fixture from a tool that reports CVE identifiers.
+
+---
+
+## Decisions taken between Phase 3 and Phase 4 (2026-09-14)
+
+**OQ-P3-01 — osv-scanner's experimental Go reachability. → RESOLVED: not a
+determiner.** govulncheck remains the sole Go reachability authority.
+`groups[].experimental_analysis.called` is stored as **non-determining
+provenance** on the finding, under a version-tagged annotation key
+(`osv-scanner/<version>/experimental_called`), so agreement with the authority
+accumulates and is auditable. Phase 5 scoring inputs are unchanged.
+
+Enforced with the same shape as the no-secret-value rule — checked at the
+boundary where it would otherwise leak:
+`TestOSVExperimentalAnalysisNeverDeterminesReachability` asserts every
+osv-scanner finding reports `reachable=unknown` *while* carrying the annotation,
+and fails as vacuous if the annotation disappears.
+`TestAnnotationsAreNotClassification` blocks an annotation key colliding with a
+classified field name. On the real capture: 39 findings annotated, 15 with
+`called=true`, none determining. Any future promotion to a determiner
+(unknown-fill only, never overriding the authority) must be an explicit,
+provenance-tagged, tested widening.
+
+**OQ-P3-03 — alias resolution no longer end-to-end. → RESOLVED: e2e restored,
+no coverage debt.** The real tool set *can* produce a cross-namespace pair, so
+the downgrade to unit-only was not accepted.
+
+Trivy's dependency scanner reports Go advisories under **CVE** identifiers where
+govulncheck reports them under **GO** ones. The trivy adapter now runs
+`trivy fs --scanners vuln,misconfig` (VM-AD §8.2 specifies both), giving 39
+CVE-namespace dependency findings from the real capture.
+
+The case is genuinely hard, which is why it is a good guard: **trivy publishes no
+alias set at all**, so nothing in its own output connects `CVE-2025-22869` to
+`GO-2025-3487`. Closing that gap required implementing the **alias table** VM-AD
+§5 specifies and Phase 1 deferred — `internal/scan/aliases.go`, a union-find over
+identifiers, populated from the tools that *do* publish OSV alias data and
+applied to every finding in the scan. One tool's knowledge repairs another's
+blind spot.
+
+`TestCrossNamespaceAliasCollapse` asserts the namespaces really diverge and that
+trivy carries no aliases before asserting the collapse, so it cannot pass
+vacuously the way the Phase 1 version came to.
+`TestCrossNamespaceCollapseIsBroad` checks the property across every shared
+defect: **37 collapse across namespaces**.
+`TestAliasEnrichmentDoesNotRewriteProvenance` guards that enrichment widens the
+alias set and never rewrites what a tool said it found.
+
+---
+
+## Phase 4 — `cmd/orchestrator`
+
+**Gate (§17 plus the extensions):** *a full sweep across ≥5 repositories; an
+in-scope repository never dispatched produces a not_dispatched row and shows as a
+coverage gap, never silently clean; exceeding the rate budget produces
+not_dispatched-with-reason rows rather than silent omission; a lease that expires
+returns its finding AUTO_REMEDIATING → TRIAGED; and a finding under an active
+lease that disappears on a qualifying scan verifies as external AND releases the
+lease with nothing stuck.*
+
+**Status: green.** 137 top-level tests (402 with subtests), vet and gofmt clean,
+passes under `-race`, against both backends.
+
+### OQ-P2-02 mechanism, as decided
+
+The planner records the in-scope set **before anything is dispatched**
+(`run_plan`, migration 0004), and run close writes the planned-minus-produced
+delta. Three outcomes are kept apart because they have different owners and
+different remedies, and folding them into `failed` would merge three operational
+problems into one unactionable number:
+
+| Situation | Outcome | Cause |
+|---|---|---|
+| Planner deliberately skipped it | `not_dispatched` | `budget_exhausted`, `concurrency_cap`, `filtered`, `archived` |
+| Planned, dispatch never reached it | `not_dispatched` | `never_dispatched` — this one means dispatch itself failed |
+| Dispatched, worker produced nothing | `no_result` | `worker_produced_no_result` |
+
+`MarkSkipped` refuses an empty reason: a skip with no reason is
+indistinguishable from a bug, and the gaps view would have nothing to group by.
+Archived repositories are recorded as skipped but **not** counted as planned
+coverage — the exclusion stays auditable without inflating the denominator.
+
+### The cross-phase interaction
+
+A finding can be fixed by someone else while the framework's own remediation is
+in flight. `TestLeasedFindingThatDisappearsVerifiesAndReleasesLease` drives
+exactly that: leased to `fixworker-7`, then a complete scan no longer sees it.
+It verifies as **external** — the framework merged nothing, so it must not claim
+credit — **and** the lease is released in the same write, on both backends. The
+test then sweeps leases a year later and asserts nothing was left stuck and the
+finding is undisturbed.
+
+### Verified by mutation
+
+| Mutation | Caught by |
+|---|---|
+| `not_dispatched`/`no_result` folded into `failed` | `TestUndispatchedRepoIsAGapNotSilence` |
+| Budget-exhausted repositories silently omitted | `TestBudgetExhaustionRecordsSkippedRows` |
+| Verification leaves the lease behind | `TestLeasedFindingThatDisappearsVerifiesAndReleasesLease` |
+| Lease sweeper does not revert | `TestExpiredLeaseRevertsFinding` |
+
+### Two real defects the suite found
+
+1. **A data race on the store's clock.** `-race` caught the orchestrator's
+   concurrent dispatch goroutines calling an unsynchronised test clock through
+   `Postgres.UpsertObservations`. The bug was in the test helper, but it exposed
+   an undocumented contract: `SetClock` may be called concurrently. The helper is
+   now mutex-guarded and the contract is documented on both backends.
+2. **Test packages shared one database.** `go test ./...` runs packages in
+   parallel, and `internal/store` and `internal/orchestrator` were both resetting
+   and migrating the same Postgres — producing failures that looked like real
+   bugs. `internal/store/storetest` now gives each package its own database, so
+   the default invocation works without `-p 1`.
+
+### What landed
+
+- `internal/orchestrator` — `Sweep` (plan → dispatch → close → reconcile),
+  `RateBudget` (VM-AD §7.2 token-bucket lease), `LocalDispatcher` and
+  `FakeDispatcher`, lease acquisition and the 60-second sweeper
+- `internal/scan/aliases.go` — the VM-AD §5 alias table
+- Store: planned scope, `CloseRun`, and the lease surface, on both backends
+- Migration `0004_run_plan`; `cmd/orchestrator`; `internal/store/storetest`
+
+### Design notes
+
+**Budget exhaustion does not block.** `RateBudget.Acquire` returns rather than
+waiting. Blocking would turn exhaustion into a stalled sweep with no record of
+why; returning lets the planner record the skip and move on, and deferred
+repositories are picked up by the next run.
+
+**Reconciliation runs for every planned repository**, including ones that never
+ran — so their findings are flagged `not_reobserved` and linked to the gap rather
+than quietly retaining stale state (`TestFindingsInAnUndispatchedRepoAreFlaggedNotVerified`).
+
+### Assumptions made
+
+**A17 — `internal/orchestrator` is a layout addition.** VM-AD §3 lists
+`cmd/orchestrator` but no internal package for its logic. Planning, budgeting and
+lease sweeping are not testable inside `main`, so they live in
+`internal/orchestrator`, as `internal/scan` did for the worker.
+
+**A18 — the fleet registry is read from the store, not GitHub.** VM-AD §7.1 has
+the orchestrator sync the registry from GitHub, which needs an App installation —
+**VM-OQ-10, still open**. Phase 4 reads registered repositories from the store so
+the whole phase stays credential-free; the GitHub sync is Phase 4's remaining
+work once VM-OQ-10 is answered.
+
+### Open questions hit
+
+**OQ-P4-01 — a skipped repository is deferred, but nothing prioritises it next
+run.** A repository skipped for budget is recorded and visible, but the next
+sweep plans in the same order, so an unlucky repository at the end of the fleet
+could be deferred indefinitely while the gap count stays flat. A starvation guard
+— ordering by last-successful-scan, or carrying deferrals forward — is wanted
+**before the first real sweep**, and interacts with VM-F-215's consecutive-failure
+escalation.
+
+**OQ-P4-02 — per-repository remediation serialisation is not implemented.**
+VM-AD §7.3 requires remediation workers be serialised within a repository by an
+advisory lock keyed on repository name, since two concurrent jobs produce
+conflicting branches and duplicate pull requests. Phase 4 caps *scan*
+concurrency; the remediation advisory lock lands with the workers in **Phase 9**,
+and the lease is not a substitute — it is per finding, not per repository.
 
 ---

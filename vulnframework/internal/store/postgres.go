@@ -29,6 +29,9 @@ func NewPostgres(db *sql.DB) *Postgres {
 }
 
 // SetClock overrides the clock, for deterministic tests.
+//
+// The clock may be called concurrently: a sweep records results from many
+// dispatch goroutines at once. Any replacement must be safe for concurrent use.
 func (p *Postgres) SetClock(f func() time.Time) { p.clock = f }
 
 func (p *Postgres) Migrate(ctx context.Context) error {
@@ -348,6 +351,9 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 			}); err != nil {
 				return stats, err
 			}
+			// Verifying releases any lease: the remediation it was held for is
+			// no longer wanted, and leaving it would keep the sweeper finding a
+			// finding that is already closed (VM-AD §6.1.1).
 			if _, err := tx.ExecContext(ctx, qMarkVerified, now, string(a.VerificationReason), a.Fingerprint); err != nil {
 				return stats, err
 			}
@@ -715,4 +721,220 @@ func categoriesToStrings(in []model.Category) []string {
 		out[i] = string(c)
 	}
 	return out
+}
+
+// --- Planned scope (OQ-P2-02) ----------------------------------------------
+
+func (p *Postgres) RecordPlan(ctx context.Context, entries []PlanEntry) error {
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, e := range entries {
+		if !e.State.Valid() {
+			return fmt.Errorf("store: invalid dispatch state %q", e.State)
+		}
+		at := e.PlannedAt
+		if at.IsZero() {
+			at = p.clock()
+		}
+		if _, err := tx.ExecContext(ctx, qUpsertPlan,
+			e.RunID, e.Repo, string(e.State), nullString(e.SkipReason), at); err != nil {
+			return fmt.Errorf("store: recording plan for %s/%s: %w", e.RunID, e.Repo, err)
+		}
+	}
+	return tx.Commit()
+}
+
+func (p *Postgres) MarkDispatched(ctx context.Context, runID, repo string) error {
+	res, err := p.db.ExecContext(ctx, qMarkDispatched, p.clock(), runID, repo)
+	if err != nil {
+		return fmt.Errorf("store: marking %s dispatched: %w", repo, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: repo %q is not in the planned scope of %q", ErrNotFound, repo, runID)
+	}
+	return nil
+}
+
+func (p *Postgres) MarkSkipped(ctx context.Context, runID, repo, reason string) error {
+	if reason == "" {
+		return fmt.Errorf("store: skipping %s in %s requires a reason", repo, runID)
+	}
+	res, err := p.db.ExecContext(ctx, qMarkSkipped, reason, runID, repo)
+	if err != nil {
+		return fmt.Errorf("store: marking %s skipped: %w", repo, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: repo %q is not in the planned scope of %q", ErrNotFound, repo, runID)
+	}
+	return nil
+}
+
+func (p *Postgres) PlanEntries(ctx context.Context, runID string) ([]PlanEntry, error) {
+	return p.scanPlan(ctx, qPlanEntries, runID)
+}
+
+func (p *Postgres) scanPlan(ctx context.Context, query, runID string) ([]PlanEntry, error) {
+	rows, err := p.db.QueryContext(ctx, query, runID)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading plan: %w", err)
+	}
+	defer rows.Close()
+
+	var out []PlanEntry
+	for rows.Next() {
+		var (
+			e          PlanEntry
+			state      string
+			reason     sql.NullString
+			dispatched sql.NullTime
+		)
+		if err := rows.Scan(&e.RunID, &e.Repo, &state, &reason, &e.PlannedAt, &dispatched); err != nil {
+			return nil, err
+		}
+		e.State = DispatchState(state)
+		e.SkipReason = reason.String
+		e.PlannedAt = e.PlannedAt.UTC()
+		if dispatched.Valid {
+			t := dispatched.Time.UTC()
+			e.DispatchedAt = &t
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
+func (p *Postgres) CloseRun(ctx context.Context, runID string) (CloseStats, error) {
+	stats := CloseStats{SkipReasons: map[string]int{}}
+
+	if err := p.db.QueryRowContext(ctx, qCountProduced, runID).Scan(&stats.Produced); err != nil {
+		return stats, fmt.Errorf("store: counting produced results: %w", err)
+	}
+
+	missing, err := p.scanPlan(ctx, qPlanWithoutResult, runID)
+	if err != nil {
+		return stats, err
+	}
+
+	for _, e := range missing {
+		outcome, cause := planCloseAction(e)
+		if err := p.RecordScanResult(ctx, RepoScanResult{
+			RunID: runID, Repo: e.Repo, Outcome: outcome,
+			FailureCause: cause,
+			FailureOwner: "platform",
+		}); err != nil {
+			return stats, err
+		}
+		switch outcome {
+		case model.ScanNoResult:
+			stats.NoResult++
+		default:
+			stats.NotDispatched++
+		}
+		stats.SkipReasons[cause]++
+	}
+	return stats, nil
+}
+
+// --- Leases (VM-AD §6.2) ----------------------------------------------------
+
+func (p *Postgres) AcquireLease(ctx context.Context, fp, owner string, expiresAt time.Time) error {
+	if owner == "" {
+		return fmt.Errorf("store: a lease requires an owner")
+	}
+	res, err := p.db.ExecContext(ctx, qAcquireLease, owner, expiresAt.UTC(), fp)
+	if err != nil {
+		return fmt.Errorf("store: acquiring lease on %s: %w", fp, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	return nil
+}
+
+func (p *Postgres) ReleaseLease(ctx context.Context, fp string) error {
+	res, err := p.db.ExecContext(ctx, qReleaseLease, fp)
+	if err != nil {
+		return fmt.Errorf("store: releasing lease on %s: %w", fp, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	return nil
+}
+
+func (p *Postgres) GetLease(ctx context.Context, fp string) (Lease, error) {
+	var (
+		owner   sql.NullString
+		expires sql.NullTime
+	)
+	err := p.db.QueryRowContext(ctx, qGetLease, fp).Scan(&owner, &expires)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Lease{}, fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	if err != nil {
+		return Lease{}, fmt.Errorf("store: reading lease on %s: %w", fp, err)
+	}
+	l := Lease{Fingerprint: fp, Owner: owner.String}
+	if expires.Valid {
+		t := expires.Time.UTC()
+		l.ExpiresAt = &t
+	}
+	return l, nil
+}
+
+func (p *Postgres) SweepExpiredLeases(ctx context.Context, now time.Time) (int, error) {
+	rows, err := p.db.QueryContext(ctx, qExpiredLeases, string(model.AutoRemediating), now.UTC())
+	if err != nil {
+		return 0, fmt.Errorf("store: finding expired leases: %w", err)
+	}
+	var expired []string
+	for rows.Next() {
+		var fp string
+		if err := rows.Scan(&fp); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		expired = append(expired, fp)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+
+	for _, fp := range expired {
+		if err := p.ApplyTransition(ctx, fp, model.Triaged, model.TransitionContext{
+			Actor: model.ActorOrchestrator,
+			Cause: "lease expired; reverting so a crashed worker cannot strand the finding (VM-F-158)",
+			At:    now,
+		}); err != nil {
+			return 0, err
+		}
+		if err := p.ReleaseLease(ctx, fp); err != nil {
+			return 0, err
+		}
+	}
+	return len(expired), nil
+}
+
+// RepoNames lists every registered repository, sorted.
+func (p *Postgres) RepoNames(ctx context.Context) ([]string, error) {
+	rows, err := p.db.QueryContext(ctx, qRepoNames)
+	if err != nil {
+		return nil, fmt.Errorf("store: listing repositories: %w", err)
+	}
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			return nil, err
+		}
+		out = append(out, n)
+	}
+	return out, rows.Err()
 }

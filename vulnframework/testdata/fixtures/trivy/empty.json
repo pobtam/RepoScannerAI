@@ -3,8 +3,27 @@
   "Trivy": {
     "Version": "0.74.0"
   },
-  "ReportID": "01a0a397-1f33-735b-8875-741b26d3b74c",
-  "CreatedAt": "2026-09-15T05:43:05.267220638Z",
+  "ReportID": "01a0a3af-b2d4-7b63-96cd-a1961177f544",
+  "CreatedAt": "2026-09-15T06:09:55.924746842Z",
   "ArtifactName": ".",
-  "ArtifactType": "filesystem"
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "go.mod",
+      "Class": "lang-pkgs",
+      "Type": "gomod",
+      "Packages": [
+        {
+          "ID": "example.com/clean",
+          "Name": "example.com/clean",
+          "Identifier": {
+            "PURL": "pkg:golang/example.com/clean",
+            "UID": "71d7ab600b352eb1"
+          },
+          "Relationship": "root",
+          "AnalyzedBy": "gomod"
+        }
+      ]
+    }
+  ]
 }

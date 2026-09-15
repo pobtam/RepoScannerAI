@@ -111,8 +111,8 @@ meta go-api gitleaks "$GITLEAKS_V"; echo "  gitleaks/go-api  bytes=$(wc -c < /fi
 meta empty gitleaks "$GITLEAKS_V"; echo "  gitleaks/empty   bytes=$(wc -c < /fixtures/gitleaks/empty.json)"
 
 echo "trivy"
-cap trivy go-api "$TRIVY_V" "$GO"          trivy config --format json --quiet .
-cap trivy empty  "$TRIVY_V" /tmp/empty-go  trivy config --format json --quiet .
+cap trivy go-api "$TRIVY_V" "$GO"          trivy fs --scanners vuln,misconfig --format json --quiet .
+cap trivy empty  "$TRIVY_V" /tmp/empty-go  trivy fs --scanners vuln,misconfig --format json --quiet .
 
 echo "semgrep"
 cap semgrep payments-web "$SEMGREP_V" "$WEB"        semgrep --json --quiet --config p/javascript --config p/typescript .

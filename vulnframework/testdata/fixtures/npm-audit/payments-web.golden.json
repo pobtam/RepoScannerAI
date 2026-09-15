@@ -30,6 +30,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-35jp-ww65-95wh",
+    "Annotations": null,
     "Raw": {
       "source": 1120650,
       "name": "axios",
@@ -79,6 +80,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-3g43-6gmg-66jw",
+    "Annotations": null,
     "Raw": {
       "source": 1120649,
       "name": "axios",
@@ -128,6 +130,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-3p68-rc4w-qgx5",
+    "Annotations": null,
     "Raw": {
       "source": 1116673,
       "name": "axios",
@@ -177,6 +180,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-3w6x-2g7m-8v23",
+    "Annotations": null,
     "Raw": {
       "source": 1117577,
       "name": "axios",
@@ -225,6 +229,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-42h9-826w-cgv3",
+    "Annotations": null,
     "Raw": {
       "source": 1153185,
       "name": "axios",
@@ -274,6 +279,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-43fc-jf86-j433",
+    "Annotations": null,
     "Raw": {
       "source": 1117858,
       "name": "axios",
@@ -323,6 +329,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-445q-vr5w-6q77",
+    "Annotations": null,
     "Raw": {
       "source": 1117581,
       "name": "axios",
@@ -371,6 +378,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-4hjh-wcwx-xvwj",
+    "Annotations": null,
     "Raw": {
       "source": 1112195,
       "name": "axios",
@@ -419,6 +427,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-5c9x-8gcm-mpgx",
+    "Annotations": null,
     "Raw": {
       "source": 1117587,
       "name": "axios",
@@ -467,6 +476,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-62hf-57xw-28j9",
+    "Annotations": null,
     "Raw": {
       "source": 1120125,
       "name": "axios",
@@ -515,6 +525,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-6chq-wfr3-2hj9",
+    "Annotations": null,
     "Raw": {
       "source": 1117593,
       "name": "axios",
@@ -563,6 +574,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-7q8q-rj6j-mhjq",
+    "Annotations": null,
     "Raw": {
       "source": 1153180,
       "name": "axios",
@@ -611,6 +623,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-898c-q2cr-xwhg",
+    "Annotations": null,
     "Raw": {
       "source": 1120652,
       "name": "axios",
@@ -658,6 +671,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-8hc4-vh64-cxmj",
+    "Annotations": null,
     "Raw": {
       "source": 1098583,
       "name": "axios",
@@ -706,6 +720,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-fvcv-3m26-pcqx",
+    "Annotations": null,
     "Raw": {
       "source": 1119404,
       "name": "axios",
@@ -756,6 +771,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-hfxv-24rg-xrqf",
+    "Annotations": null,
     "Raw": {
       "source": 1120547,
       "name": "axios",
@@ -805,6 +821,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-j5f8-grm9-p9fc",
+    "Annotations": null,
     "Raw": {
       "source": 1120647,
       "name": "axios",
@@ -852,6 +869,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-jr5f-v2jv-69x6",
+    "Annotations": null,
     "Raw": {
       "source": 1111035,
       "name": "axios",
@@ -900,6 +918,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-m7pr-hjqh-92cm",
+    "Annotations": null,
     "Raw": {
       "source": 1117583,
       "name": "axios",
@@ -947,6 +966,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-mmx7-hfxf-jppx",
+    "Annotations": null,
     "Raw": {
       "source": 1147949,
       "name": "axios",
@@ -994,6 +1014,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-p92q-9vqr-4j8v",
+    "Annotations": null,
     "Raw": {
       "source": 1120645,
       "name": "axios",
@@ -1042,6 +1063,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-pf86-5x62-jrwf",
+    "Annotations": null,
     "Raw": {
       "source": 1117591,
       "name": "axios",
@@ -1089,6 +1111,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-pmv8-rq9r-6j72",
+    "Annotations": null,
     "Raw": {
       "source": 1147950,
       "name": "axios",
@@ -1138,6 +1161,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-pmwg-cvhr-8vh7",
+    "Annotations": null,
     "Raw": {
       "source": 1117576,
       "name": "axios",
@@ -1188,6 +1212,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-q8qp-cvcw-x6jj",
+    "Annotations": null,
     "Raw": {
       "source": 1118607,
       "name": "axios",
@@ -1236,6 +1261,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-vf2m-468p-8v99",
+    "Annotations": null,
     "Raw": {
       "source": 1117589,
       "name": "axios",
@@ -1284,6 +1310,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-w9j2-pvgh-6h63",
+    "Annotations": null,
     "Raw": {
       "source": 1117574,
       "name": "axios",
@@ -1333,6 +1360,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-xhjh-pmcv-23jw",
+    "Annotations": null,
     "Raw": {
       "source": 1117580,
       "name": "axios",
@@ -1382,6 +1410,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-xx6v-rp6x-q39c",
+    "Annotations": null,
     "Raw": {
       "source": 1117595,
       "name": "axios",
@@ -1431,6 +1460,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-6g55-p6wh-862q",
+    "Annotations": null,
     "Raw": {
       "source": 1124252,
       "name": "postcss",
@@ -1480,6 +1510,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-7fh5-64p2-3v2j",
+    "Annotations": null,
     "Raw": {
       "source": 1109574,
       "name": "postcss",
@@ -1528,6 +1559,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
+    "Annotations": null,
     "Raw": {
       "source": 1130709,
       "name": "postcss",
@@ -1577,6 +1609,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
+    "Annotations": null,
     "Raw": {
       "source": 1117015,
       "name": "postcss",
@@ -1625,6 +1658,7 @@
     },
     "ToolVersion": "10.8.2",
     "AdvisoryURL": "https://github.com/advisories/GHSA-r28c-9q8g-f849",
+    "Annotations": null,
     "Raw": {
       "source": 1139510,
       "name": "postcss",

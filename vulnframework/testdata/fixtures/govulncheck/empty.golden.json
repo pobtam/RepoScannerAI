@@ -32,6 +32,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4864",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4864",
       "fixed_version": "v1.26.2",
@@ -78,6 +79,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4865",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4865",
       "fixed_version": "v1.26.2",
@@ -124,6 +126,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4866",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4866",
       "fixed_version": "v1.26.2",
@@ -170,6 +173,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4869",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4869",
       "fixed_version": "v1.26.2",
@@ -216,6 +220,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4870",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4870",
       "fixed_version": "v1.26.2",
@@ -262,6 +267,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4918",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4918",
       "fixed_version": "v1.26.3",
@@ -308,6 +314,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4946",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4946",
       "fixed_version": "v1.26.2",
@@ -354,6 +361,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4947",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4947",
       "fixed_version": "v1.26.2",
@@ -400,6 +408,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4970",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4970",
       "fixed_version": "v1.26.5",
@@ -446,6 +455,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4971",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4971",
       "fixed_version": "v1.26.3",
@@ -492,6 +502,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4976",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4976",
       "fixed_version": "v1.26.3",
@@ -538,6 +549,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4977",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4977",
       "fixed_version": "v1.26.3",
@@ -584,6 +596,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4980",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4980",
       "fixed_version": "v1.26.3",
@@ -630,6 +643,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4981",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4981",
       "fixed_version": "v1.26.3",
@@ -676,6 +690,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4982",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4982",
       "fixed_version": "v1.26.3",
@@ -722,6 +737,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-4986",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-4986",
       "fixed_version": "v1.26.3",
@@ -768,6 +784,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5026",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-5026",
       "fixed_version": "v1.26.6",
@@ -814,6 +831,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5037",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-5037",
       "fixed_version": "v1.26.4",
@@ -860,6 +878,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5038",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-5038",
       "fixed_version": "v1.26.4",
@@ -906,6 +925,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5039",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-5039",
       "fixed_version": "v1.26.4",
@@ -952,6 +972,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5856",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-5856",
       "fixed_version": "v1.26.5",
@@ -998,6 +1019,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5942",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-5942",
       "fixed_version": "v1.26.6",
@@ -1044,6 +1066,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-5972",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-5972",
       "fixed_version": "v1.26.6",
@@ -1090,6 +1113,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6088",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-6088",
       "fixed_version": "v1.26.6",
@@ -1136,6 +1160,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6089",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-6089",
       "fixed_version": "v1.26.6",
@@ -1182,6 +1207,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6090",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-6090",
       "fixed_version": "v1.26.6",
@@ -1228,6 +1254,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6091",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-6091",
       "fixed_version": "v1.26.6",
@@ -1274,6 +1301,7 @@
     },
     "ToolVersion": "v1.8.0",
     "AdvisoryURL": "https://pkg.go.dev/vuln/GO-2026-6218",
+    "Annotations": null,
     "Raw": {
       "osv": "GO-2026-6218",
       "fixed_version": "v1.26.6",

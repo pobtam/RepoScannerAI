@@ -78,7 +78,7 @@ type ReconcileAction struct {
 //
 // Findings observed by the run are not passed here; only the absent ones are.
 func PlanReconcile(outcome ScanOutcome, absent []FindingState) []ReconcileAction {
-	scanSucceeded := outcome == model.ScanComplete
+	scanSucceeded := outcome.Succeeded()
 
 	actions := make([]ReconcileAction, 0, len(absent))
 	for _, f := range absent {

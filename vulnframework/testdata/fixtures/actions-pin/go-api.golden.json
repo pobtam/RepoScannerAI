@@ -27,6 +27,7 @@
     },
     "ToolVersion": "v1.0.0",
     "AdvisoryURL": "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions",
+    "Annotations": null,
     "Raw": {
       "file": ".github/workflows/ci.yml",
       "line": 8,
@@ -65,6 +66,7 @@
     },
     "ToolVersion": "v1.0.0",
     "AdvisoryURL": "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions",
+    "Annotations": null,
     "Raw": {
       "file": ".github/workflows/release.yml",
       "line": 9,
@@ -103,6 +105,7 @@
     },
     "ToolVersion": "v1.0.0",
     "AdvisoryURL": "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions",
+    "Annotations": null,
     "Raw": {
       "file": ".github/workflows/release.yml",
       "line": 11,

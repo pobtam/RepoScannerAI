@@ -89,7 +89,8 @@ ORDER BY f.fingerprint`
 
 	qMarkVerified = `
 UPDATE findings
-SET resolved_at = $1, verified_reason = $2, not_reobserved = FALSE, gap_run_id = NULL
+SET resolved_at = $1, verified_reason = $2, not_reobserved = FALSE, gap_run_id = NULL,
+    lease_owner = NULL, lease_expires_at = NULL
 WHERE fingerprint = $3`
 
 	qMarkNotReobserved = `
@@ -117,3 +118,62 @@ FROM findings f`
 
 	qGetFinding = qListFindingsBase + ` WHERE f.fingerprint = $1`
 )
+
+// Planned scope and leases (OQ-P2-02, VM-AD §6.2).
+const (
+	qUpsertPlan = `
+INSERT INTO run_plan (run_id, repo, dispatch_state, skip_reason, planned_at)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (run_id, repo) DO UPDATE SET
+  dispatch_state = EXCLUDED.dispatch_state,
+  skip_reason = EXCLUDED.skip_reason`
+
+	qMarkDispatched = `
+UPDATE run_plan SET dispatch_state = 'dispatched', dispatched_at = $1, skip_reason = NULL
+WHERE run_id = $2 AND repo = $3`
+
+	qMarkSkipped = `
+UPDATE run_plan SET dispatch_state = 'skipped', skip_reason = $1
+WHERE run_id = $2 AND repo = $3`
+
+	qPlanEntries = `
+SELECT run_id, repo, dispatch_state, skip_reason, planned_at, dispatched_at
+FROM run_plan WHERE run_id = $1 ORDER BY repo`
+
+	// Planned repositories that produced no scan result: the delta coverage is
+	// measured against (OQ-P2-02).
+	qPlanWithoutResult = `
+SELECT p.run_id, p.repo, p.dispatch_state, p.skip_reason, p.planned_at, p.dispatched_at
+FROM run_plan p
+WHERE p.run_id = $1
+  AND NOT EXISTS (
+    SELECT 1 FROM repo_scan_results r
+    WHERE r.run_id = p.run_id AND r.repo = p.repo
+  )
+ORDER BY p.repo`
+
+	qCountProduced = `
+SELECT count(*) FROM repo_scan_results r
+JOIN run_plan p ON p.run_id = r.run_id AND p.repo = r.repo
+WHERE r.run_id = $1`
+
+	qAcquireLease = `
+UPDATE findings SET lease_owner = $1, lease_expires_at = $2 WHERE fingerprint = $3`
+
+	qReleaseLease = `
+UPDATE findings SET lease_owner = NULL, lease_expires_at = NULL WHERE fingerprint = $1`
+
+	qGetLease = `SELECT lease_owner, lease_expires_at FROM findings WHERE fingerprint = $1`
+
+	// Lease-bound findings whose claim has lapsed. AUTO_REMEDIATING is the only
+	// lease-bound state (VM-AD §6.2); without this a crashed worker strands a
+	// finding there permanently (VM-F-158).
+	qExpiredLeases = `
+SELECT fingerprint FROM findings
+WHERE state = $1 AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL
+  AND lease_expires_at <= $2
+ORDER BY fingerprint`
+)
+
+// qRepoNames lists the fleet registry.
+const qRepoNames = `SELECT name FROM repos ORDER BY name`

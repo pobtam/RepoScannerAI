@@ -235,6 +235,17 @@ type Finding struct {
 	// CredentialType names the kind of credential for secret findings
 	// (VM-F-263). It describes the class, never the value.
 	CredentialType string `json:"credential_type,omitempty"`
+
+	// Annotations carry observations a tool made that are recorded but do NOT
+	// determine any classified value.
+	//
+	// The motivating case is osv-scanner v2's experimental Go reachability
+	// analysis: it is retained, version-tagged, and auditable, so agreement with
+	// the authority can be measured over time — but govulncheck remains the sole
+	// reachability authority (VM-AD §8.2), and nothing here may reach
+	// Classification. Promoting an annotation to a determiner must be an
+	// explicit, tested widening, never a quiet one.
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 // Validate checks the finding against the closed enumerations and the schema
@@ -312,6 +323,10 @@ type RawFinding struct {
 	Classification Classification
 	ToolVersion    string
 	AdvisoryURL    string
+
+	// Annotations carry non-determining, version-tagged observations. See
+	// Finding.Annotations: nothing here may reach Classification.
+	Annotations map[string]string
 
 	// Raw is the originating tool output, retained for audit and re-triage
 	// (VM-F-109). For secret findings the adapter must redact before populating

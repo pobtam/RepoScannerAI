@@ -46,6 +46,10 @@ type Result struct {
 
 	ToolVersions map[string]string
 	DurationSec  int
+
+	// Aliases is the identifier grouping built during this scan, retained so a
+	// caller can audit why two tools' findings collapsed (VM-AD §5).
+	Aliases *AliasTable `json:"-"`
 }
 
 // CoverageGap records a scanner that did not produce results (VM-F-205).
@@ -147,6 +151,18 @@ func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile Repo
 		res.ToolsOK = append(res.ToolsOK, a.Name())
 		res.Findings = append(res.Findings, findings...)
 	}
+
+	// Alias resolution, before anything is fingerprinted (VM-AD §5).
+	//
+	// The table is built from every tool that publishes OSV alias data and then
+	// applied to every finding, including those from tools that publish none.
+	// That is what lets trivy's CVE-2025-22869 and govulncheck's GO-2025-3487
+	// collapse to one fingerprint: trivy does not know the GO identifier, and
+	// does not need to.
+	aliases := NewAliasTable()
+	aliases.AddFindings(res.Findings)
+	res.Findings = aliases.Enrich(res.Findings)
+	res.Aliases = aliases
 
 	sort.Strings(res.ToolsOK)
 	sort.Strings(res.ToolsFailed)

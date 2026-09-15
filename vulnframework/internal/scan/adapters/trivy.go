@@ -29,9 +29,14 @@ func (a *Trivy) Version() string { return a.Pinned }
 // an infrastructure manifest.
 func (a *Trivy) Supports(scan.RepoProfile) bool { return true }
 
-// Run executes trivy's configuration scanner.
+// Run executes trivy over both misconfiguration and dependency scanners
+// (VM-AD §8.2: "trivy config / trivy fs").
+//
+// The vulnerability scanner matters beyond cross-checking: trivy reports Go
+// advisories under CVE identifiers where govulncheck reports GO ones, which is
+// the cross-namespace case alias resolution exists for (VM-AD §5).
 func (a *Trivy) Run(ctx context.Context, dir string, opts scan.RunOpts) (scan.RawOutput, error) {
-	res, err := a.Runner.Run(ctx, dir, "trivy", "config", "--format", "json", "--quiet", ".")
+	res, err := a.Runner.Run(ctx, dir, "trivy", "fs", "--scanners", "vuln,misconfig", "--format", "json", "--quiet", ".")
 	if err != nil {
 		return scan.RawOutput{}, fmt.Errorf("trivy: %w", err)
 	}
@@ -45,11 +50,31 @@ type trivyReport struct {
 	SchemaVersion int    `json:"SchemaVersion"`
 	ArtifactName  string `json:"ArtifactName"`
 	Results       []struct {
-		Target            string           `json:"Target"`
-		Class             string           `json:"Class"`
-		Type              string           `json:"Type"`
-		Misconfigurations []trivyMisconfig `json:"Misconfigurations"`
+		Target            string               `json:"Target"`
+		Class             string               `json:"Class"`
+		Type              string               `json:"Type"`
+		Misconfigurations []trivyMisconfig     `json:"Misconfigurations"`
+		Vulnerabilities   []trivyVulnerability `json:"Vulnerabilities"`
 	} `json:"Results"`
+}
+
+// trivyVulnerability is one dependency advisory.
+//
+// Trivy publishes no alias set of its own, so a CVE it reports can only be
+// matched to another tool's GO or GHSA identifier through the scan's alias
+// table (VM-AD §5).
+type trivyVulnerability struct {
+	VulnerabilityID  string `json:"VulnerabilityID"`
+	PkgName          string `json:"PkgName"`
+	InstalledVersion string `json:"InstalledVersion"`
+	FixedVersion     string `json:"FixedVersion"`
+	Severity         string `json:"Severity"`
+	Title            string `json:"Title"`
+	PrimaryURL       string `json:"PrimaryURL"`
+	Status           string `json:"Status"`
+	CVSS             map[string]struct {
+		V3Score float64 `json:"V3Score"`
+	} `json:"CVSS"`
 }
 
 type trivyMisconfig struct {
@@ -71,7 +96,19 @@ type trivyMisconfig struct {
 	} `json:"CauseMetadata"`
 }
 
-// Normalize converts a trivy config report into raw findings.
+// bestCVSS takes the highest v3 base score trivy reports across its sources.
+func bestCVSS(v trivyVulnerability) float64 {
+	var best float64
+	for _, c := range v.CVSS {
+		if c.V3Score > best {
+			best = c.V3Score
+		}
+	}
+	return best
+}
+
+// Normalize converts a trivy report into raw findings, covering both the
+// dependency and misconfiguration scanners.
 func (a *Trivy) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 	var report trivyReport
 	if err := json.Unmarshal(out.Stdout, &report); err != nil {
@@ -80,6 +117,31 @@ func (a *Trivy) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 
 	var raw []model.RawFinding
 	for _, result := range report.Results {
+		for _, v := range result.Vulnerabilities {
+			raw = append(raw, model.RawFinding{
+				Repo:        out.Repo,
+				Category:    model.CategoryDependency,
+				PrimaryID:   v.VulnerabilityID,
+				Tool:        a.Name(),
+				Module:      v.PkgName,
+				ModuleMajor: moduleMajor(v.PkgName, v.InstalledVersion),
+				Versions: model.Versions{
+					Current: v.InstalledVersion,
+					Fixed:   v.FixedVersion,
+				},
+				Classification: model.Classification{
+					Severity: severityFromBand(v.Severity),
+					CVSS:     bestCVSS(v),
+					// Trivy performs no reachability analysis.
+					Reachable: model.ReachableUnknown,
+					DepClass:  model.DepProduction,
+				},
+				ToolVersion: a.Version(),
+				AdvisoryURL: v.PrimaryURL,
+				Raw:         mustRaw(v),
+			})
+		}
+
 		for _, m := range result.Misconfigurations {
 			// Trivy reports passing checks alongside failures. Only failures
 			// are findings.

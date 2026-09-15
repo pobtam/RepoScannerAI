@@ -230,6 +230,35 @@ type Store interface {
 	// ApplyTransition records a validated state change.
 	ApplyTransition(ctx context.Context, fingerprint string, to model.State, tc model.TransitionContext) error
 
+	// --- Planned scope (OQ-P2-02) ---
+	//
+	// Coverage is measured against planned scope. An in-scope repository that
+	// never runs must leave a record, or its absence reads as a clean scan.
+
+	// RecordPlan writes the planned in-scope set for a run.
+	RecordPlan(ctx context.Context, entries []PlanEntry) error
+	// MarkDispatched records that a worker was started for a repository.
+	MarkDispatched(ctx context.Context, runID, repo string) error
+	// MarkSkipped records a deliberate decision not to dispatch, with a reason.
+	MarkSkipped(ctx context.Context, runID, repo, reason string) error
+	// PlanEntries returns a run's planned scope.
+	PlanEntries(ctx context.Context, runID string) ([]PlanEntry, error)
+	// CloseRun writes a scan result for every planned repository that produced
+	// none, distinguishing "never started" from "started and lost".
+	CloseRun(ctx context.Context, runID string) (CloseStats, error)
+
+	// --- Leases (VM-AD §6.2, VM-F-158) ---
+
+	// AcquireLease claims a finding for a worker until expiresAt.
+	AcquireLease(ctx context.Context, fingerprint, owner string, expiresAt time.Time) error
+	// ReleaseLease clears a claim.
+	ReleaseLease(ctx context.Context, fingerprint string) error
+	// GetLease returns a finding's current claim.
+	GetLease(ctx context.Context, fingerprint string) (Lease, error)
+	// SweepExpiredLeases reverts findings whose lease has lapsed from
+	// AUTO_REMEDIATING back to TRIAGED and returns how many it moved.
+	SweepExpiredLeases(ctx context.Context, now time.Time) (int, error)
+
 	// Close releases resources.
 	Close() error
 }
