@@ -558,6 +558,27 @@ Adding a scanner means implementing this and registering it. Nothing downstream 
 
 Without this split the gate blocks every pull request on pre-existing debt it did not introduce, and the team will demand it be disabled within two sprints.
 
+### 8.6 Cross-source merge (normative)
+
+Two tools reporting one defect produce one fingerprint (VM-F-106) but carry different, complementary attributes: `govulncheck` alone determines reachability and supplies no severity; `osv-scanner` alone supplies the advisory score and determines no reachability. The stored finding is therefore not the output of whichever adapter wrote last.
+
+**The merged finding is a deterministic projection over the retained per-source observations.** It is an order-independent fold, recomputed on every change. Last-upsert-wins is non-compliant: it makes the stored record a function of scan scheduling, so replaying a run, or the same two tools finishing in the other order, silently changes the finding.
+
+| Field | Rule |
+|---|---|
+| `classification.reachable` | A determination (`true` or `false`) from a reachability-capable source overrides `unknown`. `unknown` never overrides a determination. On a genuine `true` vs `false` conflict between two determining sources, take `true` and record the conflict. |
+| `classification.severity` | Maximum over the sources that supply one. A source supplying none contributes nothing — it does not pull the result down to `UNKNOWN`. |
+| `classification.cvss`, `epss`, `kev` | Maximum over the sources that supply them; absent contributes nothing. |
+| `provenance.tools` | Union. |
+| `identity.aliases` | Union. `identity.primary_id` is the §4.1 precedence winner over the union. |
+| `versions.fixed` | The version that fully closes the defect — the maximum over candidates. Every candidate is retained. |
+
+**Every per-source value is retained** in the observation record, so the projection is auditable: it must always be possible to ask which tool asserted what, and to recompute the merged view from the sources alone.
+
+**Consistency with VM-ADR-12.** The projection must not drop a source's prior contribution because a later partial or failed scan did not re-observe it. An absent observation is absence of evidence, not evidence of absence — the same invariant that governs verification. A source's contribution is superseded only by a *successful* re-scan by that same source.
+
+The `true` over `false` resolution is deliberately conservative and is not reachable with today's tool matrix, since only `govulncheck` determines reachability. It is specified now so that adding a second reachability-capable source is a configuration change rather than a correctness question.
+
 ---
 
 ## 9. Triage

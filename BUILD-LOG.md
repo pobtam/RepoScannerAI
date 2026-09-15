@@ -11,7 +11,7 @@ green.
 |---|---|---|
 | **0** — module scaffold, `internal/model`, `internal/fingerprint` | **Green** | passing |
 | **1** — scanner adapters + `testdata/fixtures` | **Green** | passing |
-| 2 — store + migrations | Not started | |
+| **2** — `internal/store` + migrations | **Green** | passing (both backends) |
 | 3–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
@@ -350,5 +350,163 @@ staticcheck subset (A7) and the gosec `-severity/-confidence` defaults are the
 thresholds VM-OQ-06 asks to calibrate. Both are configurable per tier as
 required; only the defaults are guesses. Phase 5 shadow running is where they get
 real numbers.
+
+---
+
+## Decisions taken between Phase 1 and Phase 2 (2026-09-14)
+
+**A6 — hand-authored fixtures: plan accepted, with two added constraints on the
+Phase 3 re-capture gate.**
+
+1. **Separate expected diffs from gaps.** A golden **value** diff is expected and
+   may be accepted via `-update`. A **parse failure, a newly-seen field, or a
+   changed shape is a Phase-1 gap**, not an update: it means the hand-authored
+   fixture did not reflect the tool's real output. Each such case requires a new
+   test covering the newly-seen shape before the golden is regenerated. The
+   re-capture must therefore report these two classes separately rather than
+   presenting one undifferentiated diff.
+2. **Multiple real samples per tool, from a pinned version.** Capture at least
+   three envelopes per tool — **normal**, **empty** (no findings), and **error**
+   (the tool's own failure envelope) — from the scanner version pinned in
+   `config/tools.lock`, and record that version in each golden's metadata so a
+   golden can never be read without knowing which tool build produced it.
+
+**OQ-P1-02 — cross-adapter merge rule. → RESOLVED 2026-09-14.** Written into the
+specification as **VM-AD §8.6 (normative)** and implemented in Phase 2. The
+merged finding is a deterministic, order-independent projection over retained
+per-source observations, recomputed on every change — never last-upsert-wins,
+which would make the stored record a function of scan scheduling. Field rules,
+the conservative `true`-over-`false` reachability resolution, the auditability
+requirement, and the VM-ADR-12 consistency constraint are all in §8.6.
+
+## Phase 2 — `internal/store` + migrations
+
+**Gate:** *migrations apply and roll back cleanly; upsert creates an observation
+rather than a duplicate; VERIFIED → observed → REGRESSED; a finding absent due to
+a failed scan does not reach VERIFIED; and the cross-adapter projection is
+deterministic under reordered/replayed upserts.*
+
+**Status: green — all five clauses, against a real Postgres 16 as well as the
+in-memory backend.** 114 top-level tests (266 with subtests) module-wide, vet and
+gofmt clean, passes under `-race`.
+
+### Two backends, one conformance suite
+
+`Store` has two implementations: `Postgres` (production) and `Memory` (offline,
+and the fake later phases will use). They share every invariant decision through
+three pure functions — `PlanUpsert`, `PlanReconcile` and `Project` — and both are
+run against the *same* conformance suite.
+
+This is not belt-and-braces. A fake that enforces different rules than production
+makes every test that uses it a statement about the fake. The suite immediately
+earned its keep by catching a genuine divergence: `Memory` returned state history
+in insertion order while Postgres returned it in `ORDER BY at, id`. Root cause was
+that neither backend stamped the transition timestamp from its own clock, so a
+caller omitting one got wall-clock time. Both fixed — the store is the authority
+on when a change was recorded.
+
+### The gate, and proof it can fail
+
+| Mutation | Caught by |
+|---|---|
+| Verify regardless of scan outcome | `TestFailedScanDoesNotVerify` (both backends) |
+| Last-upsert-wins for severity | `TestProjectIsOrderIndependent`, `TestSeverityIsMaxOverSuppliers` |
+| `unknown` overrides a determination | `TestReachabilityRules`, `TestPriorSourceSurvivesAPartialScan` |
+| Drop a source a later scan didn't re-observe | `TestPriorSourceSurvivesAPartialScan` |
+
+Migrations are executed, not asserted structurally: `TestMigrationsApplyAndRollBack`
+walks the full ladder up one version at a time, all the way back down, then up
+again — a down migration that only works once is not a rollback, and the second
+climb is what proves the database was genuinely returned to empty.
+
+### Two real bugs found by the tests
+
+1. **`verifyChecksums` panicked** on a short or corrupt recorded checksum
+   (`want[:12]` on an 8-character value). A corrupt `schema_migrations` row
+   crashed the migrator instead of reporting the problem. Fixed with a safe
+   truncation; a regression test now tampers with a checksum both ways.
+2. **The checksum guard blocks movement in both directions**, so a tampered row
+   cannot be escaped by rolling back. Kept deliberately: a mismatch means nobody
+   knows what is deployed, and auto-rolling-back on that basis could drop data on
+   a wrong assumption. It requires a human. The test restores the row directly.
+
+### Required specification changes made
+
+**VM-AD §8.6 added (normative)** — the cross-source merge rule, per the 2026-09-14
+decision. Deterministic order-independent projection over retained per-source
+observations, field rules, conservative `true`-over-`false` reachability with
+conflict recording, auditability, and the VM-ADR-12 consistency constraint.
+
+**VM-AD §4.2 `finding_observations` primary key widened** from
+`(fingerprint, run_id)` to `(fingerprint, run_id, tool)`. Two tools reporting one
+defect in one run produce one fingerprint but two observations, and §8.6 requires
+every per-source value be retained. The narrower key cannot hold both rows. This
+is a **required change to the specification**, recorded in the migration's own
+comment as well as here.
+
+**VM-AD §4.2 `findings` gains `first_seen_run` / `last_seen_run` columns.** Both
+are queried directly for delta reporting and run-scoped corpora, so they are
+columns as well as JSON paths under `data.provenance`.
+
+### Assumptions made
+
+**A12 — the store takes an open `*sql.DB`, not a DSN.** The driver is chosen by
+the binary (`cmd/*` blank-imports pgx in Phase 4), so `internal/store` carries no
+driver dependency and a caller can substitute one without touching this package.
+Postgres array literals are rendered and parsed by hand for the same reason.
+
+**A13 — a finding absent from a *successful* scan verifies only from `MERGED`.**
+The §6.1 table has exactly one edge into `VERIFIED`. An unresolved finding in any
+other state that a successful scan no longer observes is flagged
+`not_reobserved` and left alone — never closed (VM-F-163). *This is a real
+signal, not a no-op: it surfaces findings fixed outside the framework's own
+remediation path.* See OQ-P2-01.
+
+**A14 — `Query.Scope` is required and returns `ErrScopeRequired` if absent**
+(VM-ADR-14), rather than defaulting to open findings.
+
+### Stubbed / deferred
+
+| Item | To |
+|---|---|
+| Tables created but unused: `pr_scans`, `remediation_attempts`, `tickets`, `token_usage`, `module_deps`, `wave_consumers` | Phases 3, 8, 9, 11 |
+| Lease management (`lease_owner`, `lease_expires_at`) — columns exist; the 60s sweeper is the orchestrator's | Phase 4 |
+| Priority and SLA fields — columns exist; `internal/score` computes them | Phase 5 |
+| Coverage-gap escalation on consecutive failures (VM-F-215) — `ScanResults` returns the history the streak is computed from | Phase 3/8 |
+| Retention and partitioning for `finding_observations`, `module_deps`, `repo_scan_results` (VM-OQ-09, VM-OQ-15) | open |
+
+### Open questions hit
+
+**OQ-P2-01 — a finding fixed outside the framework never verifies.** The §6.1
+table reaches `VERIFIED` only from `MERGED`. A finding a developer fixes by hand,
+which a later successful scan no longer observes, stays `TRIAGED` with
+`not_reobserved` set — correct under VM-F-163, but it accumulates forever and
+nothing ever clears it. Either the table needs an edge (something like
+`TRIAGED → VERIFIED` on repeated absence across N successful scans), or these
+need a distinct presentation so they are not read as live risk. **Wanted before
+Phase 7**, since it changes reported open counts.
+
+**OQ-P2-02 — `Reconcile` is per repository and requires a scan result.** It
+refuses to judge absence without knowing whether the scan succeeded, which is
+correct, but it means the orchestrator must call it for every planned repository
+including ones that failed entirely. A repository that was never dispatched at
+all has no row and so is never reconciled — its findings keep the flags from the
+previous run. **Phase 4 must decide** whether planning writes a `failed` row for
+undispatched repositories; the store is ready either way.
+
+### Running the gate
+
+```
+cd vulnframework
+go test ./...                      # memory backend only, fully offline
+
+docker run -d --name vf-pg-test -e POSTGRES_PASSWORD=vftest -e POSTGRES_USER=vftest \
+  -e POSTGRES_DB=vftest -p 55432:5432 postgres:16-alpine
+VULNFRAMEWORK_TEST_DSN="postgres://vftest:vftest@localhost:55432/vftest?sslmode=disable" \
+  go test ./... -race            # both backends, including migrations
+```
+
+Without the DSN the Postgres backend and the migration-execution tests skip, and
+the suite still passes offline as VM-AD §17 requires of phases 0–2.
 
 ---

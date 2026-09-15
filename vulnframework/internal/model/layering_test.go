@@ -60,17 +60,12 @@ func TestFoundationPackagesHaveNoInternalDependencies(t *testing.T) {
 func TestFoundationPackagesHaveNoExternalDependencies(t *testing.T) {
 	root := repoRoot(t)
 
-	b, err := os.ReadFile(filepath.Join(root, "go.mod"))
-	if err != nil {
-		t.Fatalf("read go.mod: %v", err)
-	}
-	for _, line := range strings.Split(string(b), "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "require") && !strings.HasPrefix(line, "require (") {
-			t.Errorf("go.mod declares a dependency: %q — Phase 0 must have none", line)
-		}
-	}
-
+	// The assertion is on these two packages' imports, not on the module's
+	// dependency list. Phase 2 legitimately adds a Postgres driver; what must
+	// stay true is that the foundation itself never reaches for one, so it can
+	// always be exercised offline and cannot inherit a supply chain risk of its
+	// own. Since model imports nothing internal and fingerprint imports only
+	// model, checking direct imports is sufficient to cover the transitive set.
 	for _, pkg := range []string{"internal/model", "internal/fingerprint"} {
 		dir := filepath.Join(root, filepath.FromSlash(pkg))
 		for _, imp := range allImportsOf(t, dir) {
