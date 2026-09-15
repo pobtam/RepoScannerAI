@@ -186,3 +186,12 @@ FROM repo_scan_results r
 JOIN runs n ON n.id = r.run_id
 WHERE r.repo = $1 AND n.kind = $2
 ORDER BY n.seq DESC`
+
+// Triage narrative and computed priority.
+const (
+	qSetTriage = `
+UPDATE findings SET data = jsonb_set(data, '{triage}', $1::jsonb, true)
+WHERE fingerprint = $2`
+
+	qSetPriority = `UPDATE findings SET priority = $1, reason_code = $2 WHERE fingerprint = $3`
+)

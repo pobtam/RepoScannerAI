@@ -23,42 +23,49 @@ type SourceObservation struct {
 
 	// Asserted values. A source that does not determine a value leaves it at
 	// its zero: SeverityUnknown, ReachableUnknown, zero CVSS/EPSS.
-	PrimaryID    string          `json:"primary_id,omitempty"`
-	Aliases      []string        `json:"aliases,omitempty"`
-	Severity     model.Severity  `json:"severity,omitempty"`
-	Reachable    model.Reachable `json:"reachable,omitempty"`
-	CVSS         float64         `json:"cvss,omitempty"`
-	EPSS         float64         `json:"epss,omitempty"`
-	KEV          bool            `json:"kev,omitempty"`
-	DepClass     model.DepClass  `json:"dep_class,omitempty"`
-	Transitive   bool            `json:"transitive,omitempty"`
-	CurrentVer   string          `json:"current_version,omitempty"`
-	FixedVer     string          `json:"fixed_version,omitempty"`
-	AdvisoryURL  string          `json:"advisory_url,omitempty"`
-	CredentialTy string          `json:"credential_type,omitempty"`
+	PrimaryID string          `json:"primary_id,omitempty"`
+	Aliases   []string        `json:"aliases,omitempty"`
+	Severity  model.Severity  `json:"severity,omitempty"`
+	Reachable model.Reachable `json:"reachable,omitempty"`
+	CVSS      float64         `json:"cvss,omitempty"`
+	EPSS      float64         `json:"epss,omitempty"`
+	KEV       bool            `json:"kev,omitempty"`
+	DepClass  model.DepClass  `json:"dep_class,omitempty"`
+	// FirstPartyPath is the shared module a vulnerable dependency is pulled in
+	// through (VM-AD §12.2). It must survive the merge: it is the sole input to
+	// the policy engine's upstream-defer rule, and a projection that drops it
+	// silently turns every first-party finding into a per-consumer fix — the
+	// exact divergence two-wave remediation exists to prevent (VM-ADR-07).
+	FirstPartyPath string `json:"first_party_path,omitempty"`
+	Transitive     bool   `json:"transitive,omitempty"`
+	CurrentVer     string `json:"current_version,omitempty"`
+	FixedVer       string `json:"fixed_version,omitempty"`
+	AdvisoryURL    string `json:"advisory_url,omitempty"`
+	CredentialTy   string `json:"credential_type,omitempty"`
 }
 
 // SourceOf builds a SourceObservation from an adapter's raw finding.
 func SourceOf(fp, runID string, observedAt time.Time, raw model.RawFinding) SourceObservation {
 	return SourceObservation{
-		Fingerprint:  fp,
-		RunID:        runID,
-		Tool:         raw.Tool,
-		ToolVersion:  raw.ToolVersion,
-		ObservedAt:   observedAt.UTC(),
-		PrimaryID:    raw.PrimaryID,
-		Aliases:      raw.Aliases,
-		Severity:     raw.Classification.Severity,
-		Reachable:    raw.Classification.Reachable,
-		CVSS:         raw.Classification.CVSS,
-		EPSS:         raw.Classification.EPSS,
-		KEV:          raw.Classification.KEV,
-		DepClass:     raw.Classification.DepClass,
-		Transitive:   raw.Classification.Transitive,
-		CurrentVer:   raw.Versions.Current,
-		FixedVer:     raw.Versions.Fixed,
-		AdvisoryURL:  raw.AdvisoryURL,
-		CredentialTy: raw.CredentialType,
+		Fingerprint:    fp,
+		RunID:          runID,
+		Tool:           raw.Tool,
+		ToolVersion:    raw.ToolVersion,
+		ObservedAt:     observedAt.UTC(),
+		PrimaryID:      raw.PrimaryID,
+		Aliases:        raw.Aliases,
+		Severity:       raw.Classification.Severity,
+		Reachable:      raw.Classification.Reachable,
+		CVSS:           raw.Classification.CVSS,
+		EPSS:           raw.Classification.EPSS,
+		KEV:            raw.Classification.KEV,
+		DepClass:       raw.Classification.DepClass,
+		FirstPartyPath: derefString(raw.Classification.FirstPartyPath),
+		Transitive:     raw.Classification.Transitive,
+		CurrentVer:     raw.Versions.Current,
+		FixedVer:       raw.Versions.Fixed,
+		AdvisoryURL:    raw.AdvisoryURL,
+		CredentialTy:   raw.CredentialType,
 	}
 }
 
@@ -72,6 +79,7 @@ type Projection struct {
 	CurrentVersion string
 	AdvisoryURL    string
 	CredentialType string
+	FirstPartyPath string
 
 	// FixedCandidates retains every fixed version any source proposed, so the
 	// choice of FixedVersion is auditable rather than merely asserted.
@@ -185,6 +193,13 @@ func Project(obs []SourceObservation) Projection {
 		if p.CredentialType == "" && o.CredentialTy != "" {
 			p.CredentialType = o.CredentialTy
 		}
+		// Any source naming a first-party path settles it: one tool knowing the
+		// dependency comes in through a shared module is enough, and losing that
+		// because another tool did not report it would route the finding as a
+		// direct dependency.
+		if p.FirstPartyPath == "" && o.FirstPartyPath != "" {
+			p.FirstPartyPath = o.FirstPartyPath
+		}
 	}
 
 	p.Tools = sortedKeys(tools)
@@ -232,6 +247,13 @@ func resolveReachability(determinedTrue, determinedFalse []string, p *Projection
 	default:
 		return model.ReachableUnknown
 	}
+}
+
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 func sortedKeys(m map[string]bool) []string {
@@ -282,4 +304,13 @@ func supersedes(a, b SourceObservation) bool {
 		return a.RunID > b.RunID
 	}
 	return false
+}
+
+// withFirstParty puts the projected first-party path back on a classification.
+func withFirstParty(c model.Classification, path string) model.Classification {
+	if path != "" {
+		p := path
+		c.FirstPartyPath = &p
+	}
+	return c
 }

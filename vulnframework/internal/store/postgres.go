@@ -627,7 +627,7 @@ func reprojectTx(ctx context.Context, tx *sql.Tx, fp string) error {
 	view := model.Finding{
 		Identity:       model.Identity{PrimaryID: p.PrimaryID, Aliases: p.Aliases},
 		Versions:       model.Versions{Current: p.CurrentVersion, Fixed: p.FixedVersion},
-		Classification: p.Classification,
+		Classification: withFirstParty(p.Classification, p.FirstPartyPath),
 		Provenance:     model.Provenance{Tools: p.Tools},
 		Refs:           model.Refs{AdvisoryURL: optionalString(p.AdvisoryURL)},
 		CredentialType: p.CredentialType,
@@ -986,4 +986,42 @@ func (p *Postgres) FleetCoverage(ctx context.Context, kind RunKind, repos []stri
 
 	sort.Slice(out, func(i, j int) bool { return out[i].Repo < out[j].Repo })
 	return out, nil
+}
+
+// SetTriage persists a finding's triage narrative (VM-F-301).
+func (p *Postgres) SetTriage(ctx context.Context, fp string, t model.Triage) error {
+	encoded, err := json.Marshal(t)
+	if err != nil {
+		return fmt.Errorf("store: encoding triage: %w", err)
+	}
+	res, err := p.db.ExecContext(ctx, qSetTriage, encoded, fp)
+	if err != nil {
+		return fmt.Errorf("store: persisting triage for %s: %w", fp, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	return nil
+}
+
+// SetPriority persists the computed priority and reason code.
+func (p *Postgres) SetPriority(ctx context.Context, fp string, pr model.Priority, reason *model.ReasonCode) error {
+	if pr != "" && !pr.Valid() {
+		return fmt.Errorf("store: invalid priority %q", pr)
+	}
+	var reasonArg any
+	if reason != nil {
+		if !reason.Valid() {
+			return fmt.Errorf("store: invalid reason code %q", *reason)
+		}
+		reasonArg = string(*reason)
+	}
+	res, err := p.db.ExecContext(ctx, qSetPriority, nullString(string(pr)), reasonArg, fp)
+	if err != nil {
+		return fmt.Errorf("store: persisting priority for %s: %w", fp, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	return nil
 }

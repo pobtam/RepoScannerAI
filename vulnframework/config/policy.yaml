@@ -1,0 +1,82 @@
+# config/policy.yaml — the decision table (VM-AD §10.1).
+#
+# This is the system's highest-authority artifact: it decides what happens to
+# every finding. Two properties are enforced in code rather than trusted to this
+# file:
+#
+#   TOTALITY — every input in the declared domain maps to exactly one outcome.
+#   An entry missing from this file is a loud error naming what was unmatched,
+#   never a silent fall-through to open_ticket. A table with a hole that quietly
+#   files tickets looks like it is working.
+#
+#   SECRETS — a secret finding always escalates, and nothing in this file can
+#   change that (VM-F-407, VM-F-851). The rule is the first branch of the engine,
+#   evaluated before this file is consulted at all.
+
+version: 1
+
+defaults:
+  max_findings_per_pr: 8
+  max_findings_per_pr_code: 1
+  auto_merge: false
+  deny_paths:
+    - ".github/workflows/**"
+    - ".github/actions/**"
+    - "CODEOWNERS"
+    - "**/*.tf"
+    - "**/*.tfvars"
+  agent_budget:
+    max_iterations: 40
+    max_wall_clock_sec: 1800
+
+# Per tier, per language, per finding class. Every class declared in
+# policy.Classes must appear for every tier and language, or the engine refuses
+# to load — a missing class is exactly the hole totality exists to prevent.
+tiers:
+  "1":
+    go:
+      dependency_patch: auto
+      dependency_minor: auto
+      dependency_major: ticket      # VM-F-406: majors are never auto by default
+      code_fix: require_test_suite
+      config_fix: auto
+    javascript:
+      dependency_patch: auto
+      dependency_minor: auto
+      dependency_major: ticket
+      code_fix: require_test_suite
+      config_fix: auto
+  "2":
+    go:
+      dependency_patch: auto
+      dependency_minor: auto
+      dependency_major: ticket
+      code_fix: require_test_suite
+      config_fix: auto
+    javascript:
+      dependency_patch: auto
+      dependency_minor: auto
+      dependency_major: ticket
+      code_fix: require_test_suite
+      config_fix: auto
+  "3":
+    go:
+      dependency_patch: auto
+      dependency_minor: auto
+      dependency_major: ticket
+      # Tier 3 admits code fixes without a test suite gate: the blast radius of
+      # a bad change is smaller, and the alternative is a ticket nobody actions.
+      code_fix: auto
+      config_fix: auto
+    javascript:
+      dependency_patch: auto
+      dependency_minor: auto
+      dependency_major: ticket
+      code_fix: auto
+      config_fix: auto
+
+categories:
+  secret:
+    remediate: never          # not overridable; enforced in code
+    ticket: always_individual
+    severity: P0

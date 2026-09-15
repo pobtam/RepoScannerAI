@@ -47,6 +47,7 @@ type memFinding struct {
 	NotReobserved  bool
 	GapRunID       string
 	VerifiedReason model.VerificationReason
+	Triage         *model.Triage
 	LeaseOwner     string
 	LeaseExpiresAt *time.Time
 	FirstSeenRun   string
@@ -520,12 +521,13 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 			Current: p.CurrentVersion,
 			Fixed:   p.FixedVersion,
 		},
-		Classification: p.Classification,
+		Classification: withFirstParty(p.Classification, p.FirstPartyPath),
 		Provenance: model.Provenance{
 			Tools:        p.Tools,
 			FirstSeenRun: f.FirstSeenRun,
 			LastSeenRun:  f.LastSeenRun,
 		},
+		Triage:         f.Triage,
 		State:          f.State,
 		ReasonCode:     f.ReasonCode,
 		Priority:       f.Priority,
@@ -837,4 +839,35 @@ func (m *Memory) FleetCoverage(_ context.Context, kind RunKind, repos []string) 
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Repo < out[j].Repo })
 	return out, nil
+}
+
+// SetTriage persists a finding's triage narrative (VM-F-301).
+func (m *Memory) SetTriage(_ context.Context, fp string, t model.Triage) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, ok := m.findings[fp]
+	if !ok {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	copied := t
+	f.Triage = &copied
+	return nil
+}
+
+// SetPriority persists the computed priority and reason code.
+func (m *Memory) SetPriority(_ context.Context, fp string, p model.Priority, reason *model.ReasonCode) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, ok := m.findings[fp]
+	if !ok {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	if p != "" && !p.Valid() {
+		return fmt.Errorf("store: invalid priority %q", p)
+	}
+	if reason != nil && !reason.Valid() {
+		return fmt.Errorf("store: invalid reason code %q", *reason)
+	}
+	f.Priority, f.ReasonCode = p, reason
+	return nil
 }

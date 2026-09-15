@@ -259,6 +259,15 @@ type Store interface {
 	// AUTO_REMEDIATING back to TRIAGED and returns how many it moved.
 	SweepExpiredLeases(ctx context.Context, now time.Time) (int, error)
 
+	// SetTriage persists a finding's triage narrative (VM-F-301).
+	//
+	// Separate from ApplyTransition on purpose: the narrative is data and the
+	// state change is a decision, and the caller must be able to record one
+	// without implying the other.
+	SetTriage(ctx context.Context, fingerprint string, t model.Triage) error
+	// SetPriority persists the computed priority and reason code.
+	SetPriority(ctx context.Context, fingerprint string, p model.Priority, reason *model.ReasonCode) error
+
 	// --- Coverage age (OQ-P4-01) ---
 
 	// RepoNames lists every registered repository, sorted.
