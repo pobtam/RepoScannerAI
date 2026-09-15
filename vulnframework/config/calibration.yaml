@@ -1,0 +1,117 @@
+# config/calibration.yaml — every tunable number in one reviewable place.
+#
+# These are the values VM-OQ-06 (static analysis thresholds) and VM-OQ-12
+# (fan-out weighting) exist to calibrate. They are data, not constants buried in
+# code, because they need reviewing by people who will not read Go, and because
+# the Phase 5 shadow run exists precisely to change them.
+#
+# Every number here is pinned by a test. Changing one without changing its test
+# fails the build — that is deliberate: a threshold nobody had to re-justify is a
+# threshold nobody owns.
+
+version: 1
+
+# --- Composite scoring (VM-AD §9.4) ----------------------------------------
+scoring:
+  # Base score where the advisory carries no CVSS. A tool that reports only a
+  # band still has to land somewhere on a 0..10 scale.
+  #
+  # UNKNOWN is deliberately NOT zero. A finding whose severity nobody stated is
+  # not thereby harmless; zero would rank it below every LOW and hide it. It
+  # sits just under MEDIUM so it surfaces for triage without displacing a
+  # scored HIGH.
+  severity_base:
+    CRITICAL: 9.5
+    HIGH: 7.5
+    MEDIUM: 5.0
+    LOW: 2.5
+    UNKNOWN: 4.0
+
+  kev_boost: 3.0        # in CISA KEV: known-exploited outranks any score
+  epss_coefficient: 2.0 # multiplied by the EPSS probability (0..1)
+
+  # Reachability multipliers. The tri-state is load-bearing (VM-F-243): unknown
+  # sits strictly between the two determinations, so it can never be silently
+  # read as either. Treating unknown as reachable would let transitive npm
+  # advisories dominate the P0 queue; treating it as unreachable would hide real
+  # risk behind a tool's silence.
+  reachable:
+    "true": 1.0
+    "unknown": 0.5
+    "false": 0.25
+
+  dep_class:
+    production: 1.0
+    development: 0.4
+    "n/a": 1.0          # code, secret and config findings are not dependencies
+
+  tier:
+    1: 1.2
+    2: 1.0
+    3: 0.8
+
+  # Priority bands (VM-AD §9.4).
+  priority_bands:
+    P0: 9.0
+    P1: 7.0
+    P2: 4.0
+    # P3 is everything below P2.
+
+# --- Fan-out / blast radius (VM-OQ-12) -------------------------------------
+#
+# The MECHANISM is implemented, tested and always computed: every first-party
+# finding records its depend-count and reach-count, so the data needed to answer
+# VM-OQ-12 accumulates from the first sweep.
+#
+# The WEIGHT is 1.0 — disabled — because VM-AD §9.4 calls the weighting "a
+# judgement about breadth versus depth" and deferred it to VM-OQ-12 rather than
+# guessing. Shipping a guessed multiplier would silently reorder the P0 queue
+# on an unreviewed opinion. Set per_tier1_reach_consumer above 0 to enable.
+fanout:
+  enabled: false
+  # Added to the multiplier for each tier-1 consumer with a reachable path.
+  per_tier1_reach_consumer: 0.0
+  # Added for each other consumer with a reachable path.
+  per_reach_consumer: 0.0
+  # Ceiling, so one very widely used module cannot swamp the whole queue.
+  max_multiplier: 1.5
+
+# --- Static analysis thresholds per tier (VM-OQ-06) ------------------------
+#
+# VM-F-224 requires these be configurable per tier. The defaults are the
+# specification's, and they are expected to be noisy: Phase 5 shadow running is
+# where they get real numbers. Until then they are explicitly provisional.
+static_analysis:
+  calibrated: false     # set true once shadow-run data has been reviewed
+  tiers:
+    1:
+      gosec_severity: medium
+      gosec_confidence: medium
+      # Tier 1 reports the whole security subset.
+      staticcheck_exclude: []
+    2:
+      gosec_severity: medium
+      gosec_confidence: medium
+      staticcheck_exclude: []
+    3:
+      # Tier 3 raises the bar: at this tier the queue is the scarce resource,
+      # not the risk.
+      gosec_severity: high
+      gosec_confidence: high
+      staticcheck_exclude: ["SA9005", "SA2002"]
+
+# --- Routing boundaries -----------------------------------------------------
+#
+# Which policy outcome a finding routes to. The policy engine (Phase 6) consumes
+# these; they live here so every tunable boundary is reviewable together.
+#
+# secret is absent on purpose. A secret finding always escalates and the
+# behaviour is not configurable (VM-F-407, VM-F-851): it is enforced in code as
+# the first short-circuit of the decision, so no configuration file — including
+# this one — can route it anywhere else.
+routing:
+  escalate_at: P0        # P0 escalates to the security owner
+  auto_remediate_at: P2  # P2 and above may be auto-remediated, subject to policy
+  # Anything below auto_remediate_at gets a ticket only, and P2/P3 not fixed are
+  # aggregated rather than individually ticketed (VM-F-808).
+  ticket_below: P2
