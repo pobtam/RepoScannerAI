@@ -691,6 +691,7 @@ func TestCalibratedThresholdsDropTheCaveat(t *testing.T) {
 		cal := calibration(t)
 		cal.StaticAnalysis.Calibrated = true
 		cal.FanOut.Enabled = true
+		cal.SLA.Calibrated = true
 
 		g := report.NewGenerator(s, cal)
 		g.Clock = func() time.Time { return base }

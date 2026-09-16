@@ -115,3 +115,36 @@ routing:
   # Anything below auto_remediate_at gets a ticket only, and P2/P3 not fixed are
   # aggregated rather than individually ticketed (VM-F-808).
   ticket_below: P2
+
+# --- SLA remediation windows (VM-NF-301) ------------------------------------
+#
+# The windows a breach count is measured against. They live here, next to the
+# flag that describes them, because a `calibrated` flag beside a table nobody
+# can edit would attest to numbers the reviewer never saw.
+#
+# calibrated is false while VM-OQ-02 (the real windows, per severity per tier)
+# is unanswered. While it is false every rendered breach count carries a
+# provisional qualifier: a confident-looking figure measured against unreviewed
+# windows is worse than no figure, because the reader cannot tell.
+#
+# Windows must ascend P0 < P1 < P2 < P3 within a tier; the loader refuses a
+# table that inverts urgency, since that silently gives the most urgent
+# findings the most time while every breach count still looks plausible.
+sla:
+  calibrated: false
+  windows:
+    1:
+      P0: 24h
+      P1: 168h
+      P2: 720h
+      P3: 2160h
+    2:
+      P0: 48h
+      P1: 336h
+      P2: 1440h
+      P3: 4320h
+    3:
+      P0: 72h
+      P1: 720h
+      P2: 2160h
+      P3: 8760h

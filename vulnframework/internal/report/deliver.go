@@ -195,9 +195,19 @@ func attestationStatement(rep Report, delivered Report) string {
 
 	if rep.Counts.SLANotComputed == rep.Counts.Total && rep.Counts.Total > 0 {
 		b.WriteString("SLA position was not computed for any finding, so this pack makes no SLA compliance claim. ")
-	} else if rep.Counts.SLANotComputed > 0 {
-		fmt.Fprintf(&b, "SLA position was not computed for %d of %d findings, which are excluded from the breach figure. ",
-			rep.Counts.SLANotComputed, rep.Counts.Total)
+	} else {
+		if rep.Counts.SLANotComputed > 0 {
+			fmt.Fprintf(&b, "SLA position was not computed for %d of %d findings, which are excluded from the breach figure. ",
+				rep.Counts.SLANotComputed, rep.Counts.Total)
+		}
+		// A pack is read detached from its report, often years later and by
+		// someone looking for an assurance claim. An unqualified breach figure
+		// here is the same defect with a longer half-life (OQ-P7b-03).
+		if !rep.Provenance.SLAWindowsCalibrated {
+			fmt.Fprintf(&b, "The %d breaches are measured against PROVISIONAL remediation windows (VM-OQ-02 unanswered), "+
+				"not against windows agreed with the teams they bind; this pack makes no claim of compliance with a commitment. ",
+				rep.Counts.SLABreached)
+		}
 	}
 
 	if delivered.Redacted {

@@ -48,6 +48,19 @@ type Calibration struct {
 		} `yaml:"tiers"`
 	} `yaml:"static_analysis"`
 
+	// SLA holds the remediation windows and whether anyone has reviewed them.
+	//
+	// The windows are configuration rather than constants for the same reason
+	// the thresholds are: a `calibrated` flag next to a table nobody can edit
+	// would attest to numbers that live in Go source (OQ-P7b-03).
+	SLA struct {
+		// Calibrated is false while VM-OQ-02 is unanswered. While it is false
+		// every rendered breach count carries a provisional qualifier.
+		Calibrated bool `yaml:"calibrated"`
+		// Windows are duration strings per tier per priority.
+		Windows map[int]map[string]string `yaml:"windows"`
+	} `yaml:"sla"`
+
 	Routing struct {
 		EscalateAt      model.Priority `yaml:"escalate_at"`
 		AutoRemediateAt model.Priority `yaml:"auto_remediate_at"`
@@ -132,6 +145,10 @@ func (c Calibration) Validate() error {
 	}
 	if !(p0 > p1 && p1 > p2) {
 		return fmt.Errorf("calibration: priority bands must descend, got P0=%v P1=%v P2=%v", p0, p1, p2)
+	}
+
+	if _, err := c.SLAWindows(); err != nil {
+		return err
 	}
 
 	if c.FanOut.Enabled && c.FanOut.MaxMultiplier < 1 {

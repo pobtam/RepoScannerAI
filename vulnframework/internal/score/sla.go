@@ -1,6 +1,7 @@
 package score
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
@@ -13,7 +14,57 @@ import (
 // until someone reviews them.
 type SLAWindows map[int]map[model.Priority]time.Duration
 
-// DefaultSLAWindows are the working defaults.
+// SLAWindows parses the configured remediation windows.
+//
+// It validates rather than falling back, because every plausible fallback is
+// wrong in a way nothing downstream can see: a missing window reads as zero and
+// breaches the finding on detection, an inverted table gives P0 the most time,
+// and in both cases the breach count still looks like a measurement.
+func (c Calibration) SLAWindows() (SLAWindows, error) {
+	out := SLAWindows{}
+	order := []model.Priority{model.P0, model.P1, model.P2, model.P3}
+
+	for tier := 1; tier <= 3; tier++ {
+		raw, ok := c.SLA.Windows[tier]
+		if !ok {
+			return nil, fmt.Errorf("calibration: sla.windows has no entry for tier %d", tier)
+		}
+		byPriority := map[model.Priority]time.Duration{}
+		for _, p := range order {
+			s, ok := raw[string(p)]
+			if !ok {
+				return nil, fmt.Errorf("calibration: sla.windows tier %d has no window for %s", tier, p)
+			}
+			d, err := time.ParseDuration(s)
+			if err != nil {
+				return nil, fmt.Errorf("calibration: sla.windows tier %d %s: %q is not a duration", tier, p, s)
+			}
+			if d <= 0 {
+				return nil, fmt.Errorf("calibration: sla.windows tier %d %s must be positive, got %v; "+
+					"a zero window breaches every finding at detection", tier, p, d)
+			}
+			byPriority[p] = d
+		}
+		// Windows must ascend with decreasing urgency. Equal values collapse two
+		// priority bands into one, which makes the band assignment upstream
+		// pointless without changing any visible number.
+		for i := 1; i < len(order); i++ {
+			prev, cur := order[i-1], order[i]
+			if byPriority[cur] <= byPriority[prev] {
+				return nil, fmt.Errorf(
+					"calibration: sla.windows tier %d must ascend P0 < P1 < P2 < P3, but %s (%v) is not longer than %s (%v); "+
+						"an inverted table gives the most urgent findings the most time while every breach count still looks plausible",
+					tier, cur, byPriority[cur], prev, byPriority[prev])
+			}
+		}
+		out[tier] = byPriority
+	}
+	return out, nil
+}
+
+// DefaultSLAWindows are the working defaults, used when no calibration file has
+// been loaded. They are pinned equal to the shipped configuration by test, so
+// the caveat a report renders describes the table actually in force.
 func DefaultSLAWindows() SLAWindows {
 	day := 24 * time.Hour
 	return SLAWindows{

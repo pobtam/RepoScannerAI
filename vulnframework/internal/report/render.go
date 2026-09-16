@@ -98,12 +98,12 @@ func Render(rep Report) []byte {
 		b.WriteString("- **SLA: not computed.** No finding in this report has an SLA position. " +
 			"This is not a statement that nothing is late — it is the absence of one.\n\n")
 	case rep.Counts.SLANotComputed > 0:
-		fmt.Fprintf(&b, "- **SLA breached:** %d _(of %d findings with a computed SLA; %d were not computed and are excluded from this figure)_\n",
-			rep.Counts.SLABreached, rep.Counts.Total-rep.Counts.SLANotComputed, rep.Counts.SLANotComputed)
+		fmt.Fprintf(&b, "- **SLA breached:** %d%s _(of %d findings with a computed SLA; %d were not computed and are excluded from this figure)_\n",
+			rep.Counts.SLABreached, windowNote(rep), rep.Counts.Total-rep.Counts.SLANotComputed, rep.Counts.SLANotComputed)
 		fmt.Fprintf(&b, "- **SLA paused:** %d (no upstream fix available; these cannot breach, and are not compliant either)\n\n",
 			rep.Counts.SLAPaused)
 	default:
-		fmt.Fprintf(&b, "- **SLA breached:** %d\n", rep.Counts.SLABreached)
+		fmt.Fprintf(&b, "- **SLA breached:** %d%s\n", rep.Counts.SLABreached, windowNote(rep))
 		fmt.Fprintf(&b, "- **SLA paused:** %d (no upstream fix available; these cannot breach, and are not compliant either)\n\n",
 			rep.Counts.SLAPaused)
 	}
@@ -178,6 +178,20 @@ func Render(rep Report) []byte {
 		rep.ID, rep.AnchorRun)
 
 	return []byte(b.String())
+}
+
+// windowNote qualifies a breach count with the provenance of the window it was
+// measured against (OQ-P7b-03).
+//
+// It travels with the NUMBER rather than sitting only in the caveat block at
+// the top, because a figure is quoted onward — into a slide, a ticket, a status
+// mail — and the qualifier has to survive the quoting. A reader must not be able
+// to obtain a confident-looking breach count with no provenance attached.
+func windowNote(rep Report) string {
+	if rep.Provenance.SLAWindowsCalibrated {
+		return ""
+	}
+	return " _(measured against PROVISIONAL windows — VM-OQ-02 unanswered; not a commitment)_"
 }
 
 func signed(n int, comparable bool) string {

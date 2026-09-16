@@ -182,6 +182,10 @@ type Provenance struct {
 	// ThresholdsCalibrated is false while VM-OQ-06 is unanswered. When false
 	// the rendered report carries a visible caveat wherever a priority appears.
 	ThresholdsCalibrated bool `json:"thresholds_calibrated"`
+	// SLAWindowsCalibrated is false while VM-OQ-02 is unanswered. A breach
+	// count is a measurement against a table; if nobody has reviewed the table,
+	// the count carries a qualifier wherever it is rendered (OQ-P7b-03).
+	SLAWindowsCalibrated bool `json:"sla_windows_calibrated"`
 	// Caveats are rendered prominently. A reader must not have to open a config
 	// file to learn that a number is provisional.
 	Caveats []string `json:"caveats,omitempty"`
@@ -277,6 +281,7 @@ func (g *Generator) Generate(ctx context.Context, q Query) (Report, error) {
 			// the flag in the calibration file is the single source of that
 			// fact (OQ-P5-02).
 			ThresholdsCalibrated: g.Calibration.StaticAnalysis.Calibrated,
+			SLAWindowsCalibrated: g.Calibration.SLA.Calibrated,
 		},
 	}
 	rep.Provenance.Caveats = caveatsFor(g.Calibration)
@@ -305,15 +310,21 @@ func (g *Generator) Generate(ctx context.Context, q Query) (Report, error) {
 
 // caveatsFor renders the provenance caveats a reader must see.
 //
-// The uncalibrated-thresholds caveat is in OUTPUT, not only in the config file
-// (OQ-P5-02): a P0 that looks confident while resting on uncalibrated
-// thresholds hides its own provenance, and the reader has no way to know the
-// number is provisional.
+// Every caveat here is in OUTPUT, not only in the config file. A P0 that looks
+// confident while resting on uncalibrated thresholds hides its own provenance
+// (OQ-P5-02), and so does a breach count measured against windows nobody has
+// reviewed (OQ-P7b-03). Marking one and not the other is worse than marking
+// neither: it teaches the reader that an absent caveat means calibrated.
 func caveatsFor(cal score.Calibration) []string {
 	var out []string
 	if !cal.StaticAnalysis.Calibrated {
 		out = append(out, "Priorities in this report derive from static analysis thresholds that have NOT been calibrated (VM-OQ-06). "+
 			"Treat P0/P1 routing as provisional: the thresholds are the specification's defaults and are expected to be noisy until shadow-run data has been reviewed.")
+	}
+	if !cal.SLA.Calibrated {
+		out = append(out, "SLA figures in this report are measured against PROVISIONAL remediation windows (VM-OQ-02 is unanswered): "+
+			"the windows are the specification's working defaults and have not been agreed with the teams they bind. "+
+			"A breach here means \"older than an unreviewed window\", not \"late against a commitment\".")
 	}
 	if !cal.FanOut.Enabled {
 		out = append(out, "Blast radius is recorded but does not influence priority (VM-OQ-12 is unanswered), "+

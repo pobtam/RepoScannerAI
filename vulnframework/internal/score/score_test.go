@@ -291,6 +291,12 @@ static_analysis:
   calibrated: false
   tiers:
     3: {gosec_severity: high, gosec_confidence: high, staticcheck_exclude: []}
+sla:
+  calibrated: false
+  windows:
+    1: {P0: 24h, P1: 168h, P2: 720h, P3: 2160h}
+    2: {P0: 48h, P1: 336h, P2: 1440h, P3: 4320h}
+    3: {P0: 72h, P1: 720h, P2: 2160h, P3: 8760h}
 routing: {escalate_at: P0, auto_remediate_at: P2, ticket_below: P2}
 `
 	tests := []struct {
@@ -331,6 +337,12 @@ scoring:
   priority_bands: {P0: 9.0, P1: 7.0, P2: 4.0}
 fanout: {enabled: false, per_tier1_reach_consumer: 0.0, per_reach_consumer: 0.0, max_multiplier: 1.5}
 static_analysis: {calibrated: false, tiers: {3: {gosec_severity: high, gosec_confidence: high, staticcheck_exclude: []}}}
+sla:
+  calibrated: false
+  windows:
+    1: {P0: 24h, P1: 168h, P2: 720h, P3: 2160h}
+    2: {P0: 48h, P1: 336h, P2: 1440h, P3: 4320h}
+    3: {P0: 72h, P1: 720h, P2: 2160h, P3: 8760h}
 routing: {escalate_at: P0, auto_remediate_at: P2, ticket_below: P2}
 `
 	if _, err := score.ParseCalibration([]byte(bad)); err == nil {
@@ -351,6 +363,12 @@ scoring:
   priority_bands: {P0: 9.0, P1: 7.0, P2: 4.0}
 fanout: {enabled: false, per_tier1_reach_consumer: 0.0, per_reach_consumer: 0.0, max_multiplier: 1.5}
 static_analysis: {calibrated: false, tiers: {3: {gosec_severity: high, gosec_confidence: high, staticcheck_exclude: []}}}
+sla:
+  calibrated: false
+  windows:
+    1: {P0: 24h, P1: 168h, P2: 720h, P3: 2160h}
+    2: {P0: 48h, P1: 336h, P2: 1440h, P3: 4320h}
+    3: {P0: 72h, P1: 720h, P2: 2160h, P3: 8760h}
 routing: {escalate_at: P0, auto_remediate_at: P2, ticket_below: P2}
 `
 	if _, err := score.ParseCalibration([]byte(bad)); err == nil {

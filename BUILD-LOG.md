@@ -1615,3 +1615,65 @@ priority computed from guessed thresholds. **Worth closing before the first real
 sweep.**
 
 ---
+
+## Decisions taken after Phase 7b (2026-09-15)
+
+**OQ-P7b-03 — provisional SLA windows. → CLOSED, same treatment as OQ-P5-02.**
+
+> A breach count computed from provisional windows (VM-OQ-02 unanswered) must
+> surface its caveat in report **output**, not only in config. Leaving SLA
+> unmarked while the static-analysis thresholds are marked is worse than marking
+> neither: it teaches the reader that an absent caveat means calibrated.
+
+Implemented below, with the windows moved into `config/calibration.yaml` so
+every provisional number lives in one reviewable place.
+
+**What landed (7b amendment):**
+
+- `sla:` block in `config/calibration.yaml` — `calibrated: false` plus the full
+  windows table per tier per priority. The windows moved out of Go source
+  because a `calibrated` flag beside a table nobody can edit would attest to
+  numbers the reviewer never saw.
+- `Calibration.SLAWindows()` parses and validates: every tier, every priority,
+  positive, parseable, and **strictly ascending P0 < P1 < P2 < P3**. An
+  inverted table gives the most urgent findings the most time while every
+  breach count still looks plausible, so the loader refuses it — the same shape
+  of guard as the reachability-multiplier ordering.
+- `Provenance.SLAWindowsCalibrated` on the report, plus a caveat naming
+  VM-OQ-02 in `caveatsFor`.
+- `windowNote()` in the renderer appends the qualifier to **every line that
+  states a breach count** — both the fully-computed and partially-computed
+  branches. It travels with the number, not only in the caveat block at the
+  top, because a figure gets quoted onward into a slide or a ticket and the
+  qualifier has to survive the quoting.
+- `attestationStatement` states the provenance of the pack's breach figure. A
+  pack is read detached from its report, years later, by someone looking for an
+  assurance claim: the same defect with a longer half-life.
+- `DefaultSLAWindows()` remains the no-config fallback and is **pinned equal to
+  the shipped file by test**, so the caveat cannot describe one table while the
+  orchestrator applies another.
+
+Mutations verified: dropping `windowNote` from the breach line, suppressing the
+caveat in `caveatsFor`, and disabling the ascending-window guard each turn the
+suite red.
+
+**OQ-P7b-01 — identity→level mapping. → Deferred to VM-UI-OQ-01, with the
+coupling recorded explicitly:**
+
+> Until the identity→level mapping exists, the privilege model is **fail-closed
+> against unauthenticated callers but TRUSTS an authenticated caller's
+> self-asserted level.** That is acceptable *only* while there is no real
+> external delivery — the publisher is still a fake (OQ-P7-02).
+>
+> **Named precondition: do not ship the git-backed publisher to real external
+> recipients until BOTH VM-OQ-10 (App install) AND VM-UI-OQ-01 (identity→level)
+> are closed.** Otherwise redacted packs are delivered on trust, and the
+> redaction is decorative.
+
+### Consolidated VM-OQ-10 dependent list
+
+| Dependent | Recorded in |
+|---|---|
+| Fleet registry sync — and therefore the OQ-P2-02 coverage guarantee | A18, Phase 4 |
+| Git-backed report publisher (VM-ADR-08) | OQ-P7-02, Phase 7 |
+| Identity→level binding for external delivery (jointly with VM-UI-OQ-01) | OQ-P7b-01, Phase 7b |
