@@ -499,7 +499,27 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 		}
 		out = append(out, projected)
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// The ticket reference is joined from the tickets table rather than read
+	// from the finding document. The document is rebuilt from observations on
+	// every scan; a reference kept inside it would be erased by the next run,
+	// and the run after that would open a duplicate ticket (VM-F-804).
+	if len(out) > 0 {
+		refs, err := p.ticketURLs(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for i := range out {
+			if url, ok := refs[out[i].Fingerprint]; ok && url != "" {
+				u := url
+				out[i].Refs.Ticket = &u
+			}
+		}
+	}
+	return out, nil
 }
 
 func (p *Postgres) Observations(ctx context.Context, fp string) ([]SourceObservation, error) {
@@ -1168,6 +1188,165 @@ func (p *Postgres) SetSLA(ctx context.Context, fp string, d model.Derived) error
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	return nil
+}
+
+// --- Tickets (VM-AD §13.2) --------------------------------------------------
+
+// SaveTicket records or updates a finding's ticket.
+func (p *Postgres) SaveTicket(ctx context.Context, t Ticket) error {
+	if t.Fingerprint == "" {
+		return fmt.Errorf("store: a ticket record needs a fingerprint; it is the idempotency key (VM-F-804)")
+	}
+	created := t.CreatedAt
+	if created.IsZero() {
+		created = p.clock()
+	}
+	var closed any
+	if t.ClosedAt != nil {
+		closed = t.ClosedAt.UTC()
+	}
+	_, err := p.db.ExecContext(ctx, qUpsertTicket,
+		t.Fingerprint, t.Backend, t.Ref, t.URL,
+		nullString(t.MirrorBackend), nullString(t.MirrorRef), created.UTC(), closed)
+	if err != nil {
+		return fmt.Errorf("store: saving ticket for %s: %w", t.Fingerprint, err)
+	}
+	return nil
+}
+
+// GetTicket returns a finding's ticket record, if one is known.
+func (p *Postgres) GetTicket(ctx context.Context, fingerprint string) (Ticket, bool, error) {
+	var (
+		t                   Ticket
+		mirrorBackend, mRef sql.NullString
+		closed              sql.NullTime
+	)
+	err := p.db.QueryRowContext(ctx, qGetTicket, fingerprint).Scan(
+		&t.Fingerprint, &t.Backend, &t.Ref, &t.URL, &mirrorBackend, &mRef, &t.CreatedAt, &closed)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Ticket{}, false, nil
+	}
+	if err != nil {
+		return Ticket{}, false, fmt.Errorf("store: reading ticket for %s: %w", fingerprint, err)
+	}
+	t.MirrorBackend, t.MirrorRef = mirrorBackend.String, mRef.String
+	t.CreatedAt = t.CreatedAt.UTC()
+	if closed.Valid {
+		at := closed.Time.UTC()
+		t.ClosedAt = &at
+	}
+	return t, true, nil
+}
+
+// DeleteTicket removes the local record, leaving the backend untouched.
+func (p *Postgres) DeleteTicket(ctx context.Context, fingerprint string) error {
+	if _, err := p.db.ExecContext(ctx, qDeleteTicket, fingerprint); err != nil {
+		return fmt.Errorf("store: deleting ticket for %s: %w", fingerprint, err)
+	}
+	return nil
+}
+
+// CloseTicket records that a finding's ticket was closed (VM-F-811).
+func (p *Postgres) CloseTicket(ctx context.Context, fingerprint string, at time.Time) error {
+	res, err := p.db.ExecContext(ctx, qCloseTicket, fingerprint, at.UTC())
+	if err != nil {
+		return fmt.Errorf("store: closing ticket for %s: %w", fingerprint, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: ticket for %q", ErrNotFound, fingerprint)
+	}
+	return nil
+}
+
+// ticketURLs returns every known ticket URL, keyed by fingerprint.
+//
+// Read separately from the finding document because the document is rebuilt
+// from observations on every scan: a reference stored inside it would be erased
+// by the next run and the run after that would open a duplicate ticket.
+func (p *Postgres) ticketURLs(ctx context.Context) (map[string]string, error) {
+	rows, err := p.db.QueryContext(ctx, qTicketURLs)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading ticket references: %w", err)
+	}
+	defer rows.Close()
+
+	out := map[string]string{}
+	for rows.Next() {
+		var fp, url string
+		if err := rows.Scan(&fp, &url); err != nil {
+			return nil, err
+		}
+		out[fp] = url
+	}
+	return out, rows.Err()
+}
+
+// --- Ticket operation queue (VM-F-812) --------------------------------------
+
+func (p *Postgres) EnqueueTicketOp(ctx context.Context, op TicketOp) error {
+	created := op.CreatedAt
+	if created.IsZero() {
+		created = p.clock()
+	}
+	_, err := p.db.ExecContext(ctx, qInsertTicketOp,
+		op.Fingerprint, op.Kind, []byte(op.Payload), op.Attempts,
+		op.NextAttemptAt.UTC(), nullString(op.LastError), created.UTC())
+	if err != nil {
+		return fmt.Errorf("store: queueing ticket op for %s: %w", op.Fingerprint, err)
+	}
+	return nil
+}
+
+func (p *Postgres) DueTicketOps(ctx context.Context, now time.Time, limit int) ([]TicketOp, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	rows, err := p.db.QueryContext(ctx, qDueTicketOps, now.UTC(), limit)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading due ticket ops: %w", err)
+	}
+	defer rows.Close()
+
+	var out []TicketOp
+	for rows.Next() {
+		var (
+			op      TicketOp
+			payload []byte
+			lastErr sql.NullString
+		)
+		if err := rows.Scan(&op.ID, &op.Fingerprint, &op.Kind, &payload, &op.Attempts,
+			&op.NextAttemptAt, &lastErr, &op.CreatedAt); err != nil {
+			return nil, err
+		}
+		op.Payload = payload
+		op.LastError = lastErr.String
+		op.NextAttemptAt = op.NextAttemptAt.UTC()
+		op.CreatedAt = op.CreatedAt.UTC()
+		out = append(out, op)
+	}
+	return out, rows.Err()
+}
+
+func (p *Postgres) CompleteTicketOp(ctx context.Context, id int64) error {
+	res, err := p.db.ExecContext(ctx, qCompleteTicketOp, id)
+	if err != nil {
+		return fmt.Errorf("store: completing ticket op %d: %w", id, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: ticket op %d", ErrNotFound, id)
+	}
+	return nil
+}
+
+func (p *Postgres) RetryTicketOp(ctx context.Context, id int64, next time.Time, lastErr string) error {
+	res, err := p.db.ExecContext(ctx, qRetryTicketOp, id, next.UTC(), nullString(lastErr))
+	if err != nil {
+		return fmt.Errorf("store: rescheduling ticket op %d: %w", id, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: ticket op %d", ErrNotFound, id)
 	}
 	return nil
 }

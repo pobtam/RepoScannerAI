@@ -19,7 +19,9 @@ green.
 | **6** — `internal/policy` | **Green** | passing (extended gate) |
 | **7** — `internal/report` + publisher | **Green** | passing (extended gate) |
 | **7b** — anchoring, redaction, delivery, audit packs | **Green** | passing (extended gate) |
-| 8–12 | Not started | |
+| **7c** — provisional SLA windows declare themselves (OQ-P7b-03) | **Green** | passing |
+| **8** — `internal/tracker` — three backends + mirror | **Green** | passing (extended gate) |
+| 9–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -1677,3 +1679,162 @@ coupling recorded explicitly:**
 | Fleet registry sync — and therefore the OQ-P2-02 coverage guarantee | A18, Phase 4 |
 | Git-backed report publisher (VM-ADR-08) | OQ-P7-02, Phase 7 |
 | Identity→level binding for external delivery (jointly with VM-UI-OQ-01) | OQ-P7b-01, Phase 7b |
+
+
+---
+
+## Phase 8 — `internal/tracker`: three backends + mirror
+
+**Gate:** *Three consecutive runs produce exactly one ticket per finding. `Find`
+locates an existing ticket after the local mirror record is deleted. A finding
+reaching `VERIFIED` transitions its ticket to closed, carrying `verified_reason`.
+Secret findings' tickets never carry the secret value. Each real backend sits
+behind the interface with a fake; the mirror survives reprojection, anchored at
+creation input.*
+
+**Status: green.** 266 top-level tests, 711 with subtests. `go vet` and `gofmt`
+clean, `-race` clean, both store backends.
+
+### What landed
+
+**`internal/tracker`** — `Tracker` (§13.1), `Ref`, `Spec` with `Validate`,
+`TicketState` (two-valued on purpose: the framework only ever asserts
+outstanding or done, and a wider enumeration would invite it to make judgements
+about someone else's workflow).
+
+- `github.go`, `jira.go`, `linear.go` — the three real backends, each over an
+  injected `Doer`. The request-building code is the part that can be wrong, and
+  it is exercised in full against a recording transport: no network, no
+  credentials.
+- `fake.go` — the in-memory backend. It **does not deduplicate** (see below).
+- `mirror.go` — §13.4 one-way mirroring, with a severity floor.
+- `service.go` — the idempotency chain, `CloseVerified`, and `Drain`.
+- `spec.go` — `SpecFor`, and `RunParentBody` for the aggregated table.
+
+**Fingerprint carriers (§13.2).** GitHub: an HTML comment marker in the body
+plus a `vf-fp-` label — invisible when rendered, present in what the search API
+indexes, so the fingerprint survives someone rewriting the title. Jira: a
+dedicated indexed custom field, queried by JQL; the backend **refuses to
+operate** without one configured, because the fallback would be matching summary
+text. Linear: a label plus a body marker, queried through the GraphQL filter.
+No backend matches on title anywhere (VM-F-805).
+
+**The idempotency chain** is local record → backend query → create, in that
+order. Skipping the middle step is the entire duplicate-ticket failure mode: a
+restore or a migration loses the record and the next run opens a second issue
+for a finding someone is already working on. Assuming a missing record means
+"no ticket" has exactly the shape of assuming a missing finding means "fixed"
+(VM-ADR-12) — it manufactures a duplicate rather than a false resolution, but
+it is the same reasoning error.
+
+**Store.** New `tickets` methods (`SaveTicket`/`GetTicket`/`DeleteTicket`/
+`CloseTicket`) and the durable `ticket_ops` queue (migration 0006), both
+backends, both under the conformance suite. `Refs.Ticket` is **joined from the
+tickets table**, never stored in the finding document — the document is rebuilt
+from observations on every scan, so a reference kept inside it would be erased
+by the next run and the run after that would open a duplicate.
+
+**Failure isolation (VM-F-812).** A tracker outage queues the operation and the
+run continues. Failing the run would convert a third-party outage into a
+coverage gap: no scan, no findings, no report. `Drain` replays through the full
+idempotency chain — the queue is a deferral, not a licence to skip the checks.
+
+**Credential shape moved into `internal/model`** (`model.CredentialPatterns`,
+`AssertNoCredential`). Three boundaries now enforce the same rule — the report
+that leaves the system, the ticket that lands in an inbox, and the durable queue
+between them — and `internal/report` delegates to it. Two definitions would mean
+two boundaries disagreeing about what a credential is, and the weaker one
+deciding.
+
+### Two test defects the mutation pass found
+
+**The fake was more idempotent than production.** `Fake.Create` originally
+returned the existing ref for a known fingerprint. GitHub, Jira and Linear all
+happily open a second issue carrying the same fingerprint — idempotency is this
+framework's job, not theirs. With the fake compensating, a duplicate-creating
+service would have passed the gate: the bug would have been invisible *because
+the fake covered for it*. The fake now opens a real second ticket and
+`TicketsFor` exposes it.
+
+**The two idempotency mechanisms masked each other.** Mutation A bypassed the
+local record entirely and the suite stayed green, because the backend `Find`
+caught every duplicate. One ticket still existed, so the count proved nothing
+about *which* mechanism produced it — while production would have issued a
+search API call per finding per run and the primary mechanism would have gone
+unexercised. The clause now asserts the backend is queried **exactly once**
+across three runs.
+
+A third, smaller one: the attribution assertion matched `verified_reason=upstream`
+in the machine field rather than the prose, so a comment claiming the framework
+merged an upstream fix passed. Each case now names the attributions it must
+**not** carry.
+
+### Mutations verified
+
+| # | Mutation | Caught by |
+|---|---|---|
+| A | `Ensure` skips the local record | one-lookup assertion (added after it passed) |
+| B | `Ensure` skips the backend `Find` | reconciliation clause |
+| C | `CloseVerified` drops the VERIFIED guard | unverified-close clause |
+| D | closure comment misattributes an upstream fix | negative attribution assertions (added after it passed) |
+| E | spec builder reinstates a value-carrying field | secret clause, at scanner input |
+| F | reprojection erases the ticket reference | reprojection clause (Postgres) |
+| G | mirror reads state from the secondary | one-way clause |
+| H | queue swallows the operation | failure-isolation clause |
+
+### Stubbed / deferred
+
+- **No orchestrator wiring.** The ticket pass is not yet called from `Sweep`;
+  `NeedsOwnTicket` and the run-parent body exist and are tested, but nothing
+  creates the run parent or links children to it yet. That belongs with the
+  Phase 9 remediation loop, where the PR ticket also appears (§13.3 row 2).
+- **No `Drain` sweeper goroutine** in `cmd/orchestrator` yet, for the same
+  reason.
+- **Codeowner assignment (VM-F-810)** takes an assignee as an input; resolving
+  it from CODEOWNERS needs the GitHub App (VM-OQ-10).
+- **Coverage-gap tickets (VM-F-813)** and **Wave 1 stall escalation
+  (VM-F-814)** are not implemented; both need Phase 11's first-party registry
+  and VM-OQ-11.
+- **Jira/Linear closed-state mapping** is configuration, not inference. Linear
+  refuses to close without a configured done-state id, and Jira refuses if no
+  transition named Done exists: guessing a workflow state moves someone's issue
+  somewhere unintended in a process nobody on this side has seen.
+
+### Assumptions
+
+- **A29.** `TicketState` is two-valued. The spec's `Transition(ctx, ref, st)`
+  does not enumerate states; open/closed is the smallest set that expresses
+  every decision the framework makes.
+- **A30.** The Phase 8 gate's word "mirror" covers two different things: §13.4's
+  secondary backend, and the local ticket record. Both are implemented. The
+  reprojection-survival clause is read as applying to the local record, which is
+  the one a projection could erase.
+- **A31.** `ticket_ops.payload` is `TEXT`, not `JSONB`. JSONB normalises
+  whitespace and reorders keys, so what came back would not be what was
+  enqueued — which matters the moment a payload is hashed or compared against
+  what was intended.
+- **A32.** The credential-pattern set moved to `internal/model`, adding
+  `secret.go` to the files §3 lists for that package. No new package, and the
+  §3 dependency rule still holds: `model` depends on nothing internal.
+- **A33.** The mirror keeps a small in-process index from primary ref to
+  fingerprint rather than parsing it back out of ticket text. It is lost on
+  restart, which only means a mirrored comment is skipped — never a duplicate,
+  and never a wrong primary.
+
+### Open questions
+
+**OQ-P8-01 — the mirror index is in-process.** A restart loses the primary-ref →
+fingerprint map, so comments and transitions stop propagating to the secondary
+until the ticket is recreated (which it never is). The fix is to persist it
+alongside `mirror_ref` in the tickets table, which is already there and unused.
+Small, and it wants doing before a mirror is configured in anger. Not on the
+Phase 8 gate.
+
+**OQ-P8-02 — nothing drains the queue yet.** A tracker outage queues correctly
+and `Drain` is tested, but no process calls it, so today the operations
+accumulate. It lands with the orchestrator wiring in Phase 9. Until then the
+failure isolation is real but the recovery is manual.
+
+**OQ-P8-03 — VM-F-806 (a regressed finding reopens its original ticket) is
+modelled but not driven.** `Transition(ref, StateOpen)` exists; nothing calls it
+on the REGRESSED transition. Same wiring, same phase.

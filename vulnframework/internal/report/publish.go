@@ -5,35 +5,20 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/wanaware/vulnframework/internal/model"
 )
 
-// credentialPatterns match tokens that look like live credentials.
-//
-// This is the output-boundary guard for VM-F-263. The finding record already has
-// nowhere to put a credential and the gitleaks adapter redacts at normalisation —
-// this is the third line, and it exists because a report is the artifact that
-// actually leaves the system. It goes into tickets, email and audit packs, and a
-// leak here is a leak everywhere.
-//
-// It scans the *rendered artifact*, not the model, so it catches credential
-// material arriving through any field: a triage narrative that quoted the
-// matched line, a file path containing a token, raw output someone added to the
-// row later.
-var credentialPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`\bAKIA[0-9A-Z]{16}\b`),                                                 // AWS access key id
-	regexp.MustCompile(`\bASIA[0-9A-Z]{16}\b`),                                                 // AWS temporary key id
-	regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9]{36,}\b`),                                       // GitHub tokens
-	regexp.MustCompile(`\bglpat-[A-Za-z0-9_\-]{20,}\b`),                                        // GitLab PAT
-	regexp.MustCompile(`\bxox[abprs]-[A-Za-z0-9-]{10,}\b`),                                     // Slack
-	regexp.MustCompile(`\bsk-[A-Za-z0-9]{32,}\b`),                                              // generic API secret keys
-	regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----`),                                   // private keys
-	regexp.MustCompile(`\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\b`), // JWT
-}
+// The credential-shape definition lives in the model (model.CredentialPatterns)
+// because more than one boundary enforces it — the report that leaves the
+// system, the ticket that carries a finding into an inbox, and the durable
+// queue between them. A second copy here would mean two boundaries disagreeing
+// about what a credential is, and the weaker one deciding.
 
 // ErrCredentialInReport is returned when a rendered artifact contains something
 // shaped like a live credential.
@@ -57,10 +42,12 @@ func (e *ErrCredentialInReport) Error() string {
 
 // AssertNoCredentials scans a rendered artifact for credential material.
 func AssertNoCredentials(artifact string, body []byte) error {
-	for _, re := range credentialPatterns {
-		if loc := re.Find(body); loc != nil {
-			return &ErrCredentialInReport{Artifact: artifact, Pattern: re.String()}
+	var ce *model.ErrCredential
+	if err := model.AssertNoCredential(artifact, body); err != nil {
+		if errors.As(err, &ce) {
+			return &ErrCredentialInReport{Artifact: ce.Artifact, Pattern: ce.Pattern}
 		}
+		return err
 	}
 	return nil
 }

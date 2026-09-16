@@ -307,6 +307,35 @@ type Store interface {
 	// ReportsForRun lists the reports anchored to a run.
 	ReportsForRun(ctx context.Context, runID string) ([]Report, error)
 
+	// --- Tickets (VM-AD §13.2) ---
+	//
+	// The local record is the primary idempotency mechanism; the backend query
+	// is the reconciliation fallback. Both are needed: without the record every
+	// run re-queries the tracker, and without the fallback a lost record
+	// produces a duplicate ticket.
+
+	// SaveTicket records or updates a finding's ticket. It is keyed on the
+	// fingerprint, which is what makes creation idempotent (VM-F-804).
+	SaveTicket(ctx context.Context, t Ticket) error
+	// GetTicket returns a finding's ticket record, if one is known.
+	GetTicket(ctx context.Context, fingerprint string) (Ticket, bool, error)
+	// DeleteTicket removes the local record. The ticket in the backend is
+	// untouched: this is how the record is discarded when it is known stale.
+	DeleteTicket(ctx context.Context, fingerprint string) error
+	// CloseTicket records that a finding's ticket was closed (VM-F-811).
+	CloseTicket(ctx context.Context, fingerprint string, at time.Time) error
+
+	// --- Ticket operation queue (VM-F-812) ---
+
+	// EnqueueTicketOp durably records an operation to retry.
+	EnqueueTicketOp(ctx context.Context, op TicketOp) error
+	// DueTicketOps returns operations whose backoff has expired, oldest first.
+	DueTicketOps(ctx context.Context, now time.Time, limit int) ([]TicketOp, error)
+	// CompleteTicketOp removes a successfully applied operation.
+	CompleteTicketOp(ctx context.Context, id int64) error
+	// RetryTicketOp records a failed attempt and schedules the next one.
+	RetryTicketOp(ctx context.Context, id int64, next time.Time, lastErr string) error
+
 	// --- Coverage age (OQ-P4-01) ---
 
 	// RepoNames lists every registered repository, sorted.

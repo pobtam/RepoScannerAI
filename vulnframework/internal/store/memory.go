@@ -33,6 +33,10 @@ type Memory struct {
 	transitions  map[string][]model.StateTransition
 	plan         map[string]map[string]PlanEntry // run id -> repo -> entry
 	reports      map[string]Report
+
+	tickets   map[string]Ticket // keyed by fingerprint
+	ticketOps []TicketOp
+	nextOpID  int64
 }
 
 type memFinding struct {
@@ -551,7 +555,20 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 			AgeDays:       f.AgeDays,
 		},
 		CredentialType: p.CredentialType,
+		Refs:           model.Refs{Ticket: ticketRef(m.tickets, f.Fingerprint)},
 	}
+}
+
+// ticketRef surfaces the ticket reference from the ticket table, never from the
+// finding document. The document is rebuilt from observations on every scan;
+// anything kept inside it is erased by the next run.
+func ticketRef(tickets map[string]Ticket, fp string) *string {
+	t, ok := tickets[fp]
+	if !ok || t.URL == "" {
+		return nil
+	}
+	url := t.URL
+	return &url
 }
 
 func (m *Memory) Close() error { return nil }
@@ -962,4 +979,114 @@ func (m *Memory) SetSLA(_ context.Context, fp string, d model.Derived) error {
 	f.SLABreachDays = d.SLABreachDays
 	f.AgeDays = d.AgeDays
 	return nil
+}
+
+// --- Tickets (VM-AD §13.2) --------------------------------------------------
+
+// SaveTicket records or updates a finding's ticket.
+func (m *Memory) SaveTicket(_ context.Context, t Ticket) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.tickets == nil {
+		m.tickets = map[string]Ticket{}
+	}
+	if t.Fingerprint == "" {
+		return fmt.Errorf("store: a ticket record needs a fingerprint; it is the idempotency key (VM-F-804)")
+	}
+	if existing, ok := m.tickets[t.Fingerprint]; ok && t.ClosedAt == nil {
+		// A re-save must not silently reopen a closed ticket: closure is a fact
+		// about the backend, not something a later create should overwrite.
+		t.ClosedAt = existing.ClosedAt
+	}
+	m.tickets[t.Fingerprint] = t
+	return nil
+}
+
+// GetTicket returns a finding's ticket record, if one is known.
+func (m *Memory) GetTicket(_ context.Context, fingerprint string) (Ticket, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	t, ok := m.tickets[fingerprint]
+	return t, ok, nil
+}
+
+// DeleteTicket removes the local record, leaving the backend untouched.
+func (m *Memory) DeleteTicket(_ context.Context, fingerprint string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.tickets, fingerprint)
+	return nil
+}
+
+// CloseTicket records that a finding's ticket was closed (VM-F-811).
+func (m *Memory) CloseTicket(_ context.Context, fingerprint string, at time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	t, ok := m.tickets[fingerprint]
+	if !ok {
+		return fmt.Errorf("%w: ticket for %q", ErrNotFound, fingerprint)
+	}
+	when := at.UTC()
+	t.ClosedAt = &when
+	m.tickets[fingerprint] = t
+	return nil
+}
+
+// --- Ticket operation queue (VM-F-812) --------------------------------------
+
+func (m *Memory) EnqueueTicketOp(_ context.Context, op TicketOp) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.nextOpID++
+	op.ID = m.nextOpID
+	if op.CreatedAt.IsZero() {
+		op.CreatedAt = m.clock()
+	}
+	op.NextAttemptAt = op.NextAttemptAt.UTC()
+	m.ticketOps = append(m.ticketOps, op)
+	return nil
+}
+
+func (m *Memory) DueTicketOps(_ context.Context, now time.Time, limit int) ([]TicketOp, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []TicketOp
+	for _, op := range m.ticketOps {
+		if op.NextAttemptAt.After(now.UTC()) {
+			continue
+		}
+		out = append(out, op)
+		if limit > 0 && len(out) == limit {
+			break
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+func (m *Memory) CompleteTicketOp(_ context.Context, id int64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, op := range m.ticketOps {
+		if op.ID == id {
+			m.ticketOps = append(m.ticketOps[:i], m.ticketOps[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: ticket op %d", ErrNotFound, id)
+}
+
+func (m *Memory) RetryTicketOp(_ context.Context, id int64, next time.Time, lastErr string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, op := range m.ticketOps {
+		if op.ID == id {
+			op.Attempts++
+			op.NextAttemptAt = next.UTC()
+			op.LastError = lastErr
+			m.ticketOps[i] = op
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: ticket op %d", ErrNotFound, id)
 }

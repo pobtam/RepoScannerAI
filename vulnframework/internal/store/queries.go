@@ -223,3 +223,45 @@ FROM reports WHERE anchor_run_id = $1 ORDER BY id`
 const qSetSLA = `
 UPDATE findings SET data = jsonb_set(data, '{derived}', $1::jsonb, true)
 WHERE fingerprint = $2`
+
+// --- Tickets (VM-AD §13.2) ---------------------------------------------------
+
+const (
+	// qUpsertTicket keys on the fingerprint, which is what makes ticket
+	// creation idempotent (VM-F-804). closed_at is preserved on conflict: a
+	// later create must never silently reopen a closed ticket.
+	qUpsertTicket = `
+INSERT INTO tickets (fingerprint, backend, ref, url, mirror_backend, mirror_ref, created_at, closed_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (fingerprint) DO UPDATE SET
+  backend        = EXCLUDED.backend,
+  ref            = EXCLUDED.ref,
+  url            = EXCLUDED.url,
+  mirror_backend = EXCLUDED.mirror_backend,
+  mirror_ref     = EXCLUDED.mirror_ref,
+  closed_at      = COALESCE(EXCLUDED.closed_at, tickets.closed_at)`
+
+	qGetTicket = `
+SELECT fingerprint, backend, ref, url, mirror_backend, mirror_ref, created_at, closed_at
+FROM tickets WHERE fingerprint = $1`
+
+	qTicketURLs = `
+SELECT fingerprint, url FROM tickets WHERE url <> ''`
+
+	qDeleteTicket = `DELETE FROM tickets WHERE fingerprint = $1`
+
+	qCloseTicket = `UPDATE tickets SET closed_at = $2 WHERE fingerprint = $1`
+
+	qInsertTicketOp = `
+INSERT INTO ticket_ops (fingerprint, kind, payload, attempts, next_attempt_at, last_error, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)`
+
+	qDueTicketOps = `
+SELECT id, fingerprint, kind, payload, attempts, next_attempt_at, last_error, created_at
+FROM ticket_ops WHERE next_attempt_at <= $1 ORDER BY id LIMIT $2`
+
+	qCompleteTicketOp = `DELETE FROM ticket_ops WHERE id = $1`
+
+	qRetryTicketOp = `
+UPDATE ticket_ops SET attempts = attempts + 1, next_attempt_at = $2, last_error = $3 WHERE id = $1`
+)
