@@ -18,7 +18,8 @@ green.
 | **5** — `internal/triage` + `internal/score` | **Green** | passing (extended gate) |
 | **6** — `internal/policy` | **Green** | passing (extended gate) |
 | **7** — `internal/report` + publisher | **Green** | passing (extended gate) |
-| 7b–12 | Not started | |
+| **7b** — anchoring, redaction, delivery, audit packs | **Green** | passing (extended gate) |
+| 8–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -1452,5 +1453,165 @@ findings, but nothing writes `Derived.SLAStatus` during a run, so those counts
 are currently always zero in practice. The wiring belongs with the orchestrator
 pass that already persists priority. **Wanted before the first real sweep**, or
 the SLA section of every report reads as "nothing is late" regardless of truth.
+
+---
+
+## Decisions taken after Phase 7 (2026-09-15)
+
+**OQ-P7-03 — SLA computed but never stored. → FOLDED INTO 7b, not deferred.**
+
+> The current state is an **actively false assurance claim**: the SLA section
+> reads "0 breached" because breaches are never computed, which is worse than
+> omitting SLA entirely. A reader cannot distinguish "nothing is late" from
+> "nobody looked".
+
+Gate clauses, fixed now: a genuinely breached SLA produces a **non-zero** breach
+count in the report — not merely a populated field; `NO_UPSTREAM_FIX` pauses the
+clock (VM-NF-304); and an **uncomputed** SLA renders as "not computed", never as
+"0 breaches".
+
+**OQ-P7-01 — redaction and delivery. → Built in 7b, with the privilege model as
+the load-bearing half.** Redaction is meaningless without "who may see what".
+Three constraints:
+
+1. The rendered-artifact secret scan runs against the **least-privileged
+   (most-redacted) rendering** — the artifact that travels furthest, to the
+   least-trusted audience.
+2. Delivery **fails closed** when recipient privilege cannot be determined. It
+   never falls back to a fuller rendering.
+3. Byte-identical regeneration stays green (VM-ADR-15).
+
+**OQ-P7-02 — git-backed publisher. → Deferral accepted; needs VM-OQ-10.**
+
+### Consolidated VM-OQ-10 dependent list
+
+VM-OQ-10 (does the organisation have a GitHub App, or is one to be created?) now
+gates:
+
+| Dependent | Recorded in |
+|---|---|
+| Fleet registry sync — and therefore the OQ-P2-02 coverage guarantee, which is only as truthful as the registry | A18, Phase 4 |
+| Git-backed report publisher (VM-ADR-08) | OQ-P7-02, Phase 7 |
+
+
+## Phase 7b — anchoring, redaction, delivery, audit packs
+
+**Gate:** *a genuinely breached SLA produces a non-zero breach count; SLA pauses
+on `NO_UPSTREAM_FIX`; an uncomputed SLA renders as "not computed", never "0
+breaches"; the secret scan runs against the least-privileged rendering; delivery
+fails closed on undetermined privilege; byte-identical regeneration stays green;
+an audit pack carries the coverage attestation including unscanned repositories
+and regenerates byte-identically; an over-limit request is rejected with the
+limit stated.*
+
+**Status: green.** 236 top-level tests (645 with subtests) module-wide, vet and
+gofmt clean, passes under `-race`, both backends.
+
+### SLA is computed, and "not computed" is now sayable
+
+The pipeline pass that persists priority now computes and persists the SLA
+position from it. Getting there needed a field that had been hidden the whole
+time: **`first_seen_at` was held in the store and never surfaced on the finding**,
+so nothing downstream could compute an age at all. The SLA clock starts at
+detection (VM-NF-302), and the clock had no start.
+
+The report now distinguishes three states, which a single zero could not:
+
+| Situation | Rendered as |
+|---|---|
+| SLA computed, none breached | `**SLA breached:** 0` |
+| SLA computed for some findings | `**SLA breached:** N _(of M with a computed SLA; K were not computed and are excluded)_` |
+| SLA computed for none | `**SLA: not computed.** … This is not a statement that nothing is late — it is the absence of one.` |
+
+The third case is the one that mattered: the previous behaviour rendered a
+reassuring `0` that no one was entitled to claim.
+
+One fix this exposed: `reprojectTx` rebuilt the Postgres finding document from
+the projection on every scan, which would have **silently reverted every SLA to
+uncomputed after the next run**. The derived block and the triage narrative are
+now preserved across reprojection.
+
+### The privilege model
+
+Redaction is expressed in terms of levels rather than the other way round.
+`Recipient.Determined` is a separate field from `Level` **on purpose**: it makes
+"we could not find out" representable, so an identity lookup failure cannot
+produce the zero value and be mistaken for "public".
+
+| Level | Sees |
+|---|---|
+| `public` | Aggregates and coverage only |
+| `engineer` | Non-secret finding detail; secret findings **counted, never detailed** (U8) |
+| `security_owner` | Everything |
+
+**Counts are never redacted.** A redacted report that also under-counts would
+misrepresent the fleet rather than merely withhold from the reader — and its
+redaction notice would then be false as well as incomplete.
+
+**Delivery fails closed**, and nothing is published on the failure path: the
+failure mode of a permissions system must never be "grant more". There is no
+fallback to a fuller rendering.
+
+**The secret scan runs against the artifact the recipient actually gets**, and
+`AssertLeastPrivilegedRenderingIsClean` checks the most-redacted rendering
+specifically — it is the one that travels furthest, so a leak there reaches the
+largest audience. The test plants a credential in a field that *only survives*
+redaction, which the unredacted scan would never have caught.
+
+### Audit packs
+
+A pack seals an issued report with a coverage attestation that **names** the
+unscanned repositories and states what is *not* claimed: "no claim is made about
+their contents", and "coverage is measured against planned scope, so a
+repository that was never dispatched appears as a gap rather than as clean". If
+SLA was not computed, the statement says the pack makes no SLA compliance claim.
+
+Packs regenerate byte-identically from the stored query, per-artifact hashes
+included.
+
+### Verified by mutation
+
+| Mutation | Caught by |
+|---|---|
+| SLA never persisted | `TestBreachedSLAProducesANonZeroBreachCount` |
+| Uncomputed SLA rendered as "0 breaches" | `TestUncomputedSLARendersAsNotComputedNeverAsZeroBreaches` |
+| Delivery falls back to a fuller rendering | `TestDeliveryFailsClosedOnUndeterminedPrivilege` |
+| Least-privileged rendering not scanned | `TestSecretScanRunsAgainstTheLeastPrivilegedRendering` |
+| Redaction leaks secret detail to engineers | `TestSecretDetailIsWithheldBelowSecurityOwner` |
+| Redaction changes the counts | same |
+| Over-limit silently truncates | `TestOverLimitRequestIsRejectedWithTheLimitStated` |
+
+### Assumptions made
+
+**A27 — three privilege levels, not two.** VM-UI-F-803 names a security-owner
+group; the engineer and public levels below it are inferred from U8's "sees the
+count but not the detail" and from the existence of fleet-wide reporting.
+**VM-UI-OQ-01 (identity provider and group source) is still open**, so the levels
+are a model, not an integration: nothing yet maps a real identity to one.
+
+**A28 — the report identifier changes with the rendering level.** Two artifacts
+with different content must not share an identity, or a citation is ambiguous
+about which one it refers to (VM-ADR-15).
+
+### Open questions hit
+
+**OQ-P7b-01 — nothing maps a real identity to a level.** `Recipient` is
+constructed by the caller, so the fail-closed guarantee is only as good as the
+caller's honesty about `Determined`. The binding to an identity provider is
+**VM-UI-OQ-01**, and until it lands the privilege model is enforced but not
+sourced.
+
+**OQ-P7b-02 — supersession is modelled but not driven.** The `reports` table has
+`supersedes`/`superseded_by` and immutability is enforced, but nothing issues a
+superseding report yet. Wanted when report regeneration becomes a user-facing
+action (VM-UI U9).
+
+**OQ-P7b-03 — SLA windows are provisional.** `DefaultSLAWindows` is a working
+default; **VM-OQ-02** (windows per severity per tier) is unanswered. Unlike the
+static-analysis thresholds, this is **not** yet surfaced as a caveat in report
+output — the same argument that produced the OQ-P5-02 constraint applies, and a
+breach count computed from guessed windows is exactly as provisional as a
+priority computed from guessed thresholds. **Worth closing before the first real
+sweep.**
 
 ---

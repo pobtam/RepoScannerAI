@@ -223,6 +223,15 @@ type Finding struct {
 	Derived        Derived        `json:"derived"`
 	Refs           Refs           `json:"refs"`
 
+	// FirstSeenAt and LastSeenAt are the detection and last-observation
+	// timestamps. The SLA clock starts at detection, not at triage or
+	// assignment (VM-NF-302), so the age cannot be computed without them —
+	// they were held in the store and never surfaced, which is why nothing
+	// downstream could compute an SLA at all.
+	FirstSeenAt time.Time  `json:"first_seen_at,omitempty"`
+	LastSeenAt  time.Time  `json:"last_seen_at,omitempty"`
+	ResolvedAt  *time.Time `json:"resolved_at,omitempty"`
+
 	// VerifiedReason records how a VERIFIED finding came to be verified
 	// (VM-AD §6.1.1). Nil unless the finding is verified.
 	//

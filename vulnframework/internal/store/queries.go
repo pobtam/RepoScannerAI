@@ -113,7 +113,8 @@ FROM state_transitions WHERE fingerprint = $1 ORDER BY at, id`
 
 	qListFindingsBase = `
 SELECT f.fingerprint, f.repo, f.category, f.data, f.state, f.reason_code, f.priority,
-       f.first_seen_run, f.last_seen_run, f.not_reobserved, f.gap_run_id, f.verified_reason
+       f.first_seen_run, f.last_seen_run, f.not_reobserved, f.gap_run_id, f.verified_reason,
+       f.first_seen_at, f.last_seen_at, f.resolved_at
 FROM findings f`
 
 	qGetFinding = qListFindingsBase + ` WHERE f.fingerprint = $1`
@@ -217,3 +218,8 @@ FROM reports WHERE id = $1`
 SELECT id, anchor_run_id, kind, repo, template, query, content_hash, content, issued_at, issued_by, supersedes, redacted, withheld_count
 FROM reports WHERE anchor_run_id = $1 ORDER BY id`
 )
+
+// qSetSLA persists the derived SLA block into the finding document.
+const qSetSLA = `
+UPDATE findings SET data = jsonb_set(data, '{derived}', $1::jsonb, true)
+WHERE fingerprint = $2`

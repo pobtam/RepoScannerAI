@@ -69,6 +69,12 @@ type Counts struct {
 	// a compliant one; it is one the SLA cannot speak to (VM-NF-304).
 	SLABreached int `json:"sla_breached"`
 	SLAPaused   int `json:"sla_paused"`
+	// SLANotComputed counts findings whose SLA was never computed.
+	//
+	// It exists so a report can never present "0 breached" as assurance when
+	// the truth is that nobody looked. Those are different claims, and a reader
+	// has no way to tell them apart from a zero (OQ-P7-03).
+	SLANotComputed int `json:"sla_not_computed"`
 }
 
 // Delta compares two runs of the same kind (VM-F-14 acceptance criterion).
@@ -345,6 +351,8 @@ func countOf(findings []model.Finding) Counts {
 			c.SLABreached++
 		case model.SLAPaused:
 			c.SLAPaused++
+		case "":
+			c.SLANotComputed++
 		}
 	}
 	return c

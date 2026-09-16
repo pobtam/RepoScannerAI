@@ -283,6 +283,11 @@ type Store interface {
 	// state change is a decision, and the caller must be able to record one
 	// without implying the other.
 	SetTriage(ctx context.Context, fingerprint string, t model.Triage) error
+	// SetSLA persists the computed SLA position (VM-F-908).
+	//
+	// Separate from the priority write because the two are computed from
+	// different inputs and either can be recomputed without the other.
+	SetSLA(ctx context.Context, fingerprint string, d model.Derived) error
 	// SetPriority persists the computed priority and reason code.
 	SetPriority(ctx context.Context, fingerprint string, p model.Priority, reason *model.ReasonCode) error
 

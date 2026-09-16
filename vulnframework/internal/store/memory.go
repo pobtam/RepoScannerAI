@@ -49,6 +49,10 @@ type memFinding struct {
 	GapRunID       string
 	VerifiedReason model.VerificationReason
 	Triage         *model.Triage
+	SLAStatus      model.SLAStatus
+	SLAWindowDays  int
+	SLABreachDays  int
+	AgeDays        int
 	LeaseOwner     string
 	LeaseExpiresAt *time.Time
 	FirstSeenRun   string
@@ -535,9 +539,16 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 		ReasonCode:     f.ReasonCode,
 		Priority:       f.Priority,
 		VerifiedReason: optionalReason(f.VerifiedReason),
+		FirstSeenAt:    f.FirstSeenAt,
+		LastSeenAt:     f.LastSeenAt,
+		ResolvedAt:     f.ResolvedAt,
 		Derived: model.Derived{
 			NotReobserved: f.NotReobserved,
 			GapRepoScan:   optionalString(f.GapRunID),
+			SLAStatus:     f.SLAStatus,
+			SLAWindowDays: f.SLAWindowDays,
+			SLABreachDays: f.SLABreachDays,
+			AgeDays:       f.AgeDays,
 		},
 		CredentialType: p.CredentialType,
 	}
@@ -936,4 +947,19 @@ func (m *Memory) ReportsForRun(_ context.Context, runID string) ([]Report, error
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
+}
+
+// SetSLA persists the computed SLA position (VM-F-908).
+func (m *Memory) SetSLA(_ context.Context, fp string, d model.Derived) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, ok := m.findings[fp]
+	if !ok {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	f.SLAStatus = d.SLAStatus
+	f.SLAWindowDays = d.SLAWindowDays
+	f.SLABreachDays = d.SLABreachDays
+	f.AgeDays = d.AgeDays
+	return nil
 }

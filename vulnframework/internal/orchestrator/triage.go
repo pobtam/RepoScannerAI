@@ -14,12 +14,13 @@ import (
 
 // TriageStats summarises a triage-and-route pass.
 type TriageStats struct {
-	Eligible  int
-	Triaged   int
-	Scored    int
-	Routed    map[policy.Outcome]int
-	Unmatched []string
-	Triage    triage.Stats
+	Eligible    int
+	Triaged     int
+	Scored      int
+	SLAComputed int
+	Routed      map[policy.Outcome]int
+	Unmatched   []string
+	Triage      triage.Stats
 }
 
 // TriageAndRoute enriches, scores and routes a repository's new findings.
@@ -131,6 +132,26 @@ func (o *Orchestrator) TriageAndRoute(
 			}
 			f.Priority = res.Priority
 			stats.Scored++
+
+			// SLA is computed in the same pass, from the priority just
+			// assigned. Computing the priority and leaving the SLA uncomputed
+			// is worse than omitting SLA entirely: the report then reads
+			// "0 breached" because nobody looked, which a reader cannot tell
+			// from "nothing is late" (OQ-P7-03).
+			sla := score.SLA(score.SLAInput{
+				State: f.State, Priority: res.Priority, Tier: repo.Tier,
+				ReasonCode: f.ReasonCode, FirstSeenAt: f.FirstSeenAt, ResolvedAt: f.ResolvedAt,
+			}, o.SLAWindows(), o.clock())
+
+			derived := f.Derived
+			derived.SLAStatus = sla.Status
+			derived.SLAWindowDays = int(sla.Window.Hours() / 24)
+			derived.SLABreachDays = int(sla.BreachedBy.Hours() / 24)
+			derived.AgeDays = int(sla.Age.Hours() / 24)
+			if err := o.Store.SetSLA(ctx, f.Fingerprint, derived); err != nil {
+				return stats, err
+			}
+			stats.SLAComputed++
 		}
 
 		if pol == nil {
@@ -195,6 +216,14 @@ func (o *Orchestrator) recordReason(ctx context.Context, f model.Finding, d poli
 	}
 	reason := d.Reason
 	return o.Store.SetPriority(ctx, f.Fingerprint, f.Priority, &reason)
+}
+
+// SLAWindows returns the configured remediation windows (VM-NF-301).
+func (o *Orchestrator) SLAWindows() score.SLAWindows {
+	if o.Config.SLAWindows != nil {
+		return o.Config.SLAWindows
+	}
+	return score.DefaultSLAWindows()
 }
 
 func primaryLanguage(r store.Repo) string {

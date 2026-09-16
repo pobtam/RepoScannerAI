@@ -10,6 +10,7 @@ import (
 
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/scan"
+	"github.com/wanaware/vulnframework/internal/score"
 	"github.com/wanaware/vulnframework/internal/store"
 )
 
@@ -49,6 +50,10 @@ type Config struct {
 	// EscalationThreshold is how many consecutive runs without a qualifying
 	// scan trigger escalation (VM-F-215, VM-OQ-10's working default of 2).
 	EscalationThreshold int
+
+	// SLAWindows are the remediation windows per tier and priority
+	// (VM-NF-301). Nil uses the working defaults; VM-OQ-02 is still open.
+	SLAWindows score.SLAWindows
 }
 
 func (c Config) withDefaults() Config {

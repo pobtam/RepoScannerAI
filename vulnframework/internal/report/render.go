@@ -90,9 +90,23 @@ func Render(rep Report) []byte {
 	b.WriteString("## Outstanding risk\n\n")
 	fmt.Fprintf(&b, "- **Not re-observed:** %d unresolved findings this run did not see. "+
 		"They are retained, not resolved — absence is not resolution (VM-ADR-12).\n", rep.Counts.NotReobserved)
-	fmt.Fprintf(&b, "- **SLA breached:** %d\n", rep.Counts.SLABreached)
-	fmt.Fprintf(&b, "- **SLA paused:** %d (no upstream fix available; these cannot breach, and are not compliant either)\n\n",
-		rep.Counts.SLAPaused)
+	// "0 breached" and "nobody computed it" are different claims, and a reader
+	// cannot tell them apart from a zero. Where any SLA is uncomputed the
+	// report says so instead of offering a reassuring number (OQ-P7-03).
+	switch {
+	case rep.Counts.SLANotComputed == rep.Counts.Total && rep.Counts.Total > 0:
+		b.WriteString("- **SLA: not computed.** No finding in this report has an SLA position. " +
+			"This is not a statement that nothing is late — it is the absence of one.\n\n")
+	case rep.Counts.SLANotComputed > 0:
+		fmt.Fprintf(&b, "- **SLA breached:** %d _(of %d findings with a computed SLA; %d were not computed and are excluded from this figure)_\n",
+			rep.Counts.SLABreached, rep.Counts.Total-rep.Counts.SLANotComputed, rep.Counts.SLANotComputed)
+		fmt.Fprintf(&b, "- **SLA paused:** %d (no upstream fix available; these cannot breach, and are not compliant either)\n\n",
+			rep.Counts.SLAPaused)
+	default:
+		fmt.Fprintf(&b, "- **SLA breached:** %d\n", rep.Counts.SLABreached)
+		fmt.Fprintf(&b, "- **SLA paused:** %d (no upstream fix available; these cannot breach, and are not compliant either)\n\n",
+			rep.Counts.SLAPaused)
+	}
 
 	// --- Coverage ---
 	b.WriteString("## Coverage\n\n")

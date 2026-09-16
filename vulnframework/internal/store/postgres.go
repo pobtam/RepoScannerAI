@@ -455,9 +455,13 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 			notReobserved bool
 			gapRun        sql.NullString
 			verifiedBy    sql.NullString
+			firstSeenAt   time.Time
+			lastSeenAt    time.Time
+			resolvedAt    sql.NullTime
 		)
 		if err := rows.Scan(&f.Fingerprint, &f.Repo, &category, &data, &state,
-			&reason, &priority, &firstRun, &lastRun, &notReobserved, &gapRun, &verifiedBy); err != nil {
+			&reason, &priority, &firstRun, &lastRun, &notReobserved, &gapRun, &verifiedBy,
+			&firstSeenAt, &lastSeenAt, &resolvedAt); err != nil {
 			return nil, err
 		}
 
@@ -486,6 +490,12 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 		if verifiedBy.Valid {
 			vr := model.VerificationReason(verifiedBy.String)
 			projected.VerifiedReason = &vr
+		}
+		projected.FirstSeenAt = firstSeenAt.UTC()
+		projected.LastSeenAt = lastSeenAt.UTC()
+		if resolvedAt.Valid {
+			t := resolvedAt.Time.UTC()
+			projected.ResolvedAt = &t
 		}
 		out = append(out, projected)
 	}
@@ -622,6 +632,19 @@ func reprojectTx(ctx context.Context, tx *sql.Tx, fp string) error {
 	if err != nil {
 		return err
 	}
+	// The derived block is computed separately and persisted into the same
+	// document, so it must survive a reprojection. Losing it here would make
+	// every SLA silently revert to uncomputed after the next scan.
+	var existingDerived model.Derived
+	var existingTriage *model.Triage
+	var raw []byte
+	if err := tx.QueryRowContext(ctx, `SELECT data FROM findings WHERE fingerprint = $1`, fp).Scan(&raw); err == nil && len(raw) > 0 {
+		var prior model.Finding
+		if json.Unmarshal(raw, &prior) == nil {
+			existingDerived = prior.Derived
+			existingTriage = prior.Triage
+		}
+	}
 	p := Project(LatestPerSource(obs))
 
 	view := model.Finding{
@@ -632,6 +655,8 @@ func reprojectTx(ctx context.Context, tx *sql.Tx, fp string) error {
 		Provenance:     model.Provenance{Tools: p.Tools},
 		Refs:           model.Refs{AdvisoryURL: optionalString(p.AdvisoryURL)},
 		CredentialType: p.CredentialType,
+		Derived:        existingDerived,
+		Triage:         existingTriage,
 	}
 	encoded, err := json.Marshal(view)
 	if err != nil {
@@ -1129,4 +1154,20 @@ func scanReports(rows *sql.Rows) ([]Report, error) {
 		out = append(out, r)
 	}
 	return out, rows.Err()
+}
+
+// SetSLA persists the computed SLA position (VM-F-908).
+func (p *Postgres) SetSLA(ctx context.Context, fp string, d model.Derived) error {
+	encoded, err := json.Marshal(d)
+	if err != nil {
+		return fmt.Errorf("store: encoding derived: %w", err)
+	}
+	res, err := p.db.ExecContext(ctx, qSetSLA, encoded, fp)
+	if err != nil {
+		return fmt.Errorf("store: persisting SLA for %s: %w", fp, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	return nil
 }
