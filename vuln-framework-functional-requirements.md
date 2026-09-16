@@ -179,7 +179,9 @@ verification, and counting it as unresolved overstates outstanding work. See VM-
 
 **Reason code enumeration (normative):**
 
-`NO_UPSTREAM_FIX`, `BLOCKED_UPSTREAM_FIRST_PARTY`, `MAJOR_BUMP_POLICY`, `BUILD_FAILED`, `TESTS_FAILED`, `NO_TEST_COVERAGE`, `NEEDS_HUMAN_SECRET`, `SUPPRESSION_PROPOSED`, `DECLINED`, `AGENT_GAVE_UP`, `BUDGET_EXHAUSTED`, `POLICY_ISSUE_ONLY`
+`NO_UPSTREAM_FIX`, `BLOCKED_UPSTREAM_FIRST_PARTY`, `MAJOR_BUMP_POLICY`, `BUILD_FAILED`, `TESTS_FAILED`, `FIX_INEFFECTIVE`, `NO_TEST_COVERAGE`, `NEEDS_HUMAN_SECRET`, `SUPPRESSION_PROPOSED`, `DECLINED`, `AGENT_GAVE_UP`, `BUDGET_EXHAUSTED`, `POLICY_ISSUE_ONLY`
+
+`FIX_INEFFECTIVE` means a remediation was applied, built and tested successfully, and the re-run of the scanners that produced the finding still reports it — most commonly a dependency proxy that has not yet mirrored the fully-closing version, so the bump resolved lower. It is distinct from `NO_UPSTREAM_FIX`, and the distinction is load-bearing: `NO_UPSTREAM_FIX` pauses the SLA clock (VM-NF-304) because nothing can be done, whereas a `FIX_INEFFECTIVE` finding is fully actionable and its clock must keep running. Reusing `NO_UPSTREAM_FIX` here would silently pause the SLA on findings that a human could fix today.
 
 ### 5.4 Detection — general (VM-F-2xx)
 

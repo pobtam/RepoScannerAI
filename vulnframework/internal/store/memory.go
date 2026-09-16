@@ -34,9 +34,11 @@ type Memory struct {
 	plan         map[string]map[string]PlanEntry // run id -> repo -> entry
 	reports      map[string]Report
 
-	tickets   map[string]Ticket // keyed by fingerprint
-	ticketOps []TicketOp
-	nextOpID  int64
+	tickets        map[string]Ticket // keyed by fingerprint
+	repoLocks      map[string]RepoLock
+	remediationPRs map[string]RemediationPR
+	ticketOps      []TicketOp
+	nextOpID       int64
 }
 
 type memFinding struct {
@@ -555,7 +557,10 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 			AgeDays:       f.AgeDays,
 		},
 		CredentialType: p.CredentialType,
-		Refs:           model.Refs{Ticket: ticketRef(m.tickets, f.Fingerprint)},
+		Refs: model.Refs{
+			Ticket:      ticketRef(m.tickets, f.Fingerprint),
+			PullRequest: prRef(m.remediationPRs, f.Fingerprint),
+		},
 	}
 }
 
@@ -568,6 +573,30 @@ func ticketRef(tickets map[string]Ticket, fp string) *string {
 		return nil
 	}
 	url := t.URL
+	return &url
+}
+
+// prRef surfaces the open pull request addressing a finding, from the
+// remediation table rather than the finding document — which is rebuilt from
+// observations on every scan.
+func prRef(prs map[string]RemediationPR, fp string) *string {
+	var best *RemediationPR
+	for i := range prs {
+		pr := prs[i]
+		if !pr.Open() || pr.URL == "" {
+			continue
+		}
+		for _, f := range pr.Findings {
+			if f == fp && (best == nil || pr.Branch < best.Branch) {
+				candidate := pr
+				best = &candidate
+			}
+		}
+	}
+	if best == nil {
+		return nil
+	}
+	url := best.URL
 	return &url
 }
 
@@ -1089,4 +1118,143 @@ func (m *Memory) RetryTicketOp(_ context.Context, id int64, next time.Time, last
 		}
 	}
 	return fmt.Errorf("%w: ticket op %d", ErrNotFound, id)
+}
+
+// --- Per-repository remediation lock (VM-AD §7.3, VM-F-503) -----------------
+
+func (m *Memory) AcquireRepoLock(ctx context.Context, repo, owner string, expiresAt time.Time) error {
+	return m.AcquireRepoLockAt(ctx, repo, owner, expiresAt, m.clock())
+}
+
+func (m *Memory) AcquireRepoLockAt(_ context.Context, repo, owner string, expiresAt, now time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if owner == "" {
+		return fmt.Errorf("store: a repository lock needs an owner; an anonymous lock cannot be released or attributed")
+	}
+	if m.repoLocks == nil {
+		m.repoLocks = map[string]RepoLock{}
+	}
+
+	if existing, ok := m.repoLocks[repo]; ok && existing.Held(now) && existing.Owner != owner {
+		return fmt.Errorf("%w: held by %s until %s", ErrRepoLocked, existing.Owner, existing.ExpiresAt)
+	}
+	// Reentrant for the owner, and an expired lock is reclaimed here rather
+	// than only by the sweeper: a worker must not wait a sweeper cycle to take
+	// a lock nobody holds.
+	acquired := now.UTC()
+	if existing, ok := m.repoLocks[repo]; ok && existing.Owner == owner {
+		acquired = existing.AcquiredAt
+	}
+	exp := expiresAt.UTC()
+	m.repoLocks[repo] = RepoLock{Repo: repo, Owner: owner, AcquiredAt: acquired, ExpiresAt: &exp}
+	return nil
+}
+
+func (m *Memory) ReleaseRepoLock(_ context.Context, repo, owner string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	existing, ok := m.repoLocks[repo]
+	if !ok {
+		return nil
+	}
+	if existing.Owner != owner {
+		return fmt.Errorf("store: %s cannot release %s's lock on %s; "+
+			"releasing another worker's lock would reintroduce concurrent remediation mid-flight", owner, existing.Owner, repo)
+	}
+	delete(m.repoLocks, repo)
+	return nil
+}
+
+func (m *Memory) GetRepoLock(_ context.Context, repo string) (RepoLock, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.repoLocks[repo], nil
+}
+
+func (m *Memory) SweepExpiredRepoLocks(_ context.Context, now time.Time) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	n := 0
+	for repo, lock := range m.repoLocks {
+		if !lock.Held(now) {
+			delete(m.repoLocks, repo)
+			n++
+		}
+	}
+	return n, nil
+}
+
+// --- Remediation pull requests (VM-AD §11) ----------------------------------
+
+func (m *Memory) SaveRemediationPR(_ context.Context, pr RemediationPR) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if pr.Branch == "" {
+		return fmt.Errorf("store: a remediation pull request needs a branch; it is the idempotency key (VM-F-502)")
+	}
+	if m.remediationPRs == nil {
+		m.remediationPRs = map[string]RemediationPR{}
+	}
+	if existing, ok := m.remediationPRs[pr.Branch]; ok {
+		if pr.ClosedAt == nil {
+			pr.ClosedAt = existing.ClosedAt
+		}
+		if pr.OpenedAt.IsZero() {
+			pr.OpenedAt = existing.OpenedAt
+		}
+	}
+	if pr.OpenedAt.IsZero() {
+		pr.OpenedAt = m.clock()
+	}
+	pr.Findings = append([]string(nil), pr.Findings...)
+	sort.Strings(pr.Findings)
+	m.remediationPRs[pr.Branch] = pr
+	return nil
+}
+
+func (m *Memory) GetRemediationPR(_ context.Context, branch string) (RemediationPR, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	pr, ok := m.remediationPRs[branch]
+	return pr, ok, nil
+}
+
+func (m *Memory) RemediationPRForFinding(_ context.Context, fingerprint string) (RemediationPR, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var (
+		best  RemediationPR
+		found bool
+	)
+	for _, pr := range m.remediationPRs {
+		if !pr.Open() {
+			continue
+		}
+		for _, fp := range pr.Findings {
+			if fp != fingerprint {
+				continue
+			}
+			// Deterministic when several match: the earliest branch wins, so
+			// two backends cannot disagree about which pull request is "the"
+			// one for a finding.
+			if !found || pr.Branch < best.Branch {
+				best, found = pr, true
+			}
+		}
+	}
+	return best, found, nil
+}
+
+func (m *Memory) CloseRemediationPR(_ context.Context, branch string, at time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	pr, ok := m.remediationPRs[branch]
+	if !ok {
+		return fmt.Errorf("%w: remediation pull request for branch %q", ErrNotFound, branch)
+	}
+	when := at.UTC()
+	pr.State, pr.ClosedAt = "closed", &when
+	m.remediationPRs[branch] = pr
+	return nil
 }

@@ -12,13 +12,22 @@ const (
 	ReasonMajorBumpPolicy           ReasonCode = "MAJOR_BUMP_POLICY"
 	ReasonBuildFailed               ReasonCode = "BUILD_FAILED"
 	ReasonTestsFailed               ReasonCode = "TESTS_FAILED"
-	ReasonNoTestCoverage            ReasonCode = "NO_TEST_COVERAGE"
-	ReasonNeedsHumanSecret          ReasonCode = "NEEDS_HUMAN_SECRET"
-	ReasonSuppressionProposed       ReasonCode = "SUPPRESSION_PROPOSED"
-	ReasonDeclined                  ReasonCode = "DECLINED"
-	ReasonAgentGaveUp               ReasonCode = "AGENT_GAVE_UP"
-	ReasonBudgetExhausted           ReasonCode = "BUDGET_EXHAUSTED"
-	ReasonPolicyIssueOnly           ReasonCode = "POLICY_ISSUE_ONLY"
+	// ReasonFixIneffective — a remediation applied, built and tested cleanly,
+	// and the re-run of the scanners still reports the finding. Usually a proxy
+	// that has not mirrored the fully-closing version, so the bump resolved
+	// lower.
+	//
+	// Deliberately NOT NO_UPSTREAM_FIX. That code pauses the SLA clock because
+	// nothing can be done; a finding here is fully actionable, and pausing its
+	// clock would be a false assurance that the delay is nobody's fault.
+	ReasonFixIneffective      ReasonCode = "FIX_INEFFECTIVE"
+	ReasonNoTestCoverage      ReasonCode = "NO_TEST_COVERAGE"
+	ReasonNeedsHumanSecret    ReasonCode = "NEEDS_HUMAN_SECRET"
+	ReasonSuppressionProposed ReasonCode = "SUPPRESSION_PROPOSED"
+	ReasonDeclined            ReasonCode = "DECLINED"
+	ReasonAgentGaveUp         ReasonCode = "AGENT_GAVE_UP"
+	ReasonBudgetExhausted     ReasonCode = "BUDGET_EXHAUSTED"
+	ReasonPolicyIssueOnly     ReasonCode = "POLICY_ISSUE_ONLY"
 )
 
 // AllReasonCodes is the closed enumeration, in the order given by VM-FR §5.3.
@@ -28,6 +37,7 @@ var AllReasonCodes = []ReasonCode{
 	ReasonMajorBumpPolicy,
 	ReasonBuildFailed,
 	ReasonTestsFailed,
+	ReasonFixIneffective,
 	ReasonNoTestCoverage,
 	ReasonNeedsHumanSecret,
 	ReasonSuppressionProposed,

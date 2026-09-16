@@ -57,6 +57,8 @@ func TestMigrationChecksumsAreStable(t *testing.T) {
 		4: "run_plan",
 		5: "reports",
 		6: "ticket_queue",
+		7: "repo_locks",
+		8: "remediation_prs",
 	}
 	migrations, err := store.LoadMigrations()
 	if err != nil {

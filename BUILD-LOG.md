@@ -21,7 +21,9 @@ green.
 | **7b** — anchoring, redaction, delivery, audit packs | **Green** | passing (extended gate) |
 | **7c** — provisional SLA windows declare themselves (OQ-P7b-03) | **Green** | passing |
 | **8** — `internal/tracker` — three backends + mirror | **Green** | passing (extended gate) |
-| 9–12 | Not started | |
+| **9a** — guard, deterministic worker, repo lock, PR ops | **Green** | passing (extended gate) |
+| 9b — orchestrator ticket wiring, Drain, reopen | Not started | |
+| 10–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -1838,3 +1840,236 @@ failure isolation is real but the recovery is manual.
 **OQ-P8-03 — VM-F-806 (a regressed finding reopens its original ticket) is
 modelled but not driven.** `Transition(ref, StateOpen)` exists; nothing calls it
 on the REGRESSED transition. Same wiring, same phase.
+
+---
+
+## Decisions taken after Phase 8 (2026-09-16)
+
+**OQ-P8-01 — mirror primary-ref index. → CLOSE IN PHASE 9.** Persist the index
+(the `tickets.mirror_ref` column already exists) **and** fix the miss path:
+
+> A cache miss must degrade to a slower correct operation, not a dropped
+> comment. `mirrorSide` currently returns silently when the index has no entry,
+> which is a silent audit-trail gap — the ticket in the planning tool stops
+> receiving updates and nothing says so. The miss path falls back to the backend
+> `Find`, which is the source of truth.
+
+**OQ-P8-02 — queue drain. → DEFERRED TO PHASE 9.** Gate: automatic drain on
+backend recovery, with no manual step.
+
+**OQ-P8-03 — VM-F-806, a regressed finding reopens its original ticket. →
+DRIVE IN PHASE 9**, coupled with OQ-P8-01. Gate, stated so it cannot be
+satisfied by the warm cache:
+
+> A REGRESSED finding reopens its ORIGINAL ticket **with the in-process index
+> cold** (as after a restart), proving reopen travels the durable path rather
+> than a cache that happens to be populated in-test.
+
+### Standing sentinel — fakes model the weakest permitted guarantee
+
+> A fake must model the real service's **weakest permitted guarantee**, not a
+> convenient one. The GitHub PR-ops fake must open duplicate PRs, reject
+> conflicting pushes, rate-limit, and fail mid-operation — because real GitHub
+> does — or the framework's handling of each goes untested.
+
+Applies to every fake from here on (Phases 9, 10, 12). This generalises the
+Phase 8 defect: `Fake.Create` deduplicated by fingerprint where no real tracker
+does, which made the duplicate-ticket gate unfalsifiable — the bug would have
+been invisible *because the fake compensated for it*. A fake that is kinder than
+production does not simplify a test, it deletes it.
+
+
+---
+
+## Phase 9a — the guard, the deterministic worker, the repo lock, PR ops
+
+**Split:** Phase 9 was split as the user invited. **9a** (this entry) is the
+guard, the deterministic bump worker, per-repository serialisation and pull
+request operations. **9b** is the orchestrator ticket wiring — run parent,
+children, PR ticket, `Drain`, the reopen path, OQ-P8-01/02/03.
+
+**Status: green.** 302 top-level tests, 774 with subtests. `go vet` and `gofmt`
+clean, `-race` clean, both store backends.
+
+### The guard came first, and it is proven
+
+`internal/remediate/guard` exists before anything that can push, and the
+deterministic worker proves it on the easy case — a dependency bump touches
+manifests and lock files only, so there are **no false positives to tune away**.
+That matters more than it sounds: tuning pressure is how guards die, and Phase
+10's agent now inherits a guard already known to fire.
+
+Three properties, each a test:
+
+- **Post-change diff inspection**, never a prompt instruction and never a
+  worker's self-report (VM-F-510). The worker reads `ChangedFiles` and `Diff`
+  from the tree; a mutation that made it trust its own report turned the suite
+  red.
+- **Rejects the whole change.** It does not drop the offending file and push the
+  remainder — that would be a partial fix (VM-F-506) *and* an unreported
+  violation.
+- **Fails loud.** An empty deny-list will not construct, and neither will one
+  missing any of VM-F-509's three minimum kinds. A guard that permits everything
+  is indistinguishable from a guard nothing has tripped.
+
+It also covers §11.2 step 6: applied suppression directives (VM-F-507) and
+reintroduced credentials, using `model.CredentialPatterns` so the tree, the
+ticket and the report cannot disagree about what a credential is. The
+credential error deliberately does not quote what it found — a guard that
+reports a leak by repeating it has moved the leak into the log.
+
+Path normalisation is deliberate: a leading `./`, a `..` segment climbing back
+into a protected directory, doubled or Windows separators, different case.
+`git diff --name-only` produces none of these, but it is not the only thing that
+will ever feed the guard, and a guard should not depend on its caller being well
+behaved.
+
+### Per-repository serialisation (OQ-P4-02 closed)
+
+A `repo_locks` row with an expiry (migration 0007), **not `pg_advisory_lock`**,
+for the two reasons recorded in §7.3 at Phase 4: an advisory lock lives in a
+Postgres session so the in-memory backend could not honour it at all, and it
+dies with its session invisibly. Acquisition is one statement, so mutual
+exclusion is the database's guarantee rather than a read-then-write race.
+Reentrant for its owner, reclaimed on acquisition as well as by the sweeper —
+a worker must not wait a sweeper cycle for a lock nobody holds.
+
+Order is **repo lock outer, finding leases inner**, batched under one
+acquisition. Ten concurrent workers on one repository elect exactly one winner,
+asserted from the store rather than from a mutex in the test.
+
+### Other invariants landed
+
+- **Fix-group cap (OQ-P6-01 closed):** an oversized group **splits**; 20
+  findings at a cap of 8 produce three pull requests and the split covers all
+  20. Membership is by sorted fingerprint, which is what lets the branch name
+  serve as the idempotency key (VM-F-502).
+- **The bump closes the vuln:** the target is the finding's fixed version, which
+  the projection already resolved to the highest candidate (OQ-P1-02), and
+  verification **re-runs the scanners**. A bump that resolves lower — a proxy
+  that has not mirrored the tag — fails verification, discards the branch, and
+  routes to `NEEDS_HUMAN`.
+- **External fix during lease (OQ-P2-01 closed for the PR half):** `Settle`
+  closes the now-moot pull request and releases any stuck lease, with
+  `verified_reason=external` and a closing comment that claims no credit.
+- Baseline before any change (VM-F-504), verbatim output (VM-F-532), machine
+  identity on commits (VM-F-544), machine-generated labels (VM-F-542), never
+  auto-merged (VM-F-541), and a PR body stating residual risk and that merging
+  does not close anything (VM-F-533).
+
+### Two defects writing the tests found
+
+**A failed attempt stranded its finding.** The worker's deferred cleanup
+released the lease but left the finding in `AUTO_REMEDIATING`. The lease sweeper
+only helps when a worker *dies* — it reverts findings whose lease lapsed. A
+worker that merely returns an error runs its cleanup, so the finding would sit
+in `AUTO_REMEDIATING` with no lease, and nothing would ever move it: policy rule
+2 skips it as in progress, and the sweeper has no lease to find. It would drop
+out of remediation with no error and no report. A failed attempt now returns the
+work to the queue itself.
+
+**A mutation survived, and the gap was real.** Inverting the version choice when
+two findings share a module was not caught: the merged case (two *tools*, one
+finding) was covered, the two-*findings*-one-module case was not.
+`TestOneModuleWithTwoAdvisoriesBumpsToTheHigherFix` closes it — two advisories
+closing at v0.36.0 and v0.37.0 must produce one bump to v0.37.0.
+
+### The standing sentinel, applied
+
+`gh.Fake` models GitHub's **weakest** permitted behaviour, as instructed:
+
+| Behaviour | Why the framework must handle it |
+|---|---|
+| Opens duplicate PRs when heads differ | Nothing remote deduplicates by content; branch derivation is ours alone |
+| Answers 422 when a PR exists for a head | A caller assuming success breaks on an ordinary retry |
+| Rejects non-fast-forward pushes | The remote's rejection is what a lock failure looks like; never force |
+| Rate limits | A retry-after path that is never exercised is a path that does not work |
+| Fails mid-operation | Leaves a branch pushed with no PR — the partial state the next run must adopt |
+| Refuses a commit with no author identity | VM-F-544 must hold; a real remote would accept it |
+
+`FakeToolchain` does the same: a bump can **resolve lower than asked**, a
+baseline can already be failing, and a bump can touch files nobody expected. Its
+re-scan consults a module registry, so "did the bump close the advisory" is
+answered by comparing the installed version against the version that actually
+closes it — never by the fake agreeing with what it was told.
+
+### Mutations verified
+
+| # | Mutation | Caught by |
+|---|---|---|
+| A | guard returns nil instead of rejecting | guard clause + worker obedience clause |
+| B | guard loses `**` matching | nested-workflow case |
+| C | guard skips path normalisation | evasion cases |
+| D | worker runs the guard AFTER the push | "no push attempted" assertion |
+| E | worker trusts its own change report | guard-violation clause (VM-F-510) |
+| F | verification ignores the re-scan | partial-bump clause |
+| G | group cap ignored | split clause |
+| H | targets take the lowest fixed version | **survived**; gap closed, then caught |
+| I | repo lock never blocks a second worker | mutual-exclusion clause, both backends |
+| J | `Settle` does not close the moot PR | external-fix clause |
+
+### Spec amendment
+
+**VM-FR §5.3 gains `FIX_INEFFECTIVE`.** There was no code for "a remediation
+applied, built and tested cleanly, and the re-scan still reports the finding".
+The available alternative was `NO_UPSTREAM_FIX`, and using it would have been a
+quiet falsehood: that code **pauses the SLA clock** (VM-NF-304) because nothing
+can be done, whereas a `FIX_INEFFECTIVE` finding is fully actionable — usually
+the proxy has not mirrored the fully-closing version and a human can act today.
+Reusing it would have presented a delay somebody owns as one nobody could have
+prevented. `TestFixIneffectiveDoesNotPauseTheSLA` pins the distinction.
+
+### Stubbed / deferred
+
+- **No real `gh` implementation.** `PROps` has only the fake; the real one needs
+  the GitHub App (VM-OQ-10). Every behaviour above is tested against the
+  interface, so the real adapter slots in behind it.
+- **No real `Toolchain`.** §11.3's `go get` / `go mod tidy` / `go build` /
+  `go test` sequence is specified and the interface matches it; the executing
+  implementation is not written. The bisect-on-failure path (§11.3) is
+  represented in `Applied.Dropped` but not implemented.
+- **JavaScript path** (`npm ci` → targeted upgrade → build → test) not started.
+- **No orchestrator wiring** — that is 9b, deliberately.
+- **`OutcomePushRejected`** returns the conflict to the caller; nothing yet
+  decides whether to re-plan the group next sweep.
+- **VM-F-526** (config and container fixes last) is not enforced; there is no
+  config-fix worker yet.
+
+### Assumptions
+
+- **A34.** §10 rule 8 says "split; remainder deferred to the next run". The gate
+  says split into multiple pull requests. Implemented as a full split into
+  several groups; "deferred to the next run" is then whichever groups the run's
+  concurrency and budget do not reach, which is the orchestrator's existing
+  behaviour rather than a special case here.
+- **A35.** A failing **baseline** routes to `NEEDS_HUMAN` with
+  `BUILD_FAILED`/`TESTS_FAILED`. §11.2 says "abort and report the pre-existing
+  failure"; NEEDS_HUMAN is the honest destination, because a human must repair
+  the repository before it can be remediated at all.
+- **A36.** The worker's `dir` is a synthetic path (`/work/<group id>`). Real
+  clone-directory management belongs with the real `gh` implementation.
+- **A37.** `remediation_prs` is keyed on branch, and membership
+  (`remediation_pr_findings`) is **stored, not recomputed** — the membership
+  that produced a branch is history, and recomputing it from current findings
+  would disagree the moment one changed state.
+- **A38.** `Settle` takes a repository argument and is called per repository,
+  matching how the orchestrator already iterates.
+
+### Open questions
+
+**OQ-P9a-01 — nothing calls `Settle` yet.** It is tested end to end but no
+sweep invokes it, so today an externally-fixed finding leaves its pull request
+open until someone notices. Wiring belongs in 9b, alongside `Drain`.
+
+**OQ-P9a-02 — `VM-F-545` (a pull request closed without merge transitions its
+findings to `DECLINED`) is not driven.** It needs the GitHub webhook
+(VM-AD §7.4 `POST /v1/webhooks/github`), which does not exist. Until then a
+human closing a remediation pull request leaves its findings in `PR_OPEN`
+indefinitely — and policy rule 2 will skip them as in progress. This is the
+mirror image of the stranding bug found above, and it is currently **live**:
+worth fixing in 9b or Phase 12, not later.
+
+**OQ-P9a-03 — rate limiting is modelled but not handled.** `gh.ErrRateLimited`
+carries a retry-after and `IsRateLimited` exists, but the worker propagates it
+rather than backing off. The fake exercises the path; nothing consumes it. It
+belongs with the real `gh` implementation and the run budget.

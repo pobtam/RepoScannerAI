@@ -21,6 +21,14 @@ func highestVersion(candidates []string) string {
 	return best
 }
 
+// CompareVersions orders two version strings, returning -1, 0 or 1.
+//
+// Exported because remediation needs exactly this comparison when two findings
+// in one module demand different fixed versions, and a second implementation
+// there would eventually disagree with the projection about which version
+// fully closes a defect.
+func CompareVersions(a, b string) int { return compareVersions(a, b) }
+
 // compareVersions orders two version strings, returning -1, 0 or 1.
 //
 // It is deliberately tolerant rather than strictly semver: the versions arriving

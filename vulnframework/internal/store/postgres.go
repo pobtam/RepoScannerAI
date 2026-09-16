@@ -512,10 +512,18 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 		if err != nil {
 			return nil, err
 		}
+		prs, err := p.openPRURLs(ctx)
+		if err != nil {
+			return nil, err
+		}
 		for i := range out {
 			if url, ok := refs[out[i].Fingerprint]; ok && url != "" {
 				u := url
 				out[i].Refs.Ticket = &u
+			}
+			if url, ok := prs[out[i].Fingerprint]; ok && url != "" {
+				u := url
+				out[i].Refs.PullRequest = &u
 			}
 		}
 	}
@@ -1349,4 +1357,202 @@ func (p *Postgres) RetryTicketOp(ctx context.Context, id int64, next time.Time, 
 		return fmt.Errorf("%w: ticket op %d", ErrNotFound, id)
 	}
 	return nil
+}
+
+// --- Per-repository remediation lock (VM-AD §7.3, VM-F-503) -----------------
+
+func (p *Postgres) AcquireRepoLock(ctx context.Context, repo, owner string, expiresAt time.Time) error {
+	return p.AcquireRepoLockAt(ctx, repo, owner, expiresAt, p.clock())
+}
+
+func (p *Postgres) AcquireRepoLockAt(ctx context.Context, repo, owner string, expiresAt, now time.Time) error {
+	if owner == "" {
+		return fmt.Errorf("store: a repository lock needs an owner; an anonymous lock cannot be released or attributed")
+	}
+	res, err := p.db.ExecContext(ctx, qAcquireRepoLock, repo, owner, expiresAt.UTC(), now.UTC())
+	if err != nil {
+		return fmt.Errorf("store: acquiring the remediation lock on %s: %w", repo, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		// No row changed: someone else holds an unexpired lock. Read it back so
+		// the error names the holder.
+		held, gerr := p.GetRepoLock(ctx, repo)
+		if gerr != nil {
+			return fmt.Errorf("%w: on %s", ErrRepoLocked, repo)
+		}
+		return fmt.Errorf("%w: held by %s until %s", ErrRepoLocked, held.Owner, held.ExpiresAt)
+	}
+	return nil
+}
+
+func (p *Postgres) ReleaseRepoLock(ctx context.Context, repo, owner string) error {
+	held, err := p.GetRepoLock(ctx, repo)
+	if err != nil {
+		return err
+	}
+	if held.Owner == "" {
+		return nil
+	}
+	if held.Owner != owner {
+		return fmt.Errorf("store: %s cannot release %s's lock on %s; "+
+			"releasing another worker's lock would reintroduce concurrent remediation mid-flight", owner, held.Owner, repo)
+	}
+	if _, err := p.db.ExecContext(ctx, qReleaseRepoLock, repo, owner); err != nil {
+		return fmt.Errorf("store: releasing the remediation lock on %s: %w", repo, err)
+	}
+	return nil
+}
+
+func (p *Postgres) GetRepoLock(ctx context.Context, repo string) (RepoLock, error) {
+	var (
+		l         RepoLock
+		expiresAt time.Time
+	)
+	err := p.db.QueryRowContext(ctx, qGetRepoLock, repo).Scan(&l.Repo, &l.Owner, &l.AcquiredAt, &expiresAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return RepoLock{}, nil
+	}
+	if err != nil {
+		return RepoLock{}, fmt.Errorf("store: reading the remediation lock on %s: %w", repo, err)
+	}
+	exp := expiresAt.UTC()
+	l.AcquiredAt = l.AcquiredAt.UTC()
+	l.ExpiresAt = &exp
+	return l, nil
+}
+
+func (p *Postgres) SweepExpiredRepoLocks(ctx context.Context, now time.Time) (int, error) {
+	res, err := p.db.ExecContext(ctx, qSweepRepoLocks, now.UTC())
+	if err != nil {
+		return 0, fmt.Errorf("store: sweeping expired remediation locks: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	return int(n), nil
+}
+
+// --- Remediation pull requests (VM-AD §11) ----------------------------------
+
+func (p *Postgres) SaveRemediationPR(ctx context.Context, pr RemediationPR) error {
+	if pr.Branch == "" {
+		return fmt.Errorf("store: a remediation pull request needs a branch; it is the idempotency key (VM-F-502)")
+	}
+	opened := pr.OpenedAt
+	if opened.IsZero() {
+		opened = p.clock()
+	}
+	var closed any
+	if pr.ClosedAt != nil {
+		closed = pr.ClosedAt.UTC()
+	}
+
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.ExecContext(ctx, qUpsertRemediationPR,
+		pr.Branch, pr.Repo, pr.FixGroupID, pr.Number, pr.URL, pr.State, opened.UTC(), closed); err != nil {
+		return fmt.Errorf("store: saving remediation pull request %s: %w", pr.Branch, err)
+	}
+	// Membership is replaced wholesale, so a group recomputed with a different
+	// membership cannot leave stale rows behind claiming coverage it no longer
+	// has.
+	if len(pr.Findings) > 0 {
+		if _, err := tx.ExecContext(ctx, qDeletePRFindings, pr.Branch); err != nil {
+			return err
+		}
+		for _, fp := range pr.Findings {
+			if _, err := tx.ExecContext(ctx, qInsertPRFinding, pr.Branch, fp); err != nil {
+				return fmt.Errorf("store: linking %s to %s: %w", fp, pr.Branch, err)
+			}
+		}
+	}
+	return tx.Commit()
+}
+
+func (p *Postgres) GetRemediationPR(ctx context.Context, branch string) (RemediationPR, bool, error) {
+	pr, err := p.scanRemediationPR(ctx, qGetRemediationPR, branch)
+	if errors.Is(err, sql.ErrNoRows) {
+		return RemediationPR{}, false, nil
+	}
+	if err != nil {
+		return RemediationPR{}, false, err
+	}
+	return pr, true, nil
+}
+
+func (p *Postgres) RemediationPRForFinding(ctx context.Context, fingerprint string) (RemediationPR, bool, error) {
+	pr, err := p.scanRemediationPR(ctx, qRemediationPRForFinding, fingerprint)
+	if errors.Is(err, sql.ErrNoRows) {
+		return RemediationPR{}, false, nil
+	}
+	if err != nil {
+		return RemediationPR{}, false, err
+	}
+	return pr, true, nil
+}
+
+func (p *Postgres) scanRemediationPR(ctx context.Context, query string, arg any) (RemediationPR, error) {
+	var (
+		pr     RemediationPR
+		number sql.NullInt64
+		url    sql.NullString
+		closed sql.NullTime
+	)
+	err := p.db.QueryRowContext(ctx, query, arg).Scan(
+		&pr.Branch, &pr.Repo, &pr.FixGroupID, &number, &url, &pr.State, &pr.OpenedAt, &closed)
+	if err != nil {
+		return RemediationPR{}, err
+	}
+	pr.Number, pr.URL = int(number.Int64), url.String
+	pr.OpenedAt = pr.OpenedAt.UTC()
+	if closed.Valid {
+		at := closed.Time.UTC()
+		pr.ClosedAt = &at
+	}
+
+	rows, err := p.db.QueryContext(ctx, qPRFindings, pr.Branch)
+	if err != nil {
+		return RemediationPR{}, fmt.Errorf("store: reading pull request membership: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var fp string
+		if err := rows.Scan(&fp); err != nil {
+			return RemediationPR{}, err
+		}
+		pr.Findings = append(pr.Findings, fp)
+	}
+	return pr, rows.Err()
+}
+
+func (p *Postgres) CloseRemediationPR(ctx context.Context, branch string, at time.Time) error {
+	res, err := p.db.ExecContext(ctx, qCloseRemediationPR, branch, at.UTC())
+	if err != nil {
+		return fmt.Errorf("store: closing remediation pull request %s: %w", branch, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: remediation pull request for branch %q", ErrNotFound, branch)
+	}
+	return nil
+}
+
+// openPRURLs returns the open pull request URL per finding, for the projection.
+func (p *Postgres) openPRURLs(ctx context.Context) (map[string]string, error) {
+	rows, err := p.db.QueryContext(ctx, qOpenPRURLs)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading remediation pull request references: %w", err)
+	}
+	defer rows.Close()
+
+	out := map[string]string{}
+	for rows.Next() {
+		var fp, url string
+		if err := rows.Scan(&fp, &url); err != nil {
+			return nil, err
+		}
+		out[fp] = url
+	}
+	return out, rows.Err()
 }

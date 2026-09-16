@@ -221,7 +221,7 @@ func TestReasonCodeEnumerationIsClosed(t *testing.T) {
 	// Transcribed from the normative list in VM-FR §5.3.
 	want := []string{
 		"NO_UPSTREAM_FIX", "BLOCKED_UPSTREAM_FIRST_PARTY", "MAJOR_BUMP_POLICY",
-		"BUILD_FAILED", "TESTS_FAILED", "NO_TEST_COVERAGE", "NEEDS_HUMAN_SECRET",
+		"BUILD_FAILED", "TESTS_FAILED", "FIX_INEFFECTIVE", "NO_TEST_COVERAGE", "NEEDS_HUMAN_SECRET",
 		"SUPPRESSION_PROPOSED", "DECLINED", "AGENT_GAVE_UP", "BUDGET_EXHAUSTED",
 		"POLICY_ISSUE_ONLY",
 	}
@@ -235,6 +235,24 @@ func TestReasonCodeEnumerationIsClosed(t *testing.T) {
 	}
 	if model.ReasonCode("").Valid() || model.ReasonCode("MADE_UP").Valid() {
 		t.Error("the reason code enumeration is not closed")
+	}
+}
+
+// TestFixIneffectiveDoesNotPauseTheSLA is why FIX_INEFFECTIVE exists as its own
+// code rather than reusing NO_UPSTREAM_FIX.
+//
+// A finding whose bump built and tested but did not close the defect is fully
+// actionable — most often the proxy has not mirrored the fully-closing version
+// yet, and a human can act today. Reusing NO_UPSTREAM_FIX would pause its SLA
+// clock (VM-NF-304), presenting a delay somebody owns as one nobody could have
+// prevented.
+func TestFixIneffectiveDoesNotPauseTheSLA(t *testing.T) {
+	if model.ReasonFixIneffective.PausesSLA() {
+		t.Error("FIX_INEFFECTIVE pauses the SLA clock; it must not — the finding is actionable, and " +
+			"pausing the clock would be a false assurance that the delay is nobody's fault")
+	}
+	if !model.ReasonFixIneffective.Valid() {
+		t.Error("FIX_INEFFECTIVE is not a member of the enumeration")
 	}
 }
 

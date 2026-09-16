@@ -47,3 +47,48 @@ type TicketOp struct {
 	LastError     string    `json:"last_error,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
 }
+
+// RepoLock is the per-repository remediation lock (VM-AD §7.3, VM-F-503).
+//
+// It is a row with an expiry rather than `pg_advisory_lock`. An advisory lock
+// lives in a Postgres session, so the in-memory backend could not honour it at
+// all, and a fake that enforces weaker rules than production makes every test
+// using it a statement about the fake. The expiry also buys crash safety an
+// advisory lock cannot: a worker that dies does not strand the repository.
+type RepoLock struct {
+	Repo       string     `json:"repo"`
+	Owner      string     `json:"owner"`
+	AcquiredAt time.Time  `json:"acquired_at"`
+	ExpiresAt  *time.Time `json:"expires_at"`
+}
+
+// Held reports whether the lock is claimed as of now, accounting for expiry.
+func (l RepoLock) Held(now time.Time) bool {
+	if l.Owner == "" {
+		return false
+	}
+	return l.ExpiresAt == nil || now.Before(*l.ExpiresAt)
+}
+
+// RemediationPR is the record of a pull request opened for a fix group.
+//
+// Keyed on the branch, which derives from the fix group identity, so
+// re-running remediation for the same group finds this row and cannot open a
+// second pull request (VM-F-502).
+type RemediationPR struct {
+	Branch     string     `json:"branch"`
+	Repo       string     `json:"repo"`
+	FixGroupID string     `json:"fix_group_id"`
+	Number     int        `json:"number"`
+	URL        string     `json:"url"`
+	State      string     `json:"state"`
+	OpenedAt   time.Time  `json:"opened_at"`
+	ClosedAt   *time.Time `json:"closed_at,omitempty"`
+	// Findings is the group membership that produced this branch. It is stored
+	// rather than recomputed: the membership is history, and recomputing it
+	// from current findings would disagree the moment one changed state.
+	Findings []string `json:"findings"`
+}
+
+// Open reports whether the pull request is still open.
+func (p RemediationPR) Open() bool { return p.State == "open" }

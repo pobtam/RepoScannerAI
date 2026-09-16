@@ -265,3 +265,73 @@ FROM ticket_ops WHERE next_attempt_at <= $1 ORDER BY id LIMIT $2`
 	qRetryTicketOp = `
 UPDATE ticket_ops SET attempts = attempts + 1, next_attempt_at = $2, last_error = $3 WHERE id = $1`
 )
+
+// --- Per-repository remediation lock (VM-AD §7.3) ----------------------------
+
+const (
+	// qAcquireRepoLock is one statement, so mutual exclusion is the database's
+	// guarantee rather than a read-then-write race in application code.
+	//
+	// The conflict clause takes the lock only when it is the caller's own
+	// (reentrant, extending the expiry) or has expired (reclaim). Otherwise no
+	// row is updated and the caller sees zero rows affected, which is the
+	// contention signal.
+	qAcquireRepoLock = `
+INSERT INTO repo_locks (repo, owner, acquired_at, expires_at)
+VALUES ($1, $2, $4, $3)
+ON CONFLICT (repo) DO UPDATE SET
+  owner       = EXCLUDED.owner,
+  acquired_at = CASE WHEN repo_locks.owner = EXCLUDED.owner THEN repo_locks.acquired_at ELSE EXCLUDED.acquired_at END,
+  expires_at  = EXCLUDED.expires_at
+WHERE repo_locks.owner = EXCLUDED.owner OR repo_locks.expires_at <= $4`
+
+	qGetRepoLock = `SELECT repo, owner, acquired_at, expires_at FROM repo_locks WHERE repo = $1`
+
+	qReleaseRepoLock = `DELETE FROM repo_locks WHERE repo = $1 AND owner = $2`
+
+	qSweepRepoLocks = `DELETE FROM repo_locks WHERE expires_at <= $1`
+)
+
+// --- Remediation pull requests (VM-AD §11) -----------------------------------
+
+const (
+	qUpsertRemediationPR = `
+INSERT INTO remediation_prs (branch, repo, fix_group_id, number, url, state, opened_at, closed_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (branch) DO UPDATE SET
+  number    = EXCLUDED.number,
+  url       = EXCLUDED.url,
+  state     = EXCLUDED.state,
+  closed_at = COALESCE(EXCLUDED.closed_at, remediation_prs.closed_at)`
+
+	qGetRemediationPR = `
+SELECT branch, repo, fix_group_id, number, url, state, opened_at, closed_at
+FROM remediation_prs WHERE branch = $1`
+
+	qRemediationPRForFinding = `
+SELECT p.branch, p.repo, p.fix_group_id, p.number, p.url, p.state, p.opened_at, p.closed_at
+FROM remediation_prs p
+JOIN remediation_pr_findings f ON f.branch = p.branch
+WHERE f.fingerprint = $1 AND p.state = 'open'
+ORDER BY p.branch
+LIMIT 1`
+
+	qCloseRemediationPR = `UPDATE remediation_prs SET state = 'closed', closed_at = $2 WHERE branch = $1`
+
+	qDeletePRFindings = `DELETE FROM remediation_pr_findings WHERE branch = $1`
+
+	qInsertPRFinding = `
+INSERT INTO remediation_pr_findings (branch, fingerprint) VALUES ($1, $2)
+ON CONFLICT DO NOTHING`
+
+	qPRFindings = `SELECT fingerprint FROM remediation_pr_findings WHERE branch = $1 ORDER BY fingerprint`
+
+	// qOpenPRURLs feeds the finding projection: the open pull request per
+	// finding, joined in rather than stored in the finding document.
+	qOpenPRURLs = `
+SELECT f.fingerprint, MIN(p.url)
+FROM remediation_prs p
+JOIN remediation_pr_findings f ON f.branch = p.branch
+WHERE p.state = 'open' AND p.url <> ''
+GROUP BY f.fingerprint`
+)

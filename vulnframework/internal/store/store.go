@@ -191,6 +191,15 @@ var ErrScopeRequired = errors.New("store: query scope is required and is never d
 // ErrNotFound is returned when an addressed record does not exist.
 var ErrNotFound = errors.New("store: not found")
 
+// ErrRepoLocked is returned when another worker holds a repository's
+// remediation lock.
+//
+// It is a distinct sentinel because it is not a failure: the correct response
+// is to defer this repository to the next sweep, not to retry or to report an
+// error. A caller that treated it as a failure would count a correctly
+// serialised repository as a coverage gap.
+var ErrRepoLocked = errors.New("store: another worker holds this repository's remediation lock (VM-F-503)")
+
 // Store is the findings store.
 type Store interface {
 	// Migrate applies every pending migration.
@@ -324,6 +333,44 @@ type Store interface {
 	DeleteTicket(ctx context.Context, fingerprint string) error
 	// CloseTicket records that a finding's ticket was closed (VM-F-811).
 	CloseTicket(ctx context.Context, fingerprint string, at time.Time) error
+
+	// --- Per-repository remediation lock (VM-AD §7.3, VM-F-503) ---
+	//
+	// Remediation is parallel across repositories and strictly serialised
+	// within one. Acquisition order is repo lock OUTER, finding leases INNER,
+	// and a repository's findings are batched under one acquisition: fixed
+	// ordering makes deadlock impossible, and batching holds the lock once per
+	// repository per attempt rather than once per finding.
+
+	// AcquireRepoLock claims a repository for a worker until expiresAt. It is
+	// reentrant for the current owner, which extends the expiry. It reclaims an
+	// expired lock rather than waiting for the sweeper.
+	AcquireRepoLock(ctx context.Context, repo, owner string, expiresAt time.Time) error
+	// AcquireRepoLockAt is AcquireRepoLock with an explicit now, so expiry is
+	// testable without sleeping.
+	AcquireRepoLockAt(ctx context.Context, repo, owner string, expiresAt, now time.Time) error
+	// ReleaseRepoLock releases a lock the caller owns. Releasing another
+	// worker's lock is refused: it would silently reintroduce the concurrency
+	// the lock exists to prevent, mid-remediation.
+	ReleaseRepoLock(ctx context.Context, repo, owner string) error
+	// GetRepoLock returns a repository's current lock, zero if unlocked.
+	GetRepoLock(ctx context.Context, repo string) (RepoLock, error)
+	// SweepExpiredRepoLocks reclaims locks whose holder died and returns how
+	// many it released.
+	SweepExpiredRepoLocks(ctx context.Context, now time.Time) (int, error)
+
+	// --- Remediation pull requests (VM-AD §11, VM-F-501/502) ---
+
+	// SaveRemediationPR records or updates a fix group's pull request.
+	SaveRemediationPR(ctx context.Context, pr RemediationPR) error
+	// GetRemediationPR returns the pull request for a branch, if any.
+	GetRemediationPR(ctx context.Context, branch string) (RemediationPR, bool, error)
+	// RemediationPRForFinding returns the open pull request addressing a
+	// finding, if any. This is what tells the settle path there is a pull
+	// request to close when a finding is fixed elsewhere.
+	RemediationPRForFinding(ctx context.Context, fingerprint string) (RemediationPR, bool, error)
+	// CloseRemediationPR marks a pull request closed.
+	CloseRemediationPR(ctx context.Context, branch string, at time.Time) error
 
 	// --- Ticket operation queue (VM-F-812) ---
 
