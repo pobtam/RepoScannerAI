@@ -626,6 +626,7 @@ func reprojectTx(ctx context.Context, tx *sql.Tx, fp string) error {
 
 	view := model.Finding{
 		Identity:       model.Identity{PrimaryID: p.PrimaryID, Aliases: p.Aliases},
+		Location:       p.LocationOf(),
 		Versions:       model.Versions{Current: p.CurrentVersion, Fixed: p.FixedVersion},
 		Classification: withFirstParty(p.Classification, p.FirstPartyPath),
 		Provenance:     model.Provenance{Tools: p.Tools},
@@ -1024,4 +1025,108 @@ func (p *Postgres) SetPriority(ctx context.Context, fp string, pr model.Priority
 		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
 	}
 	return nil
+}
+
+// PreviousRun returns the run of the same kind immediately before seq.
+func (p *Postgres) PreviousRun(ctx context.Context, kind RunKind, beforeSeq int64) (Run, error) {
+	var (
+		run                      Run
+		k                        string
+		trigger                  sql.NullString
+		finished                 sql.NullTime
+		versions                 []byte
+		planned, scanned, failed sql.NullInt64
+	)
+	err := p.db.QueryRowContext(ctx, qPreviousRun, string(kind), beforeSeq).Scan(
+		&run.ID, &k, &run.Seq, &trigger, &run.StartedAt, &finished,
+		&run.ScannerImage, &versions, &planned, &scanned, &failed)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Run{}, nil
+	}
+	if err != nil {
+		return Run{}, fmt.Errorf("store: previous %s run before %d: %w", kind, beforeSeq, err)
+	}
+	run.Kind = RunKind(k)
+	run.TriggerDetail = trigger.String
+	if finished.Valid {
+		t := finished.Time.UTC()
+		run.FinishedAt = &t
+	}
+	run.StartedAt = run.StartedAt.UTC()
+	_ = json.Unmarshal(versions, &run.ToolVersions)
+	run.ReposPlanned, run.ReposScanned, run.ReposFailed = int(planned.Int64), int(scanned.Int64), int(failed.Int64)
+	return run, nil
+}
+
+// SaveReport records an issued report (VM-ADR-15).
+func (p *Postgres) SaveReport(ctx context.Context, r Report) error {
+	existing, err := p.GetReport(ctx, r.ID)
+	if err == nil {
+		if existing.ContentHash != r.ContentHash {
+			return fmt.Errorf("store: report %s is already issued with a different content hash (%s); "+
+				"reports are immutable — issue a new report that supersedes it (VM-ADR-15)", r.ID, existing.ContentHash)
+		}
+		return nil
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return err
+	}
+
+	_, err = p.db.ExecContext(ctx, qInsertReport,
+		r.ID, r.AnchorRunID, r.Kind, nullString(r.Repo), r.Template,
+		[]byte(r.Query), r.ContentHash, []byte(r.Content),
+		r.IssuedAt.UTC(), nullString(r.IssuedBy), nullString(r.Supersedes),
+		r.Redacted, r.WithheldCount)
+	if err != nil {
+		return fmt.Errorf("store: saving report %s: %w", r.ID, err)
+	}
+	return nil
+}
+
+// GetReport returns an issued report.
+func (p *Postgres) GetReport(ctx context.Context, id string) (Report, error) {
+	rows, err := p.db.QueryContext(ctx, qGetReport, id)
+	if err != nil {
+		return Report{}, fmt.Errorf("store: reading report %s: %w", id, err)
+	}
+	defer rows.Close()
+	out, err := scanReports(rows)
+	if err != nil {
+		return Report{}, err
+	}
+	if len(out) == 0 {
+		return Report{}, fmt.Errorf("%w: report %q", ErrNotFound, id)
+	}
+	return out[0], nil
+}
+
+// ReportsForRun lists the reports anchored to a run.
+func (p *Postgres) ReportsForRun(ctx context.Context, runID string) ([]Report, error) {
+	rows, err := p.db.QueryContext(ctx, qReportsForRun, runID)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading reports for %s: %w", runID, err)
+	}
+	defer rows.Close()
+	return scanReports(rows)
+}
+
+func scanReports(rows *sql.Rows) ([]Report, error) {
+	var out []Report
+	for rows.Next() {
+		var (
+			r                          Report
+			repo, issuedBy, supersedes sql.NullString
+			query, content             []byte
+		)
+		if err := rows.Scan(&r.ID, &r.AnchorRunID, &r.Kind, &repo, &r.Template,
+			&query, &r.ContentHash, &content, &r.IssuedAt, &issuedBy, &supersedes,
+			&r.Redacted, &r.WithheldCount); err != nil {
+			return nil, err
+		}
+		r.Repo, r.IssuedBy, r.Supersedes = repo.String, issuedBy.String, supersedes.String
+		r.Query, r.Content = query, content
+		r.IssuedAt = r.IssuedAt.UTC()
+		out = append(out, r)
+	}
+	return out, rows.Err()
 }

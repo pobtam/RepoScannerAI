@@ -32,6 +32,7 @@ type Memory struct {
 	observations map[string][]SourceObservation // keyed by fingerprint
 	transitions  map[string][]model.StateTransition
 	plan         map[string]map[string]PlanEntry // run id -> repo -> entry
+	reports      map[string]Report
 }
 
 type memFinding struct {
@@ -69,6 +70,7 @@ func NewMemory() *Memory {
 		observations: map[string][]SourceObservation{},
 		transitions:  map[string][]model.StateTransition{},
 		plan:         map[string]map[string]PlanEntry{},
+		reports:      map[string]Report{},
 	}
 }
 
@@ -105,6 +107,7 @@ func (m *Memory) MigrateTo(_ context.Context, version int) error {
 		m.observations = map[string][]SourceObservation{}
 		m.transitions = map[string][]model.StateTransition{}
 		m.plan = map[string]map[string]PlanEntry{}
+		m.reports = map[string]Report{}
 	}
 	m.schemaVersion = version
 	return nil
@@ -516,7 +519,7 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 			PrimaryID: p.PrimaryID,
 			Aliases:   p.Aliases,
 		},
-		Location: f.Location,
+		Location: p.LocationOf(),
 		Versions: model.Versions{
 			Current: p.CurrentVersion,
 			Fixed:   p.FixedVersion,
@@ -870,4 +873,67 @@ func (m *Memory) SetPriority(_ context.Context, fp string, p model.Priority, rea
 	}
 	f.Priority, f.ReasonCode = p, reason
 	return nil
+}
+
+// PreviousRun returns the run of the same kind immediately before seq.
+func (m *Memory) PreviousRun(_ context.Context, kind RunKind, beforeSeq int64) (Run, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var best Run
+	for _, r := range m.runs {
+		if r.Kind != kind || r.Seq >= beforeSeq {
+			continue
+		}
+		if best.ID == "" || r.Seq > best.Seq {
+			best = r
+		}
+	}
+	return best, nil
+}
+
+// SaveReport records an issued report (VM-ADR-15).
+func (m *Memory) SaveReport(_ context.Context, r Report) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.reports == nil {
+		m.reports = map[string]Report{}
+	}
+	if existing, ok := m.reports[r.ID]; ok {
+		// Immutable once issued. Re-issuing identical content is idempotent;
+		// different content for the same identifier is a defect, because a
+		// citation to that identifier would silently change meaning.
+		if existing.ContentHash != r.ContentHash {
+			return fmt.Errorf("store: report %s is already issued with a different content hash (%s); "+
+				"reports are immutable — issue a new report that supersedes it (VM-ADR-15)", r.ID, existing.ContentHash)
+		}
+		return nil
+	}
+	m.reports[r.ID] = r
+	return nil
+}
+
+// GetReport returns an issued report.
+func (m *Memory) GetReport(_ context.Context, id string) (Report, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	r, ok := m.reports[id]
+	if !ok {
+		return Report{}, fmt.Errorf("%w: report %q", ErrNotFound, id)
+	}
+	return r, nil
+}
+
+// ReportsForRun lists the reports anchored to a run.
+func (m *Memory) ReportsForRun(_ context.Context, runID string) ([]Report, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []Report
+	for _, r := range m.reports {
+		if r.AnchorRunID == runID {
+			out = append(out, r)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
 }

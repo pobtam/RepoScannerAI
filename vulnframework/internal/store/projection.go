@@ -38,10 +38,21 @@ type SourceObservation struct {
 	// exact divergence two-wave remediation exists to prevent (VM-ADR-07).
 	FirstPartyPath string `json:"first_party_path,omitempty"`
 	Transitive     bool   `json:"transitive,omitempty"`
-	CurrentVer     string `json:"current_version,omitempty"`
-	FixedVer       string `json:"fixed_version,omitempty"`
-	AdvisoryURL    string `json:"advisory_url,omitempty"`
-	CredentialTy   string `json:"credential_type,omitempty"`
+	// Location fields. They come from the scanner rather than from the merge,
+	// but they must travel with the observation: the Postgres store rebuilds the
+	// whole finding document from the projection, so anything not carried here
+	// is simply lost — which is how module, file and line went missing.
+	Module      string `json:"module,omitempty"`
+	ModuleMajor string `json:"module_major,omitempty"`
+	Package     string `json:"package,omitempty"`
+	Function    string `json:"function,omitempty"`
+	File        string `json:"file,omitempty"`
+	Line        int    `json:"line,omitempty"`
+
+	CurrentVer   string `json:"current_version,omitempty"`
+	FixedVer     string `json:"fixed_version,omitempty"`
+	AdvisoryURL  string `json:"advisory_url,omitempty"`
+	CredentialTy string `json:"credential_type,omitempty"`
 }
 
 // SourceOf builds a SourceObservation from an adapter's raw finding.
@@ -62,6 +73,12 @@ func SourceOf(fp, runID string, observedAt time.Time, raw model.RawFinding) Sour
 		DepClass:       raw.Classification.DepClass,
 		FirstPartyPath: derefString(raw.Classification.FirstPartyPath),
 		Transitive:     raw.Classification.Transitive,
+		Module:         raw.Module,
+		ModuleMajor:    raw.ModuleMajor,
+		Package:        raw.Package,
+		Function:       raw.Function,
+		File:           raw.File,
+		Line:           raw.Line,
 		CurrentVer:     raw.Versions.Current,
 		FixedVer:       raw.Versions.Fixed,
 		AdvisoryURL:    raw.AdvisoryURL,
@@ -80,6 +97,16 @@ type Projection struct {
 	AdvisoryURL    string
 	CredentialType string
 	FirstPartyPath string
+
+	// Location, taken from the first source that reports it. Sources are folded
+	// in a deterministic order, so this does not depend on which tool happened
+	// to run first.
+	Module      string
+	ModuleMajor string
+	Package     string
+	Function    string
+	File        string
+	Line        int
 
 	// FixedCandidates retains every fixed version any source proposed, so the
 	// choice of FixedVersion is auditable rather than merely asserted.
@@ -112,6 +139,11 @@ func Project(obs []SourceObservation) Projection {
 		p.Classification.Reachable = model.ReachableUnknown
 		return p
 	}
+
+	// Folded in a deterministic order so "first source that reports it" is a
+	// property of the observation set, not of arrival order.
+	obs = append([]SourceObservation(nil), obs...)
+	sort.SliceStable(obs, func(i, j int) bool { return obs[i].Tool < obs[j].Tool })
 
 	var (
 		tools                 = map[string]bool{}
@@ -199,6 +231,18 @@ func Project(obs []SourceObservation) Projection {
 		// direct dependency.
 		if p.FirstPartyPath == "" && o.FirstPartyPath != "" {
 			p.FirstPartyPath = o.FirstPartyPath
+		}
+		if p.Module == "" && o.Module != "" {
+			p.Module, p.ModuleMajor = o.Module, o.ModuleMajor
+		}
+		if p.Package == "" && o.Package != "" {
+			p.Package = o.Package
+		}
+		if p.Function == "" && o.Function != "" {
+			p.Function = o.Function
+		}
+		if p.File == "" && o.File != "" {
+			p.File, p.Line = o.File, o.Line
 		}
 	}
 
@@ -313,4 +357,26 @@ func withFirstParty(c model.Classification, path string) model.Classification {
 		c.FirstPartyPath = &p
 	}
 	return c
+}
+
+// LocationOf builds the finding location from a projection.
+func (p Projection) LocationOf() model.Location {
+	loc := model.Location{Module: p.Module, ModuleMajor: p.ModuleMajor}
+	if p.Package != "" {
+		v := p.Package
+		loc.Package = &v
+	}
+	if p.Function != "" {
+		v := p.Function
+		loc.Function = &v
+	}
+	if p.File != "" {
+		v := p.File
+		loc.File = &v
+	}
+	if p.Line != 0 {
+		v := p.Line
+		loc.Line = &v
+	}
+	return loc
 }

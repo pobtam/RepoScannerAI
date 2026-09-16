@@ -17,7 +17,8 @@ green.
 | **4a** — coverage-age ordering, staleness metric, unified escalation | **Green** | passing |
 | **5** — `internal/triage` + `internal/score` | **Green** | passing (extended gate) |
 | **6** — `internal/policy` | **Green** | passing (extended gate) |
-| 7–12 | Not started | |
+| **7** — `internal/report` + publisher | **Green** | passing (extended gate) |
+| 7b–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -1284,5 +1285,172 @@ upstream-defer rule fires only from `FirstPartyPath`, which normalisation sets �
 and **VM-AD §12.2's classification step is itself still Phase 11**, so no scan
 currently populates it. The rule is tested and correct; the data feeding it
 arrives later.
+
+---
+
+## Decisions taken after Phase 6 (2026-09-15)
+
+**OQ-P6-01 — fix-group cap (VM-AD §10 rule 8). → Deferral to Phase 9 accepted,
+with the gate clause fixed now:**
+
+> **Phase 9 must assert that a fix group exceeding `max_findings_per_pr` SPLITS
+> into multiple pull requests, and never silently emits one oversized PR.**
+
+**OQ-P6-02 — `FirstPartyPath` unpopulated until Phase 11. → Accepted, with the
+dormancy recorded explicitly:**
+
+> **Upstream-defer is end-to-end DORMANT until Phase 11.** The rule is correct
+> and tested, but no real scan populates `FirstPartyPath` — VM-AD §12.2's
+> classification step is itself Phase 11 — so the only thing exercising the rule
+> today is synthetic classification in tests.
+>
+> **Phase 11's gate MUST include a full scan-to-decision test** that populates
+> `FirstPartyPath` from *real* first-party classification and asserts it survives
+> the store projection into a `defer_upstream` outcome. That is the end-to-end
+> guard that would have caught the Phase 6 projection bug.
+>
+> Until then, the projection round-trip test added in Phase 6 stays as the
+> **standing regression sentinel**.
+
+### Standing note carried forward (from the Phase 6 projection bug)
+
+> **A passing unit test proves the rule, not that the rule runs. An invariant is
+> only real if its input survives every projection between scan and decision.**
+
+The Phase 6 bug was exactly this shape: the policy rule for upstream defer was
+correct and unit-tested, while the field it depends on was being dropped by the
+store projection — so the rule could never fire. Nothing in the policy package
+could have caught it.
+
+**Applied to Phase 7 reporting:** a report is another projection, and the same
+failure mode applies with the same invisibility. A report that reads from a
+convenience view rather than from ground truth will under-report exactly the
+fields that view forgot, and every test written against that view will pass.
+This is why the Phase 7 gate verifies reports against the store rather than
+against the reporting layer's own model.
+
+## Phase 7 — `internal/report` + publisher
+
+**Gate:** *reports verified against ground truth rather than a convenience
+projection; no secret value in any artifact, in any field; the
+uncalibrated-threshold caveat in OUTPUT; same-kind deltas and coverage trending
+from real run history with gaps represented honestly; run-anchored, immutable,
+content-hashed, storing their query.*
+
+**Status: green.** 223 top-level tests (609 with subtests) module-wide, vet and
+gofmt clean, passes under `-race`, both backends.
+
+### Ground truth — and why the obvious test was not enough
+
+The first ground-truth test compared the report against the store, field by
+field, driven by reflection over the report row. It passed. Then the mutation
+that matters — reverting the Phase 6 fix so the store projection drops
+`FirstPartyPath` — **did not fail it.**
+
+That is the standing note biting again, one level up: the store *is* a
+projection, so a field it drops is missing from both the report and the
+expectation, and the two agree. A test comparing a projection against itself
+proves nothing about the field that was lost.
+
+`TestReportReflectsScannerInputNotOnlyStoreProjection` fixes it by asserting
+against what was **scanned** — the raw findings written in — so a drop anywhere
+between the scanner and the rendered report fails. Both tests are kept: one
+catches the report layer diverging from the store, the other catches the whole
+chain losing a field.
+
+### A fourth backend divergence, found by that test
+
+With ground truth anchored at the scanner, Postgres immediately failed:
+**`Location` was never persisted at all.** `reprojectTx` rebuilt the finding
+document from the projection, and the projection never carried module, file,
+line, package or function — so every Postgres-stored finding lost its location.
+Memory kept its own copy and looked correct.
+
+Location now travels through `SourceObservation` and `Project`, and **both
+backends materialise it from the projection**, so they cannot diverge again.
+Sources are folded in a deterministic order, so "first source that reports it"
+is a property of the observation set rather than of arrival order.
+
+### A dishonest field name, caught while fixing a delta bug
+
+The delta was computed with the report's own scope, so under `ScopeAll` both
+sides returned every finding and every delta was zero. Fixing that exposed a
+worse problem in the field it populated: it was called `Fixed`.
+
+A finding observed last run and not this one **may have been fixed, or may
+simply not have been looked for.** Calling that "fixed" launders a coverage gap
+into good news — the exact failure VM-ADR-12 exists to prevent, reappearing in
+the reporting layer. It is now `NoLongerObserved`, with a separate `Verified`
+count for findings that actually reached `VERIFIED`, and the rendered report
+says so in as many words.
+
+### Secrets at the output boundary
+
+A report is the artifact that actually leaves the system — into tickets, email
+and audit packs — so it carries its own guard rather than trusting the two
+upstream ones. `Issue` scans the **rendered artifact**, not the model, so
+credential material arriving through any field is caught: a narrative that
+quoted the matched line, a file path containing a token, a caveat string.
+
+It **fails rather than scrubbing**. A silent scrub would hide that credential
+material reached the output boundary at all, which is the defect worth knowing
+about. Verified across five credential shapes × seven fields.
+
+### Honest coverage
+
+Every gap cause is carried separately and named, never summed into one figure: a
+repository deferred for budget, one whose build failed, one never dispatched and
+one whose worker died are four different problems with four different remedies.
+The coverage percentage counts **complete scans only** — a partial scan is not
+coverage, any more than it verifies a finding — and the staleness distribution
+travels with it, because a flat gap count with a growing maximum age is
+starvation a percentage cannot show. Uncovered repositories are **named**, since
+an audit attestation needs names.
+
+### Verified by mutation
+
+| Mutation | Caught by |
+|---|---|
+| Store projection drops `FirstPartyPath` | `TestReportReflectsScannerInputNotOnlyStoreProjection` |
+| Projection drops `Module` / drops `File` | same |
+| Report drops a field the store holds | `TestReportMatchesStoreGroundTruth` |
+| Credential guard disabled | `TestIssueRefusesCredentialMaterialInAnyField` |
+| Uncalibrated caveat omitted from output | `TestUncalibratedThresholdCaveatSurfacesInOutput` |
+| Deltas compare across run kinds | `TestDeltasCompareTheSameRunKind` |
+| Partial scans counted as coverage | `TestCoverageGapsAreNotFoldedIntoClean` |
+
+### Assumptions made
+
+**A25 — the uncalibrated caveat is rendered before the headline, not after it.**
+A reader who stops at the numbers must still have seen that they are
+provisional; a footnote after the table is a caveat only in the sense that it
+exists. The test asserts the ordering.
+
+**A26 — `latest.json` carries the anchor and content hash, not the report.** It
+is a pointer (VM-AD §14.1); duplicating the document there would create a second
+representation that can drift from the one under `runs/`.
+
+### Open questions hit
+
+**OQ-P7-01 — Phase 7b is not done.** Redaction and delivery are modelled
+(`Redacted`, `WithheldCount`, and the rendered notice) but nothing computes
+them: there is no privilege model yet, which is **VM-UI-OQ-01 / VM-OQ-05**
+territory. The §17 Phase 7b gate — an audit pack regenerating byte-identically,
+a report redacted below the generator's privilege level, an over-limit request
+rejected with the limit stated — is **not claimed**. Byte-identical
+regeneration *is* covered: regenerating from the stored query reproduces the
+same content hash.
+
+**OQ-P7-02 — the publisher is a fake.** VM-ADR-08 puts reports in a dedicated
+git repository; `PublishRun` writes the §14.1 layout through a `Publisher`
+interface, and the git-backed implementation needs the GitHub App
+(**VM-OQ-10**, already a named precondition of the coverage guarantee).
+
+**OQ-P7-03 — SLA status is reported but never computed into the store.**
+`internal/score.SLA` computes it and the report counts breached and paused
+findings, but nothing writes `Derived.SLAStatus` during a run, so those counts
+are currently always zero in practice. The wiring belongs with the orchestrator
+pass that already persists priority. **Wanted before the first real sweep**, or
+the SLA section of every report reads as "nothing is late" regardless of truth.
 
 ---

@@ -195,3 +195,25 @@ WHERE fingerprint = $2`
 
 	qSetPriority = `UPDATE findings SET priority = $1, reason_code = $2 WHERE fingerprint = $3`
 )
+
+// Previous run of a kind, and issued reports (VM-ADR-15).
+const (
+	qPreviousRun = `
+SELECT id, kind, seq, trigger_detail, started_at, finished_at, scanner_image,
+       tool_versions, repos_planned, repos_scanned, repos_failed
+FROM runs WHERE kind = $1 AND seq < $2 ORDER BY seq DESC LIMIT 1`
+
+	qInsertReport = `
+INSERT INTO reports
+  (id, anchor_run_id, kind, repo, template, query, content_hash, content, issued_at, issued_by, supersedes, redacted, withheld_count)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+ON CONFLICT (id) DO NOTHING`
+
+	qGetReport = `
+SELECT id, anchor_run_id, kind, repo, template, query, content_hash, content, issued_at, issued_by, supersedes, redacted, withheld_count
+FROM reports WHERE id = $1`
+
+	qReportsForRun = `
+SELECT id, anchor_run_id, kind, repo, template, query, content_hash, content, issued_at, issued_by, supersedes, redacted, withheld_count
+FROM reports WHERE anchor_run_id = $1 ORDER BY id`
+)

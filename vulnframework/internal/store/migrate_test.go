@@ -55,6 +55,7 @@ func TestMigrationChecksumsAreStable(t *testing.T) {
 		2: "merge_provenance",
 		3: "verification_reason",
 		4: "run_plan",
+		5: "reports",
 	}
 	migrations, err := store.LoadMigrations()
 	if err != nil {
@@ -120,6 +121,7 @@ func TestMigrationsApplyAndRollBack(t *testing.T) {
 	assertColumnPresent(t, db, "findings", "reach_conflict")
 	assertColumnPresent(t, db, "findings", "verified_reason")
 	assertTablePresent(t, db, "run_plan")
+	assertTablePresent(t, db, "reports")
 
 	// Down, one version at a time.
 	for v := top - 1; v >= 0; v-- {
@@ -131,6 +133,7 @@ func TestMigrationsApplyAndRollBack(t *testing.T) {
 	assertTableAbsent(t, db, "findings")
 	assertTableAbsent(t, db, "finding_observations")
 	assertTableAbsent(t, db, "run_plan")
+	assertTableAbsent(t, db, "reports")
 
 	// And up again: a down migration that leaves residue fails here.
 	if err := s.Migrate(ctx); err != nil {

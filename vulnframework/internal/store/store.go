@@ -9,6 +9,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -92,6 +93,23 @@ type RepoScanResult struct {
 	FailureDetail string      `json:"failure_detail,omitempty"`
 	FailureOwner  string      `json:"failure_owner,omitempty"`
 	DurationSec   int         `json:"duration_sec,omitempty"`
+}
+
+// Report is an issued report record (VM-ADR-15).
+type Report struct {
+	ID            string          `json:"id"`
+	AnchorRunID   string          `json:"anchor_run_id"`
+	Kind          string          `json:"kind"`
+	Repo          string          `json:"repo,omitempty"`
+	Template      string          `json:"template"`
+	Query         json.RawMessage `json:"query"`
+	ContentHash   string          `json:"content_hash"`
+	Content       json.RawMessage `json:"content"`
+	IssuedAt      time.Time       `json:"issued_at"`
+	IssuedBy      string          `json:"issued_by,omitempty"`
+	Supersedes    string          `json:"supersedes,omitempty"`
+	Redacted      bool            `json:"redacted"`
+	WithheldCount int             `json:"withheld_count"`
 }
 
 // Repo is a repository in the fleet registry.
@@ -267,6 +285,22 @@ type Store interface {
 	SetTriage(ctx context.Context, fingerprint string, t model.Triage) error
 	// SetPriority persists the computed priority and reason code.
 	SetPriority(ctx context.Context, fingerprint string, p model.Priority, reason *model.ReasonCode) error
+
+	// PreviousRun returns the run of the same kind immediately before seq, or a
+	// zero Run when there is none. Deltas compare same-kind runs only: an
+	// advisory rescan that touched six repositories against a full sweep
+	// produces a delta that looks like a catastrophe or a miracle, and is
+	// neither (VM-F-14).
+	PreviousRun(ctx context.Context, kind RunKind, beforeSeq int64) (Run, error)
+
+	// SaveReport records an issued report. Reports are immutable: re-issuing
+	// the same content for the same anchor is idempotent, and changing a
+	// report means issuing a new one that supersedes it (VM-ADR-15).
+	SaveReport(ctx context.Context, r Report) error
+	// GetReport returns an issued report.
+	GetReport(ctx context.Context, id string) (Report, error)
+	// ReportsForRun lists the reports anchored to a run.
+	ReportsForRun(ctx context.Context, runID string) ([]Report, error)
 
 	// --- Coverage age (OQ-P4-01) ---
 

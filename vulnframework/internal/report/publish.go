@@ -1,0 +1,213 @@
+package report
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"sort"
+	"strings"
+	"sync"
+)
+
+// credentialPatterns match tokens that look like live credentials.
+//
+// This is the output-boundary guard for VM-F-263. The finding record already has
+// nowhere to put a credential and the gitleaks adapter redacts at normalisation —
+// this is the third line, and it exists because a report is the artifact that
+// actually leaves the system. It goes into tickets, email and audit packs, and a
+// leak here is a leak everywhere.
+//
+// It scans the *rendered artifact*, not the model, so it catches credential
+// material arriving through any field: a triage narrative that quoted the
+// matched line, a file path containing a token, raw output someone added to the
+// row later.
+var credentialPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`\bAKIA[0-9A-Z]{16}\b`),                                                 // AWS access key id
+	regexp.MustCompile(`\bASIA[0-9A-Z]{16}\b`),                                                 // AWS temporary key id
+	regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9]{36,}\b`),                                       // GitHub tokens
+	regexp.MustCompile(`\bglpat-[A-Za-z0-9_\-]{20,}\b`),                                        // GitLab PAT
+	regexp.MustCompile(`\bxox[abprs]-[A-Za-z0-9-]{10,}\b`),                                     // Slack
+	regexp.MustCompile(`\bsk-[A-Za-z0-9]{32,}\b`),                                              // generic API secret keys
+	regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----`),                                   // private keys
+	regexp.MustCompile(`\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\b`), // JWT
+}
+
+// ErrCredentialInReport is returned when a rendered artifact contains something
+// shaped like a live credential.
+//
+// Generation fails rather than scrubbing silently. A report that cannot be made
+// safe should not be published, and a silent scrub would hide the fact that
+// credential material reached the output boundary at all — which is itself the
+// defect worth knowing about.
+type ErrCredentialInReport struct {
+	Artifact string
+	Pattern  string
+}
+
+func (e *ErrCredentialInReport) Error() string {
+	return fmt.Sprintf(
+		"report: refusing to publish %s: it contains something matching %s. "+
+			"A secret's value must never be written to a report, in any field (VM-F-263, VM-UI-F-105). "+
+			"Find how credential material reached the output boundary rather than scrubbing it here",
+		e.Artifact, e.Pattern)
+}
+
+// AssertNoCredentials scans a rendered artifact for credential material.
+func AssertNoCredentials(artifact string, body []byte) error {
+	for _, re := range credentialPatterns {
+		if loc := re.Find(body); loc != nil {
+			return &ErrCredentialInReport{Artifact: artifact, Pattern: re.String()}
+		}
+	}
+	return nil
+}
+
+// Issued is a report that has been rendered, hashed and sealed (VM-ADR-15).
+type Issued struct {
+	Report Report `json:"report"`
+	// JSON is the authoritative document; Markdown is rendered from it and is
+	// never generated independently (principle P5).
+	JSON     []byte `json:"-"`
+	Markdown []byte `json:"-"`
+	Hash     string `json:"content_hash"`
+}
+
+// Issue renders, guards and hashes a report.
+//
+// The hash covers the authoritative JSON, so a copy found in an email thread
+// eighteen months later can be checked against the original. It is computed
+// over the document with the hash field itself empty, so hashing is idempotent
+// and a report's hash does not depend on whether it has been hashed before.
+func Issue(rep Report) (Issued, error) {
+	rep.ContentHash = ""
+
+	body, err := json.MarshalIndent(rep, "", "  ")
+	if err != nil {
+		return Issued{}, fmt.Errorf("report: encoding: %w", err)
+	}
+	if err := AssertNoCredentials("fleet.json", body); err != nil {
+		return Issued{}, err
+	}
+
+	sum := sha256.Sum256(body)
+	hash := hex.EncodeToString(sum[:])
+
+	rep.ContentHash = hash
+	sealed, err := json.MarshalIndent(rep, "", "  ")
+	if err != nil {
+		return Issued{}, fmt.Errorf("report: encoding: %w", err)
+	}
+
+	md := Render(rep)
+	if err := AssertNoCredentials("report.md", md); err != nil {
+		return Issued{}, err
+	}
+
+	return Issued{Report: rep, JSON: sealed, Markdown: md, Hash: hash}, nil
+}
+
+// reportID derives a stable identifier from the anchor and query.
+func reportID(rep Report) string {
+	parts := []string{string(rep.Kind), rep.AnchorRun, rep.Repo, rep.Query.Template, string(rep.Query.Scope)}
+	sum := sha256.Sum256([]byte(strings.Join(parts, "\x1f")))
+	return fmt.Sprintf("R-%s-%s", rep.AnchorRun, hex.EncodeToString(sum[:])[:8])
+}
+
+// Publisher writes issued reports somewhere durable (VM-ADR-08).
+//
+// An interface so the system builds and tests with no repository, no
+// credentials and no network; the git-backed implementation arrives with the
+// GitHub App (VM-OQ-10).
+type Publisher interface {
+	Publish(ctx context.Context, path string, body []byte) error
+}
+
+// FakePublisher collects artifacts in memory.
+type FakePublisher struct {
+	mu  sync.Mutex
+	got map[string][]byte
+}
+
+// NewFakePublisher builds an empty publisher.
+func NewFakePublisher() *FakePublisher { return &FakePublisher{got: map[string][]byte{}} }
+
+// Publish records an artifact.
+func (p *FakePublisher) Publish(_ context.Context, path string, body []byte) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.got == nil {
+		p.got = map[string][]byte{}
+	}
+	cp := make([]byte, len(body))
+	copy(cp, body)
+	p.got[path] = cp
+	return nil
+}
+
+// Get returns a published artifact.
+func (p *FakePublisher) Get(path string) ([]byte, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	b, ok := p.got[path]
+	return b, ok
+}
+
+// Paths returns every published path, sorted.
+func (p *FakePublisher) Paths() []string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	out := make([]string, 0, len(p.got))
+	for k := range p.got {
+		out = append(out, k)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// All returns every published artifact.
+func (p *FakePublisher) All() map[string][]byte {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	out := make(map[string][]byte, len(p.got))
+	for k, v := range p.got {
+		out[k] = v
+	}
+	return out
+}
+
+// PublishRun writes a run's artifacts in the VM-AD §14.1 layout.
+//
+//	security-reports/runs/S-001247/fleet.json    authoritative
+//	security-reports/runs/S-001247/fleet.md      rendered
+//	security-reports/runs/S-001247/repos/<r>.md  rendered, one per repository
+func PublishRun(ctx context.Context, p Publisher, fleet Issued, repos []Issued) error {
+	base := "runs/" + fleet.Report.AnchorRun
+	if err := p.Publish(ctx, base+"/fleet.json", fleet.JSON); err != nil {
+		return err
+	}
+	if err := p.Publish(ctx, base+"/fleet.md", fleet.Markdown); err != nil {
+		return err
+	}
+	for _, r := range repos {
+		name := strings.ReplaceAll(r.Report.Repo, "/", "__")
+		if err := p.Publish(ctx, base+"/repos/"+name+".md", r.Markdown); err != nil {
+			return err
+		}
+		if err := p.Publish(ctx, base+"/repos/"+name+".json", r.JSON); err != nil {
+			return err
+		}
+	}
+	// latest.json points at the most recent run (VM-AD §14.1).
+	pointer, err := json.MarshalIndent(map[string]string{
+		"run":          fleet.Report.AnchorRun,
+		"content_hash": fleet.Hash,
+		"issued_at":    fleet.Report.IssuedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}, "", "  ")
+	if err != nil {
+		return err
+	}
+	return p.Publish(ctx, "latest.json", pointer)
+}
