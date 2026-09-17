@@ -379,6 +379,22 @@ func (o *Orchestrator) dispatch(ctx context.Context, runID string, plan []store.
 
 // record persists one worker's result.
 func (o *Orchestrator) record(ctx context.Context, res scan.Result) error {
+	// The dependency manifest, before the findings. Without this the
+	// reverse-dependency index is empty and the entire first-party wave design
+	// is inert — a consumer reading a field no producer wrote, which is the
+	// defect Phase 11 found three times (OQ-P11-01).
+	if len(res.Deps) > 0 {
+		deps := make([]store.ModuleDep, 0, len(res.Deps))
+		for _, d := range res.Deps {
+			deps = append(deps, store.ModuleDep{
+				Module: d.Module, Version: d.Version, Direct: d.Direct, Replaced: d.Replaced,
+			})
+		}
+		if err := o.Store.RecordDeps(ctx, res.RunID, res.Repo, deps); err != nil {
+			return err
+		}
+	}
+
 	if _, err := o.Store.UpsertObservations(ctx, res.RunID, res.Repo, res.Findings); err != nil {
 		return fmt.Errorf("recording findings for %s: %w", res.Repo, err)
 	}

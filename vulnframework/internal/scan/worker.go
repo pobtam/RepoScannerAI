@@ -50,6 +50,15 @@ type Result struct {
 	// Aliases is the identifier grouping built during this scan, retained so a
 	// caller can audit why two tools' findings collapsed (VM-AD §5).
 	Aliases *AliasTable `json:"-"`
+
+	// Deps is the repository's dependency manifest (VM-F-602, VM-AD §8.1).
+	//
+	// Read here because the clone is already on disk, and recorded because the
+	// reverse-dependency index that first-party waves rest on has no other
+	// source. Phase 11 built classification, waves and blast radius over an
+	// index nothing populated — the field existed, a consumer read it, and no
+	// producer wrote it (OQ-P11-01).
+	Deps []ModuleDep `json:"deps"`
 }
 
 // CoverageGap records a scanner that did not produce results (VM-F-205).
@@ -163,6 +172,19 @@ func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile Repo
 	aliases.AddFindings(res.Findings)
 	res.Findings = aliases.Enrich(res.Findings)
 	res.Aliases = aliases
+
+	// The manifest, from the clone already on disk. A failure to read it is a
+	// coverage gap in the dependency index, not a failed scan: the findings
+	// are valid regardless, and treating a missing manifest as a scan failure
+	// would turn every JavaScript repository into a gap.
+	deps, err := ReadGoManifest(dir)
+	if err != nil {
+		res.Gaps = append(res.Gaps, CoverageGap{
+			Tool: "manifest", Classification: GapPartial, Cause: "manifest_unreadable",
+			Detail: err.Error(), Owner: OwnerRepo,
+		})
+	}
+	res.Deps = deps
 
 	sort.Strings(res.ToolsOK)
 	sort.Strings(res.ToolsFailed)

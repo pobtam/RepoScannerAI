@@ -38,6 +38,7 @@ type Memory struct {
 	repoLocks      map[string]RepoLock
 	remediationPRs map[string]RemediationPR
 	runTickets     map[string]RunTicket
+	deps           map[string]map[string]ModuleDep
 	ticketOps      []TicketOp
 	nextOpID       int64
 }
@@ -1366,4 +1367,62 @@ func (m *Memory) SetUpstreamFinding(_ context.Context, fingerprint, upstream str
 	}
 	f.UpstreamFinding = upstream
 	return nil
+}
+
+// --- Dependency manifests (VM-F-602) ----------------------------------------
+
+func (m *Memory) RecordDeps(_ context.Context, runID, repo string, deps []ModuleDep) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.deps == nil {
+		m.deps = map[string]map[string]ModuleDep{}
+	}
+	// Keyed by repository, replacing wholesale: a repository that dropped a
+	// dependency must stop appearing as a consumer of it, and merging would
+	// leave it there for ever.
+	fresh := map[string]ModuleDep{}
+	for _, d := range deps {
+		d.RunID, d.Repo = runID, repo
+		fresh[d.Module] = d
+	}
+	m.deps[repo] = fresh
+	return nil
+}
+
+func (m *Memory) Dependents(_ context.Context, module string) ([]ModuleDep, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []ModuleDep
+	for _, byModule := range m.deps {
+		if d, ok := byModule[module]; ok {
+			out = append(out, d)
+		}
+	}
+	sortDeps(out)
+	return out, nil
+}
+
+func (m *Memory) AllDeps(_ context.Context) ([]ModuleDep, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []ModuleDep
+	for _, byModule := range m.deps {
+		for _, d := range byModule {
+			out = append(out, d)
+		}
+	}
+	sortDeps(out)
+	return out, nil
+}
+
+// sortDeps orders by repository then module, shared by both backends so an
+// index built from either is identical — a wave plan derived from a different
+// order would dispatch a different wave.
+func sortDeps(in []ModuleDep) {
+	sort.Slice(in, func(a, b int) bool {
+		if in[a].Repo != in[b].Repo {
+			return in[a].Repo < in[b].Repo
+		}
+		return in[a].Module < in[b].Module
+	})
 }

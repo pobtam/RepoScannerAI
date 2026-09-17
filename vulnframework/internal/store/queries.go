@@ -367,3 +367,23 @@ FROM tickets WHERE backend = $1 AND ref = $2`
 
 // qSetUpstreamFinding records the owner's finding a consumer is blocked on.
 const qSetUpstreamFinding = `UPDATE findings SET upstream_finding = $2 WHERE fingerprint = $1`
+
+// --- Dependency manifests (VM-F-602) ----------------------------------------
+
+const (
+	qDeleteRepoDeps = `DELETE FROM module_deps WHERE repo = $1`
+
+	qInsertDep = `
+INSERT INTO module_deps (run_id, repo, module, version, direct, replaced)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (run_id, repo, module) DO UPDATE SET
+  version = EXCLUDED.version, direct = EXCLUDED.direct, replaced = EXCLUDED.replaced`
+
+	qDependents = `
+SELECT run_id, repo, module, version, direct, replaced
+FROM module_deps WHERE module = $1 ORDER BY repo, module`
+
+	qAllDeps = `
+SELECT run_id, repo, module, version, direct, replaced
+FROM module_deps ORDER BY repo, module`
+)

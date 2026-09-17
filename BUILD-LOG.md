@@ -25,8 +25,8 @@ green.
 | **9b** — orchestrator ticket wiring, Drain, reopen, strand sweep | **Green** | passing (extended gate) |
 | **10a** — `internal/remediate/agent` — guard inheritance + harness | **Green** | passing (extended gate) |
 | **10b** — headless client, §11.4 prompt, sandbox, VM-F-854 | **Green** | passing (extended gate) |
-| **11** — `internal/firstparty` — classification + wave propagation | **Green** | passing (extended gate) |
-| 12 | Not started | |
+| **11** — `internal/firstparty` — classification + wave propagation | **Green** | passing, OQ-P11-01 closed |
+| 12 — the GitHub App | Not started | |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -2893,3 +2893,103 @@ specification says "more than one minor behind may need an intermediate step",
 which implies a distance judgement this does not make. Conservative in the safe
 direction — it defers more than it must — but it will defer consumers that
 would have built, and the operator cost of that is real.
+
+---
+
+## Decisions after Phase 11 (2026-09-16)
+
+**Phase 11 is approved IN PRINCIPLE but NOT complete until OQ-P11-01 is
+closed.**
+
+**OQ-P11-01 — `module_deps` is never written by the scan worker. → CLOSE
+BEFORE PHASE 11 IS DONE.**
+
+> Same inertness class this phase found twice already (ImportPath, and the
+> Phase 6 FirstPartyPath). Wire the scan worker to WRITE `module_deps` from the
+> manifest read it already performs, then **re-run the full wave-propagation
+> suite against scanner-written consumer data**, not hand-built indexes.
+>
+> Phase 11's determinism and termination proofs only mean something over data a
+> real run produces. Green over test-scaffolded `Consumers` is "algorithm
+> correct", not "algorithm runs".
+
+### NAMED DELIVERABLE — the Producer-Coverage Audit
+
+Phase 11 found the same defect **three times**: `FirstPartyPath` (Phase 6),
+`ImportPath` (Phase 11), `module_deps` (Phase 11). In every case a schema field
+that a consumer reads, that **no real adapter, scanner or classifier writes**,
+and that is invisible to every test which supplies the field itself.
+
+> This is now the **dominant risk mode of the architecture**, not an incidental
+> bug.
+>
+> **Deliverable:** for EVERY field in the finding and store schema, a test that
+> FAILS if the real producer stops writing it — the govulncheck-NDJSON
+> discipline generalised to the whole schema. Anchored at producer input, never
+> at a projection or a constructed finding.
+>
+> Expect more unwritten fields to surface. **This audit gates "backend
+> complete."**
+
+### The state-liveness question is now permanent
+
+Recorded in VM-AD §6.1.4: any state added to §6.1 must answer *"if nothing else
+happens, what moves this?"* before it is merged. Three no-exit states
+(§6.1.2, §6.1.3, §6.1.4) were all found by asking exactly that.
+
+
+---
+
+## Phase 11 completion — OQ-P11-01 closed
+
+Phase 11 is now complete. The wave machinery runs over **scanner-written**
+consumer data.
+
+### What was missing
+
+Nothing read a dependency manifest. `module_deps` had been in the schema since
+migration 0001, `Index.Add` accepted dependencies from any source, and every
+wave test supplied its own. The algorithm was correct and the algorithm did not
+run.
+
+### The chain, and a failing mutation at every link
+
+| Link | Test | Mutation that reddens it |
+|---|---|---|
+| go.mod → `ModuleDep` | manifest parse tests | — (parser is the leaf) |
+| parser → `Result.Deps` | `TestTheWorkerRecordsTheManifestItRead` | worker drops the read |
+| `Result` → store | `TestTheOrchestratorPersistsWhatTheWorkerRead` | orchestrator skips `RecordDeps` |
+| store → index | `TestTheIndexIsBuiltFromScannerWrittenManifests` | — (covered by the above) |
+| index → wave plan | `TestWavePlanningOverScannerWrittenData` | replace/spread mutations from Phase 11 |
+
+Each link was tested through the *next* one, deliberately. A test that calls
+the parser directly cannot see that nothing calls the parser — which is how
+this defect and its two predecessors survived a green suite.
+
+### Two facts that exist only in a manifest
+
+`go.mod` is the only place a **replace directive** lives, and it is the fact
+VM-F-608's exclusion turns on. Phase 11 implemented that exclusion with no way
+to learn it: `Replaced` was whatever a test set. The same is true of the
+version a consumer actually sits on, which VM-F-613's split depends on. Both
+now travel from a real file to a wave decision.
+
+### Determinism, re-proven over producer output
+
+The Phase 11 permutation test rotated a hand-built slice. The new one varies
+the order repositories are **scanned** in, which is the order that actually
+varies in production — dispatch is concurrent and most-stale-first.
+
+### A negative the wholesale write buys
+
+`RecordDeps` replaces a repository's manifest rather than merging into it. A
+repository that dropped the shared module must stop appearing as a consumer;
+merging would leave it listed for ever and the next wave would open a pull
+request against a module it no longer uses, which its owners could not
+explain. `TestADroppedDependencyStopsBeingAConsumer` has a failing mutation.
+
+### Still open from Phase 11
+
+**OQ-P11-02** (propagation memoisation unproven) and **OQ-P11-03** (spread
+split by equality rather than distance) are unchanged. Neither is an inertness
+defect.

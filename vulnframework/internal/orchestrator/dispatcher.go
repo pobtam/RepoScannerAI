@@ -62,6 +62,22 @@ func (f *FakeDispatcher) WithFindings(repo string, tools []string, findings ...m
 	return f
 }
 
+// WithDeps registers the dependency manifest a scan read (VM-F-602).
+//
+// Separate from WithFindings because the two are separate producer outputs,
+// and a fake that bundled them would let a test assert the index was
+// populated by supplying findings — which is exactly the shape of the defect
+// this exists to catch.
+func (f *FakeDispatcher) WithDeps(repo string, deps []scan.ModuleDep) *FakeDispatcher {
+	res, ok := f.Results[repo]
+	if !ok {
+		res = scan.Result{Repo: repo, Outcome: model.ScanComplete, ToolsOK: []string{"govulncheck"}}
+	}
+	res.Deps = deps
+	f.Results[repo] = res
+	return f
+}
+
 // WithOutcome registers a scan that completed with a given outcome.
 func (f *FakeDispatcher) WithOutcome(repo string, outcome model.ScanOutcome, toolsOK, toolsFailed []string) *FakeDispatcher {
 	f.Results[repo] = scan.Result{

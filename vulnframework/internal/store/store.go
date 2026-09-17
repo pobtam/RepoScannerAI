@@ -112,6 +112,16 @@ type Report struct {
 	WithheldCount int             `json:"withheld_count"`
 }
 
+// ModuleDep is one repository's recorded use of one module (VM-F-602).
+type ModuleDep struct {
+	RunID    string `json:"run_id"`
+	Repo     string `json:"repo"`
+	Module   string `json:"module"`
+	Version  string `json:"version"`
+	Direct   bool   `json:"direct"`
+	Replaced bool   `json:"replaced"`
+}
+
 // Repo is a repository in the fleet registry.
 type Repo struct {
 	Name           string   `json:"name"`
@@ -358,6 +368,22 @@ type Store interface {
 	// SweepExpiredRepoLocks reclaims locks whose holder died and returns how
 	// many it released.
 	SweepExpiredRepoLocks(ctx context.Context, now time.Time) (int, error)
+
+	// --- Dependency manifests (VM-F-602) ---
+
+	// RecordDeps writes a repository's dependency manifest for a run.
+	//
+	// The reverse-dependency index that first-party waves rest on has no other
+	// source, and until Phase 11 closed OQ-P11-01 nothing wrote this table at
+	// all: the schema had existed since migration 0001 and every wave test ran
+	// over a hand-built index.
+	RecordDeps(ctx context.Context, runID, repo string, deps []ModuleDep) error
+	// Dependents returns the repositories depending on a module, from the most
+	// recent run that recorded each.
+	Dependents(ctx context.Context, module string) ([]ModuleDep, error)
+	// AllDeps returns every recorded dependency from the latest run per
+	// repository, for building the standing index (VM-F-612).
+	AllDeps(ctx context.Context) ([]ModuleDep, error)
 
 	// SetUpstreamFinding records which upstream finding a consumer is blocked
 	// on (VM-F-604).

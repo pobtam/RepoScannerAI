@@ -1692,3 +1692,53 @@ func (p *Postgres) SetUpstreamFinding(ctx context.Context, fingerprint, upstream
 	}
 	return nil
 }
+
+// --- Dependency manifests (VM-F-602) ----------------------------------------
+
+func (p *Postgres) RecordDeps(ctx context.Context, runID, repo string, deps []ModuleDep) error {
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Replaced wholesale for the repository: a dependency that was dropped
+	// must stop appearing, and merging would leave the repository listed as a
+	// consumer of something it no longer uses — which a wave would then try to
+	// advance.
+	if _, err := tx.ExecContext(ctx, qDeleteRepoDeps, repo); err != nil {
+		return fmt.Errorf("store: clearing dependencies for %s: %w", repo, err)
+	}
+	for _, d := range deps {
+		if _, err := tx.ExecContext(ctx, qInsertDep, runID, repo, d.Module, d.Version, d.Direct, d.Replaced); err != nil {
+			return fmt.Errorf("store: recording dependency %s for %s: %w", d.Module, repo, err)
+		}
+	}
+	return tx.Commit()
+}
+
+func (p *Postgres) Dependents(ctx context.Context, module string) ([]ModuleDep, error) {
+	return p.scanDeps(ctx, qDependents, module)
+}
+
+func (p *Postgres) AllDeps(ctx context.Context) ([]ModuleDep, error) {
+	return p.scanDeps(ctx, qAllDeps)
+}
+
+func (p *Postgres) scanDeps(ctx context.Context, query string, args ...any) ([]ModuleDep, error) {
+	rows, err := p.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading dependencies: %w", err)
+	}
+	defer rows.Close()
+
+	var out []ModuleDep
+	for rows.Next() {
+		var d ModuleDep
+		if err := rows.Scan(&d.RunID, &d.Repo, &d.Module, &d.Version, &d.Direct, &d.Replaced); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}

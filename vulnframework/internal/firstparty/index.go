@@ -1,6 +1,7 @@
 package firstparty
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -285,4 +286,31 @@ func dedupe(in []string) []string {
 		last = s
 	}
 	return out
+}
+
+// LoadIndex builds the standing index from what scans recorded.
+//
+// This is the function whose absence made all of Phase 11 an assertion about
+// hand-built data (OQ-P11-01). The index is only as good as the manifests
+// recorded into it, and nothing here invents an entry: a repository that has
+// never been scanned contributes nothing, and appears as a gap rather than as
+// a repository with no dependencies.
+func LoadIndex(ctx context.Context, s DepSource, r *Registry) (*Index, error) {
+	deps, err := s.AllDeps(ctx)
+	if err != nil {
+		return nil, err
+	}
+	idx := NewIndex(r)
+	for _, d := range deps {
+		idx.Add(Dependency{
+			Repo: d.Repo, Module: d.Module, Version: d.Version,
+			Direct: d.Direct, Replaced: d.Replaced,
+		})
+	}
+	return idx, nil
+}
+
+// DepSource is the store surface the index is built from.
+type DepSource interface {
+	AllDeps(ctx context.Context) ([]store.ModuleDep, error)
 }
