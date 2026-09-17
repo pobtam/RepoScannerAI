@@ -14,6 +14,15 @@ type SpecOptions struct {
 	Assignee  string
 	Parent    *Ref
 	Labels    []string
+
+	// UnavailableScoringInputs and DeclaredScoringInputs carry the scoring
+	// provenance into the ticket (OQ-AUDIT-01).
+	//
+	// A ticket is read detached from any report, and the priority in its body
+	// is the figure quoted in a planning meeting. A caveat that stayed in the
+	// report would never reach that conversation.
+	UnavailableScoringInputs []string
+	DeclaredScoringInputs    int
 }
 
 // SpecFor renders the ticket for a finding.
@@ -100,6 +109,17 @@ func bodyFor(f model.Finding, opts SpecOptions) string {
 	fmt.Fprintf(&b, "**Category:** %s\n", f.Category)
 	if f.Priority != "" {
 		fmt.Fprintf(&b, "**Priority:** %s\n", f.Priority)
+		// The qualification goes where the priority goes. A ticket is read
+		// detached from any report, and the priority in its body is the figure
+		// someone will quote in a planning meeting (OQ-AUDIT-01).
+		if len(opts.UnavailableScoringInputs) > 0 {
+			fmt.Fprintf(&b, "\n> This priority rests on %d of %d declared scoring inputs: %s "+
+				"unavailable because no enrichment feed is wired. Those answer whether the "+
+				"vulnerability is being exploited now and how likely it is to be, so treat the "+
+				"priority as a **floor** rather than an assessment (OQ-AUDIT-01).\n\n",
+				opts.DeclaredScoringInputs-len(opts.UnavailableScoringInputs),
+				opts.DeclaredScoringInputs, strings.Join(opts.UnavailableScoringInputs, " and "))
+		}
 	}
 	fmt.Fprintf(&b, "**State:** %s\n", f.State)
 

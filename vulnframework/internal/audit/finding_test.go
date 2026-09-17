@@ -195,6 +195,15 @@ var findingExemptions = map[audit.FieldPath]audit.Exemption{
 		Producer: "internal/store.Reconcile",
 		Why:      "written on verification; nothing verified in this run",
 	},
+	"Derived.ResidualPossible": {
+		Producer: "internal/store.PlanReconcile via model.ResidualWarning",
+		Why: "written on verification (OQ-AUDIT-02); nothing verified in this run. Covered by " +
+			"internal/store's residual clause across both backends",
+	},
+	"Derived.ResidualDetail": {
+		Producer: "internal/store.PlanReconcile via model.ResidualWarning",
+		Why:      "as above",
+	},
 	"Triage.FPReasoning": {
 		Producer: "internal/triage",
 		Why:      "written only for a false-positive candidate",

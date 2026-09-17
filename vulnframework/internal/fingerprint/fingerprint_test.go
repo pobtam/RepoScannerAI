@@ -20,14 +20,20 @@ func depFinding() model.RawFinding {
 	}
 }
 
+// codeFinding is what a real code-analysis tool produces.
+//
+// Package and Function are deliberately ABSENT. This fixture used to set both,
+// and the Producer-Coverage Audit established that no pinned tool reports
+// either — so every assertion made against it, including the golden value, was
+// a statement about input the system never sees. A fixture that is more
+// informative than its producer is the same defect as a fake that is kinder
+// than production.
 func codeFinding() model.RawFinding {
 	return model.RawFinding{
 		Repo:     "org/wanaware-api",
 		Category: model.CategoryCode,
 		Tool:     "gosec",
 		RuleID:   "G401",
-		Package:  "github.com/org/wanaware-api/internal/crypto",
-		Function: "HashPassword",
 		File:     "internal/crypto/hash.go",
 		Line:     42,
 	}
@@ -101,11 +107,6 @@ func TestStableAcrossReformatting(t *testing.T) {
 			name: "code: line number moves",
 			base: codeFinding(),
 			mut:  func(f model.RawFinding) model.RawFinding { f.Line = 9137; return f },
-		},
-		{
-			name: "code: function moves to a different file in the same package",
-			base: codeFinding(),
-			mut:  func(f model.RawFinding) model.RawFinding { f.File = "internal/crypto/hashing_v2.go"; return f },
 		},
 		{
 			name: "code: rule id case differs between tool versions",
@@ -241,19 +242,6 @@ func TestUnstableAcrossIdentityChange(t *testing.T) {
 			name: "different major version of the same module",
 			base: depFinding(),
 			mut:  func(f model.RawFinding) model.RawFinding { f.ModuleMajor = "v2"; return f },
-		},
-		{
-			name: "different enclosing function",
-			base: codeFinding(),
-			mut:  func(f model.RawFinding) model.RawFinding { f.Function = "ComparePassword"; return f },
-		},
-		{
-			name: "different package, same function name",
-			base: codeFinding(),
-			mut: func(f model.RawFinding) model.RawFinding {
-				f.Package = "github.com/org/wanaware-api/internal/auth"
-				return f
-			},
 		},
 		{
 			name: "different rule from the same tool",
@@ -471,9 +459,23 @@ func TestFingerprintGoldenValues(t *testing.T) {
 		// VM-AD §5 construction:
 		//   sha256("v1" | repo | category | identity | location)[:16], \x1f-joined.
 		"dependency": {depFinding(), "2b3f437df7c03666"},
-		"code":       {codeFinding(), "2c878f11d3ea1e72"},
-		"secret":     {secretFinding(), "b863317fc8fa88eb"},
-		"config":     {configFinding(), "ebdccd46822d729b"},
+		// Changed at OQ-AUDIT-02, and deliberately WITHOUT a Version bump or a
+		// migration.
+		//
+		// The old value was computed from a fixture that set Package and
+		// Function. No pinned tool reports either, so no fingerprint this
+		// system has ever computed in production took the symbol branch — every
+		// real code finding was already fingerprinted from its file path. The
+		// algorithm's output for every PRODUCIBLE input is unchanged, so there
+		// is nothing stored to migrate.
+		//
+		// Independently recomputed from scratch before being locked, as the
+		// Phase 0 values were:
+		//   sha256("v1" | "org/wanaware-api" | "code" | "gosec:g401" |
+		//          "internal/crypto/hash.go")[:16]
+		"code":   {codeFinding(), "dd152167d193b9ff"},
+		"secret": {secretFinding(), "b863317fc8fa88eb"},
+		"config": {configFinding(), "ebdccd46822d729b"},
 	}
 	for name, tc := range golden {
 		t.Run(name, func(t *testing.T) {
@@ -482,5 +484,68 @@ func TestFingerprintGoldenValues(t *testing.T) {
 					"If this is intended, bump fingerprint.Version and write a migration (VM-AD §5).", name, got, tc.want)
 			}
 		})
+	}
+}
+
+// --- What file granularity gives up (OQ-AUDIT-02) ---------------------------
+//
+// Three cases used to live in the tables above, asserting symbol-level
+// behaviour. They passed because each one SET Function or Package, and the
+// Producer-Coverage Audit then established that no pinned tool ever does — so
+// all three were statements about a branch no real input could reach.
+//
+// They are restated here as what the decision gives up, rather than deleted.
+// A capability that was never real should not vanish from the record: the next
+// person to want per-function granularity needs to find this, not rediscover
+// it.
+
+// TestFileGranularitySplitsAFindingWhenItsFileIsRenamed is the first loss.
+//
+// At symbol granularity, moving a function to another file in the same package
+// kept one finding. At file granularity it becomes a new one: the old
+// fingerprint stops being observed and verifies, and a new fingerprint appears
+// with a fresh detection date and a fresh SLA clock.
+//
+// The consequence is an SLA reset on a refactor, and it is worth knowing
+// before someone reports it as a bug.
+func TestFileGranularitySplitsAFindingWhenItsFileIsRenamed(t *testing.T) {
+	before := codeFinding()
+	after := codeFinding()
+	after.File = "internal/crypto/hashing_v2.go"
+
+	if fingerprint.Compute(before) == fingerprint.Compute(after) {
+		t.Fatal("the fingerprint survived a file rename, which requires symbol granularity that no " +
+			"pinned tool supplies the input for")
+	}
+	// And the granularity says so, so a consumer can explain it.
+	if !fingerprint.GranularityOf(before).MayHideResidual() {
+		t.Error("file granularity does not declare its imprecision")
+	}
+}
+
+// TestFileGranularityMergesTwoOccurrencesOfOneRule is the second and third
+// loss together, and the one that matters for correctness rather than for
+// bookkeeping.
+//
+// Two occurrences of one rule in one file — in different functions, or in
+// different packages that happen to share a file path — are ONE finding. Fix
+// the reported one and leave the other, and the finding can verify while a
+// live twin remains.
+//
+// That is why MayHideResidual exists: the risk is not eliminated by this
+// decision, it is made answerable.
+func TestFileGranularityMergesTwoOccurrencesOfOneRule(t *testing.T) {
+	first := codeFinding()
+	second := codeFinding()
+	second.Function = "ComparePassword"
+	second.Line = 412
+
+	if fingerprint.Compute(first) != fingerprint.Compute(second) {
+		t.Fatal("two occurrences of one rule in one file produced different fingerprints; that is " +
+			"symbol granularity, and no tool supplies the symbol")
+	}
+	if !fingerprint.GranularityOf(first).MayHideResidual() {
+		t.Fatal("the merge is not declared as possibly hiding a residual occurrence, so a " +
+			"verification of this finding could not know to warn that a twin may remain")
 	}
 }

@@ -189,6 +189,23 @@ type Derived struct {
 	SLAWindowDays int       `json:"sla_window_days"`
 	SLAStatus     SLAStatus `json:"sla_status,omitempty"`
 	SLABreachDays int       `json:"sla_breach_days"`
+
+	// ResidualPossible marks a VERIFIED finding whose fingerprint granularity
+	// could have covered more than one occurrence (OQ-AUDIT-02).
+	//
+	// Code and secret findings are located to a FILE, because no pinned tool
+	// reports the enclosing symbol. Two occurrences of one rule — or two
+	// credentials — in one file are therefore ONE finding, and a verification
+	// can mean the reported occurrence was fixed while another in the same
+	// file was not flagged, or was flagged as the same finding.
+	//
+	// This is absence-is-not-resolution one level down. VM-ADR-12 asks whether
+	// the scan looked; this asks whether what it looked AT was one thing. A
+	// VERIFIED that can hide a live twin must not pass silently.
+	ResidualPossible bool `json:"residual_possible,omitempty"`
+	// ResidualDetail explains it. A boolean nobody can act on is not a
+	// warning, it is a decoration.
+	ResidualDetail string `json:"residual_detail,omitempty"`
 }
 
 // Refs links the finding to artifacts outside the findings store.
@@ -356,4 +373,35 @@ type RawFinding struct {
 	// (VM-F-109). For secret findings the adapter must redact before populating
 	// this field.
 	Raw json.RawMessage
+}
+
+// ResidualWarning describes the imprecision a verification at this category's
+// fingerprint granularity carries (OQ-AUDIT-02).
+//
+// Returns the empty string where the granularity hides nothing. Living in the
+// model rather than in the store means both backends produce the same wording
+// from the same rule — a warning phrased differently by each would read as two
+// different problems.
+func ResidualWarning(c Category) string {
+	switch c {
+	case CategoryCode:
+		return "This finding is located to a FILE, not to a function: no scanner in the pinned tool " +
+			"set reports the enclosing symbol. Two occurrences of the same rule in the same file are " +
+			"therefore one finding, so this verification may have confirmed the reported occurrence " +
+			"while another in the same file remains. Check the file, not just the fix (OQ-AUDIT-02)."
+	case CategorySecret:
+		return "This finding is located to a FILE. Two credentials in the same file are one finding, " +
+			"so this verification may have confirmed one rotation while another credential in the " +
+			"same file remains live. Check the file, not just the fix (OQ-AUDIT-02)."
+	case CategoryConfig:
+		return "This finding is located to a file and a resource key. A second misconfiguration " +
+			"under the same key may not have been reported separately (OQ-AUDIT-02)."
+	default:
+		// Dependency findings are located to a module and major version. The
+		// module either resolves to the fixed version or it does not, so there
+		// is no second occurrence to hide — and a warning on every
+		// verification would be filtered out within a week, taking the real
+		// ones with it.
+		return ""
+	}
 }

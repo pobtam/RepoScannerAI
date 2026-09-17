@@ -321,12 +321,13 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 	var absent []FindingState
 	for rows.Next() {
 		var f FindingState
-		var state string
-		if err := rows.Scan(&f.Fingerprint, &state); err != nil {
+		var state, category string
+		if err := rows.Scan(&f.Fingerprint, &state, &category); err != nil {
 			rows.Close()
 			return stats, err
 		}
 		f.State = model.State(state)
+		f.Category = model.Category(category)
 		absent = append(absent, f)
 	}
 	rows.Close()
@@ -355,7 +356,12 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 			// Verifying releases any lease: the remediation it was held for is
 			// no longer wanted, and leaving it would keep the sweeper finding a
 			// finding that is already closed (VM-AD §6.1.1).
-			if _, err := tx.ExecContext(ctx, qMarkVerified, now, string(a.VerificationReason), a.Fingerprint); err != nil {
+			// The residual warning comes from the shared model rule, so both
+			// backends word it identically: a warning phrased differently by
+			// each would read as two different problems (OQ-AUDIT-02).
+			residual := a.ResidualDetail
+			if _, err := tx.ExecContext(ctx, qMarkVerified, now, string(a.VerificationReason),
+				a.Fingerprint, residual != "", residual); err != nil {
 				return stats, err
 			}
 			stats.Verified++

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
@@ -199,6 +200,14 @@ type Provenance struct {
 	// count is a measurement against a table; if nobody has reviewed the table,
 	// the count carries a qualifier wherever it is rendered (OQ-P7b-03).
 	SLAWindowsCalibrated bool `json:"sla_windows_calibrated"`
+	// ScoringInputsAvailable is how many of the declared scoring inputs
+	// actually answered, out of how many the formula declares.
+	//
+	// Reported as a fraction rather than a boolean because "complete" and
+	// "missing the two that matter most" are not the same claim, and a reader
+	// needs to know which (OQ-AUDIT-01).
+	ScoringInputsAvailable int `json:"scoring_inputs_available"`
+	ScoringInputsDeclared  int `json:"scoring_inputs_declared"`
 	// Caveats are rendered prominently. A reader must not have to open a config
 	// file to learn that a number is provisional.
 	Caveats []string `json:"caveats,omitempty"`
@@ -239,12 +248,24 @@ type Generator struct {
 	// Calibration is consulted only for its provenance flags: the report states
 	// whether the thresholds behind a priority have been calibrated.
 	Calibration score.Calibration
-	Clock       func() time.Time
+
+	// UnavailableScoringInputs names the declared scoring inputs no feed
+	// writes in this deployment (OQ-AUDIT-01).
+	//
+	// A field rather than a constant so the caveat CLEARS when the feeds are
+	// wired. A caveat that never clears is decoration, and the next one
+	// nobody believes.
+	UnavailableScoringInputs []string
+	Clock                    func() time.Time
 }
 
 // NewGenerator builds a generator.
 func NewGenerator(s store.Store, cal score.Calibration) *Generator {
-	return &Generator{Store: s, Calibration: cal, Clock: func() time.Time { return time.Now().UTC() }}
+	return &Generator{
+		Store: s, Calibration: cal,
+		UnavailableScoringInputs: score.UnavailableInputs(),
+		Clock:                    func() time.Time { return time.Now().UTC() },
+	}
 }
 
 func (g *Generator) now() time.Time {
@@ -293,11 +314,13 @@ func (g *Generator) Generate(ctx context.Context, q Query) (Report, error) {
 			// VM-OQ-06 is unanswered until someone reviews shadow-run data, and
 			// the flag in the calibration file is the single source of that
 			// fact (OQ-P5-02).
-			ThresholdsCalibrated: g.Calibration.StaticAnalysis.Calibrated,
-			SLAWindowsCalibrated: g.Calibration.SLA.Calibrated,
+			ThresholdsCalibrated:   g.Calibration.StaticAnalysis.Calibrated,
+			SLAWindowsCalibrated:   g.Calibration.SLA.Calibrated,
+			ScoringInputsDeclared:  score.DeclaredInputs(),
+			ScoringInputsAvailable: score.DeclaredInputs() - len(g.UnavailableScoringInputs),
 		},
 	}
-	rep.Provenance.Caveats = caveatsFor(g.Calibration)
+	rep.Provenance.Caveats = caveatsFor(g.Calibration, g.UnavailableScoringInputs)
 
 	findings, err := g.Store.ListFindings(ctx, store.Query{
 		Scope: q.Scope, Repo: q.Repo, RunID: q.AnchorRun,
@@ -328,7 +351,7 @@ func (g *Generator) Generate(ctx context.Context, q Query) (Report, error) {
 // (OQ-P5-02), and so does a breach count measured against windows nobody has
 // reviewed (OQ-P7b-03). Marking one and not the other is worse than marking
 // neither: it teaches the reader that an absent caveat means calibrated.
-func caveatsFor(cal score.Calibration) []string {
+func caveatsFor(cal score.Calibration, unavailableScoringInputs []string) []string {
 	var out []string
 	if !cal.StaticAnalysis.Calibrated {
 		out = append(out, "Priorities in this report derive from static analysis thresholds that have NOT been calibrated (VM-OQ-06). "+
@@ -338,6 +361,16 @@ func caveatsFor(cal score.Calibration) []string {
 		out = append(out, "SLA figures in this report are measured against PROVISIONAL remediation windows (VM-OQ-02 is unanswered): "+
 			"the windows are the specification's working defaults and have not been agreed with the teams they bind. "+
 			"A breach here means \"older than an unreviewed window\", not \"late against a commitment\".")
+	}
+	if len(unavailableScoringInputs) > 0 {
+		out = append(out, fmt.Sprintf(
+			"Priorities in this report rest on %d of %d declared scoring inputs: %s unavailable "+
+				"because no enrichment feed is wired (OQ-AUDIT-01). Those answer whether a "+
+				"vulnerability is being exploited now and how likely it is to be — the questions that "+
+				"most often change what a human does — so every priority here is a FLOOR rather than "+
+				"an assessment.",
+			score.DeclaredInputs()-len(unavailableScoringInputs), score.DeclaredInputs(),
+			strings.Join(unavailableScoringInputs, " and ")))
 	}
 	if !cal.FanOut.Enabled {
 		out = append(out, "Blast radius is recorded but does not influence priority (VM-OQ-12 is unanswered), "+

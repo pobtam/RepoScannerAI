@@ -145,3 +145,53 @@ func fingerprintsOf(t *testing.T, s store.Store) []string {
 	}
 	return out
 }
+
+// TestTheScoringInputCaveatTravelsWithEveryPriority covers OQ-AUDIT-01(a).
+//
+// The standard is the one OQ-P5-02 and OQ-P7b-03 set: a qualification must
+// travel with the NUMBER, not sit in a block at the top. A priority is the
+// most-quoted figure this system produces — it reaches a ticket title, a
+// slide, a status mail — and a caveat left behind in the report is a caveat
+// nobody quoting the priority ever saw.
+func TestTheScoringInputCaveatTravelsWithEveryPriority(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		ctx := context.Background()
+		raw := dep("org/a", "GO-2025-0001")
+		f := seed(t, s, store.KindSweep, []model.RawFinding{raw},
+			map[string]model.ScanOutcome{"org/a": model.ScanComplete})
+
+		fps := fingerprintsOf(t, s)
+		if err := s.ApplyTransition(ctx, fps[0], model.Triaged, model.TransitionContext{
+			Actor: model.ActorTriage, Cause: "test",
+		}); err != nil {
+			t.Fatalf("triage: %v", err)
+		}
+		if err := s.SetPriority(ctx, fps[0], model.P1, nil); err != nil {
+			t.Fatalf("priority: %v", err)
+		}
+
+		rep := generate(t, s, f.runID)
+
+		// The structured fraction, so a machine consumer can see it too.
+		if rep.Provenance.ScoringInputsAvailable >= rep.Provenance.ScoringInputsDeclared {
+			t.Errorf("provenance claims %d of %d scoring inputs available while no enrichment feed "+
+				"is wired", rep.Provenance.ScoringInputsAvailable, rep.Provenance.ScoringInputsDeclared)
+		}
+
+		md := string(report.Render(rep))
+		section := sectionOf(md, "By priority")
+		if section == "" {
+			t.Fatalf("the report renders no priority section:\n%s", md)
+		}
+		for _, want := range []string{"3 of 5", "exploit"} {
+			if !strings.Contains(strings.ToLower(section), strings.ToLower(want)) {
+				t.Errorf("the priority table does not say %q, so a reader taking the priority away "+
+					"takes no qualification with it:\n%s", want, section)
+			}
+		}
+		// And a reader must be told it is a floor, not an assessment.
+		if !strings.Contains(strings.ToLower(section), "floor") {
+			t.Errorf("the priority table does not say the numbers are a floor:\n%s", section)
+		}
+	})
+}

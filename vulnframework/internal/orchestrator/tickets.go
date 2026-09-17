@@ -8,6 +8,7 @@ import (
 
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/policy"
+	"github.com/wanaware/vulnframework/internal/score"
 	"github.com/wanaware/vulnframework/internal/store"
 	"github.com/wanaware/vulnframework/internal/tracker"
 )
@@ -123,6 +124,10 @@ func (o *Orchestrator) TicketPass(ctx context.Context, req TicketRequest) (Ticke
 			ReportURL: req.ReportURL,
 			Assignee:  assigneeFor(req.Repo),
 			Parent:    parentRef(parent),
+			// Carried so the priority in the ticket body is qualified the same
+			// way the one in the report is (OQ-AUDIT-01).
+			UnavailableScoringInputs: score.UnavailableInputs(),
+			DeclaredScoringInputs:    score.DeclaredInputs(),
 		})
 		if err != nil {
 			return stats, err

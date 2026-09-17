@@ -3303,3 +3303,180 @@ instance will be.
 | 1 | Producer-Coverage Audit | **GREEN** |
 | 2 | Precondition 1 — real sandbox on Linux CI | Not started; no API key until it passes |
 | 3 | Precondition 3 — first supervised agent run | Gated behind 2 |
+
+---
+
+## Decisions after the Producer-Coverage Audit (2026-09-17)
+
+Audit approved. **Eight instances** found across the build — four projection
+drops and four writer gaps. The audit's producer-naming exemptions become
+**permanent conformance tests**.
+
+**OQ-AUDIT-01 — EPSS and KEV read by the scorer, written by nothing.
+TWO-PART. Part (a) must not mask part (b).**
+
+> **(a) Provenance caveat NOW**, to the same standard as OQ-P5-02 and
+> OQ-P7b-03: a priority resting on **3 of 5** declared inputs must not look
+> complete. The caveat travels **inline with the score** into report, slide and
+> ticket — not only in the config.
+>
+> **(b) NAMED PRE-PRODUCTION WORK ITEM: wire the KEV (CISA known-exploited) and
+> EPSS enrichment feeds.** These are the highest-value real-world triage
+> signals. A scorer that structurally cannot see active-exploitation status has
+> a **feed-shaped hole where its most decision-changing input belongs**. The
+> provenance caveat is the honest interim, **not** the resolution.
+>
+> Apply producer-coverage and weakest-guarantee-fake discipline to the feed:
+> external source, refresh cadence, and **staleness = unknown, never zero**.
+>
+> **Do NOT mark this closed at (a).**
+
+**OQ-AUDIT-02 — the dead `Package#Function` fingerprint branch. DECISION
+TAKEN: delete it, accept file-level granularity for v1.**
+
+> Consistent with refusing to guess `Function` from a gosec snippet: no
+> fabricated fingerprint components.
+>
+> **Required condition — the misleading-verification case must be VISIBLE.** A
+> fix that verifies a file-granular code finding must flag that residual
+> same-file occurrences of the same rule are possible. A `VERIFIED` that can
+> hide a live same-file twin must not pass silently: absence-is-not-resolution,
+> at fingerprint granularity.
+>
+> Symbol-level precision — wiring a tool that reports symbols — is recorded as
+> a later enhancement if real users need per-function granularity.
+
+**`Location.Function` / `Location.Package` writer gap — not-fixed ACCEPTED.**
+No tool reports them, and deriving them from a code snippet would be a guess
+feeding a fingerprint. The conformance test stays.
+
+**OQ-AUDIT-04 — run the same audit over the store types.** `store.Report`,
+`store.Ticket`, `store.RemediationPR`, `store.ModuleDep` and the coverage types
+were not covered. Do it **before "backend complete"**; expect more instances —
+this is where the next one is.
+
+### Order agreed
+
+1. OQ-AUDIT-04 over the store and coverage types
+2. The **HTTP API server** — the frontend's first deliverable, not U0
+3. Frontend U0–U10
+
+### The API is subject to the same discipline
+
+VM-AD §7.4 specifies an HTTP API and **nothing implements it**. It projects the
+finding and store fields, so an endpoint returning a field no producer writes
+ships an always-empty column to the UI — the Phase 6 bug at the last layer.
+API-response tests anchor at **producer/store ground truth**, never at a
+convenience projection.
+
+### Gates unchanged
+
+| Gate | State |
+|---|---|
+| Precondition 1 — Linux CI real-sandbox job | Not started; no API key until green |
+| Precondition 3 — first supervised agent run | Gated behind Precondition 1 |
+| OQ-P12-01 — webhook replaces polling | Pre-production hardening |
+| OQ-AUDIT-01(b) — KEV/EPSS feeds | Pre-production hardening |
+
+
+---
+
+## OQ-AUDIT-01(a) and OQ-AUDIT-02 — both landed
+
+**Status: green.** 993 tests with subtests. `go vet` and `gofmt` clean,
+`-race` clean, both store backends. Six mutations verified.
+
+### OQ-AUDIT-01(a) — the caveat travels with the score
+
+`score.Input` gains `EPSSAvailable` and `KEVAvailable`, and the distinction is
+the same one reachability's tri-state exists for: **an EPSS of zero means
+"measured, and nothing exploits this"; an absent EPSS means "nobody looked"**.
+Collapsing them lets a missing lookup read as good news, which is how a P0
+becomes a P2 because a feed was down. A mutation treating absent as measured
+turns the suite red.
+
+`score.Result` gains `UnavailableInputs` and `Caveat`. The caveat travels with
+the number, in three places, because a priority is the most-quoted figure this
+system produces:
+
+- **the score itself** — the `Explain` trail an engineer reads when they
+  disagree with a priority;
+- **the priority table in the report**, inline, not only in the caveat block
+  at the top;
+- **the ticket body**, because a ticket is read detached from any report and
+  its priority is what gets repeated in a planning meeting.
+
+Each is separately mutation-tested. The caveat also **clears**: a deployment
+with the feeds wired passes `UnavailableScoringInputs = nil` and the
+qualification disappears. A caveat that never clears is decoration, and the
+next one nobody believes.
+
+An existing test had to change: `TestScoreExplainsItself` supplied EPSS and KEV
+without saying a feed had answered — the exact shape that hid this for the
+whole build. It now says so, and that is part of the fix rather than a
+workaround.
+
+**OQ-AUDIT-01(b) remains open and is NOT closed by this.** The feeds are still
+unwired. A scorer that structurally cannot see active-exploitation status has a
+feed-shaped hole where its most decision-changing input belongs.
+
+### OQ-AUDIT-02 — the dead branch is gone, and the loss is visible
+
+`fingerprint.Location` no longer prefers `Package#Function`. Code findings are
+file-granular **by decision**, with the reasoning in the code: no pinned tool
+supplies the symbol, and while the branch existed the obvious "fix" was to
+derive a function name from a tool's code snippet — a fabricated component
+feeding a fingerprint.
+
+A second reason to delete rather than leave it: granularity must not depend on
+**which tool saw the defect**. If a symbol changed the fingerprint when
+present, two tools reporting one finding would fail to merge (VM-F-106).
+
+**The golden value changed, deliberately without a Version bump or a
+migration.** The old value came from a fixture that set `Package` and
+`Function`; no fingerprint this system has ever computed in production took
+that branch, so the algorithm's output for every *producible* input is
+unchanged and there is nothing stored to migrate. The new value was
+**independently recomputed from scratch** before being locked, as the Phase 0
+values were.
+
+The fixture itself was the deeper problem and is fixed: `codeFinding()` no
+longer sets a symbol. **A fixture more informative than its producer is the
+same defect as a fake kinder than production.**
+
+**The required condition is met.** `model.ResidualWarning` and
+`Derived.ResidualPossible` / `ResidualDetail`: a verification at file
+granularity now says that a same-file twin may remain. It is
+absence-is-not-resolution one level down — VM-ADR-12 asks whether the scan
+looked; this asks whether what it looked *at* was one thing. Module-granular
+verifications carry no warning, because a flag on every verification is
+filtered out within a week and takes the real ones with it. Both directions are
+mutation-tested.
+
+The decision is computed in `PlanReconcile`, the shared pure function, so the
+two backends cannot word it differently — a warning phrased differently by each
+would read as two different problems. The Postgres path writes it on the
+**same statement** as the verification: a verification that landed with a
+warning that did not would be the silent case the condition forbids.
+
+**Three Phase 0 tests were restated rather than deleted.** They asserted
+symbol-level behaviour and passed by supplying the symbol. They now record what
+file granularity gives up — an SLA reset when a file is renamed, and two
+occurrences of one rule merging — because a capability that was never real
+should not vanish from the record. The next person who wants per-function
+granularity should find this, not rediscover it.
+
+### The audit caught the new fields immediately
+
+Adding `ResidualPossible` and `ResidualDetail` made
+`TestEveryFindingFieldHasAProducer` fail on the same turn, because the audit's
+pipeline run verifies nothing. That is the mechanism working on new schema
+rather than only on old, and the exemptions name their producer like every
+other.
+
+### Symbol-level precision — recorded as a later enhancement
+
+Wiring a tool that reports enclosing symbols would restore per-function
+granularity. It is not needed for v1, and it should be driven by real users
+finding file granularity too coarse rather than by the design's original
+preference for it.

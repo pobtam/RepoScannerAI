@@ -85,9 +85,27 @@ func Location(f model.RawFinding) string {
 	case model.CategoryDependency:
 		return strings.TrimSpace(f.Module) + "@" + strings.TrimSpace(f.ModuleMajor)
 	case model.CategoryCode:
-		if fn := strings.TrimSpace(f.Function); fn != "" {
-			return strings.TrimSpace(f.Package) + "#" + fn
-		}
+		// FILE granularity, by decision (OQ-AUDIT-02).
+		//
+		// This branch used to prefer "Package#Function" and fall back to the
+		// file. The Producer-Coverage Audit established that no pinned
+		// code-analysis tool reports either — gosec, staticcheck and semgrep
+		// all emit file, line and column and nothing about the enclosing
+		// symbol — so the symbol branch was unreachable and the fallback was
+		// the only real behaviour.
+		//
+		// It is deleted rather than left in place for two reasons. A branch no
+		// input can reach is a claim about behaviour nobody can observe. And
+		// while it existed, the obvious "fix" was to derive a function name
+		// from a tool's code snippet, which would be a fabricated component
+		// feeding a fingerprint — the one place this system refuses to guess.
+		//
+		// Granularity must also not depend on WHICH tool saw the defect: if a
+		// symbol changed the fingerprint when present, two tools reporting one
+		// finding would fail to merge (VM-F-106).
+		//
+		// The consequence is real and is surfaced rather than absorbed: see
+		// Granularity and GranularityOf.
 		return normalizePath(f.File)
 	case model.CategorySecret:
 		return normalizePath(f.File)
@@ -127,4 +145,51 @@ func Validate(f model.RawFinding) error {
 		}
 	}
 	return nil
+}
+
+// Granularity is how precisely a fingerprint locates a defect.
+//
+// It exists so the consequence of OQ-AUDIT-02 is answerable rather than
+// implicit. A consumer that has just VERIFIED a finding needs to know whether
+// the fingerprint it verified could have covered more than one occurrence,
+// because a verification that can hide a live twin must not pass silently —
+// absence-is-not-resolution, at fingerprint granularity.
+type Granularity string
+
+const (
+	// GranularityModule — the defect is located to a module and major
+	// version. A module either resolves to the fixed version or it does not,
+	// so nothing hides behind it.
+	GranularityModule Granularity = "module"
+	// GranularityFile — the defect is located to a file. Two occurrences of
+	// the same rule, or two credentials, in one file are ONE finding.
+	GranularityFile Granularity = "file"
+	// GranularityResource — a config finding, located to a file and a
+	// resource key within it.
+	GranularityResource Granularity = "resource"
+)
+
+// MayHideResidual reports whether verifying one finding at this granularity
+// could leave another live occurrence unreported.
+//
+// True for file granularity: fixing the first of two occurrences of a rule in
+// one file makes the finding disappear from the next scan only if BOTH were
+// fixed — and if only one was, the scan still reports it, so the finding does
+// not verify. The danger is the reverse case: a fix that removes the reported
+// occurrence and leaves a second one the tool did not flag, or flagged as the
+// same finding. Then the finding verifies and the twin is live.
+func (g Granularity) MayHideResidual() bool {
+	return g == GranularityFile || g == GranularityResource
+}
+
+// GranularityOf reports the granularity a finding's fingerprint uses.
+func GranularityOf(f model.RawFinding) Granularity {
+	switch f.Category {
+	case model.CategoryDependency:
+		return GranularityModule
+	case model.CategoryConfig:
+		return GranularityResource
+	default:
+		return GranularityFile
+	}
 }

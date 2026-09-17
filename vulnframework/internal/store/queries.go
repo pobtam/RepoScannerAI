@@ -78,7 +78,7 @@ SELECT source FROM finding_observations WHERE fingerprint = $1 ORDER BY run_id, 
 
 	// Unresolved findings in a repository that the given run did not observe.
 	qAbsentFindings = `
-SELECT f.fingerprint, f.state
+SELECT f.fingerprint, f.state, f.category
 FROM findings f
 WHERE f.repo = $1
   AND NOT EXISTS (
@@ -87,10 +87,16 @@ WHERE f.repo = $1
   )
 ORDER BY f.fingerprint`
 
+	// The residual warning is written on the same statement as the
+	// verification, not by a later update. A verification that landed and a
+	// warning that did not would be the silent case OQ-AUDIT-02 forbids.
 	qMarkVerified = `
 UPDATE findings
 SET resolved_at = $1, verified_reason = $2, not_reobserved = FALSE, gap_run_id = NULL,
-    lease_owner = NULL, lease_expires_at = NULL
+    lease_owner = NULL, lease_expires_at = NULL,
+    data = jsonb_set(
+             jsonb_set(data, '{derived,residual_possible}', to_jsonb($4::boolean), true),
+             '{derived,residual_detail}', to_jsonb($5::text), true)
 WHERE fingerprint = $3`
 
 	qMarkNotReobserved = `

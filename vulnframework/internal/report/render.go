@@ -77,6 +77,19 @@ func Render(rep Report) []byte {
 		if !rep.Provenance.ThresholdsCalibrated {
 			b.WriteString("_Priorities below rest on uncalibrated thresholds (VM-OQ-06) and are provisional._\n\n")
 		}
+		// The qualification travels WITH the table, not only in the caveat
+		// block above it. A priority is the most-quoted number this system
+		// produces, and a caveat left at the top is one nobody quoting the
+		// priority ever saw (OQ-AUDIT-01, OQ-P5-02's lesson applied inward).
+		if rep.Provenance.ScoringInputsDeclared > 0 &&
+			rep.Provenance.ScoringInputsAvailable < rep.Provenance.ScoringInputsDeclared {
+			fmt.Fprintf(&b, "_These priorities rest on **%d of %d** declared scoring inputs. "+
+				"KEV (is it being exploited now) and EPSS (how likely is it to be) are unavailable "+
+				"because no enrichment feed is wired (OQ-AUDIT-01) — the two questions that most "+
+				"often change what a human does. Read every priority below as a **floor**, not an "+
+				"assessment._\n\n",
+				rep.Provenance.ScoringInputsAvailable, rep.Provenance.ScoringInputsDeclared)
+		}
 		b.WriteString("| Priority | Count |\n|---|---:|\n")
 		for _, p := range []string{"P0", "P1", "P2", "P3"} {
 			if n, ok := rep.Counts.ByPriority[p]; ok {

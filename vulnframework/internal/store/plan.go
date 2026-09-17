@@ -38,6 +38,11 @@ func PlanUpsert(current model.State, exists bool) UpsertDecision {
 type FindingState struct {
 	Fingerprint string
 	State       model.State
+	// Category decides the residual warning a verification carries
+	// (OQ-AUDIT-02). Carried here so the decision is made once, in the shared
+	// pure function, rather than looked up separately by each backend — which
+	// is how the two came to disagree about state history in Phase 2.
+	Category model.Category
 }
 
 // ReconcileAction is what a reconciliation does to one absent finding.
@@ -56,6 +61,16 @@ type ReconcileAction struct {
 	// where one exists (VM-F-162). Empty where the scan succeeded and the
 	// absence is genuine.
 	GapRunID string
+
+	// Category travels with the action so a backend applying it does not have
+	// to re-derive anything.
+	Category model.Category
+
+	// ResidualDetail is the warning a verification at this finding's
+	// fingerprint granularity must carry, empty where the granularity hides
+	// nothing (OQ-AUDIT-02). Computed here so both backends word it
+	// identically.
+	ResidualDetail string
 
 	// RetainedUnverified marks a finding that would have verified had the scan
 	// succeeded. This is the count VM-F-216 requires reported alongside a gap.
@@ -87,7 +102,7 @@ func PlanReconcile(outcome ScanOutcome, absent []FindingState) []ReconcileAction
 			continue
 		}
 
-		a := ReconcileAction{Fingerprint: f.Fingerprint}
+		a := ReconcileAction{Fingerprint: f.Fingerprint, Category: f.Category}
 
 		// Disappearance is the universal verification trigger (VM-AD §6.1.1):
 		// any unresolved state with a legal edge to VERIFIED verifies when a
@@ -100,6 +115,10 @@ func PlanReconcile(outcome ScanOutcome, absent []FindingState) []ReconcileAction
 		case scanSucceeded && canVerify:
 			a.Verify = true
 			a.VerificationReason = model.VerificationReasonFor(f.State)
+			// A verification that could be hiding a live same-file twin says
+			// so (OQ-AUDIT-02). Decided here rather than in either backend so
+			// the wording cannot diverge.
+			a.ResidualDetail = model.ResidualWarning(f.Category)
 
 		case !scanSucceeded && canVerify:
 			// The gate clause, unchanged and now covering every verifiable

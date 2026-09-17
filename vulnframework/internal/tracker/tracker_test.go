@@ -481,3 +481,53 @@ func derefString(p *string) string {
 	}
 	return *p
 }
+
+// TestATicketsPriorityCarriesItsScoringProvenance covers OQ-AUDIT-01(a) at the
+// boundary where a priority most often gets quoted.
+//
+// A ticket is read detached from any report. The priority in its body is the
+// figure someone repeats in a planning meeting, and a caveat that stayed
+// behind in the report never reaches that conversation.
+func TestATicketsPriorityCarriesItsScoringProvenance(t *testing.T) {
+	ctx := context.Background()
+	s := newStore(t)
+	fp := fingerprint.Compute(depFinding())
+	observeIn(t, s, []model.RawFinding{depFinding()})
+	if err := s.ApplyTransition(ctx, fp, model.Triaged, model.TransitionContext{
+		Actor: model.ActorTriage, Cause: "test", At: time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("triage: %v", err)
+	}
+	if err := s.SetPriority(ctx, fp, model.P1, nil); err != nil {
+		t.Fatalf("priority: %v", err)
+	}
+
+	f, err := s.GetFinding(ctx, fp)
+	if err != nil {
+		t.Fatalf("get finding: %v", err)
+	}
+	spec, err := tracker.SpecFor(f, tracker.SpecOptions{
+		ReportURL:                "https://reports.example/x",
+		UnavailableScoringInputs: []string{"KEV (CISA known-exploited)", "EPSS (exploit prediction)"},
+		DeclaredScoringInputs:    5,
+	})
+	if err != nil {
+		t.Fatalf("SpecFor: %v", err)
+	}
+
+	low := strings.ToLower(spec.Body)
+	for _, want := range []string{"3 of 5", "kev", "epss", "floor"} {
+		if !strings.Contains(low, want) {
+			t.Errorf("the ticket body does not carry %q alongside the priority:\n%s", want, spec.Body)
+		}
+	}
+
+	// And it clears: a caveat that never clears is decoration.
+	plain, err := tracker.SpecFor(f, tracker.SpecOptions{ReportURL: "https://reports.example/x"})
+	if err != nil {
+		t.Fatalf("SpecFor: %v", err)
+	}
+	if strings.Contains(strings.ToLower(plain.Body), "floor") {
+		t.Error("the caveat appears with no unavailable inputs declared")
+	}
+}

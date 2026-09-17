@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"strings"
 
 	"github.com/wanaware/vulnframework/internal/model"
 )
@@ -26,6 +27,21 @@ type Input struct {
 	// computed and recorded; whether it influences the score is calibration
 	// (VM-OQ-12).
 	FanOut FanOut
+
+	// EPSSAvailable and KEVAvailable say whether the enrichment feed ANSWERED,
+	// as distinct from answering zero.
+	//
+	// The distinction is the same one reachability's tri-state exists for. An
+	// EPSS of zero means "measured, and nothing exploits this"; an absent EPSS
+	// means "nobody looked". Collapsing them lets a missing lookup read as
+	// good news, and it is how a P0 becomes a P2 on the strength of a feed
+	// that was down.
+	//
+	// Both are false throughout the build so far, because nothing writes
+	// either input — which is what the Producer-Coverage Audit found, and why
+	// a score has to say so (OQ-AUDIT-01).
+	EPSSAvailable bool
+	KEVAvailable  bool
 }
 
 // Result is a scored finding, with the arithmetic retained.
@@ -45,6 +61,19 @@ type Result struct {
 	// VM-OQ-12 needs accumulates from the first sweep rather than from whenever
 	// someone decides to switch it on.
 	FanOut FanOut `json:"fanout"`
+
+	// UnavailableInputs names the declared scoring inputs that did not answer.
+	//
+	// A score computed from three of five inputs is not a worse score, it is a
+	// narrower one, and the difference is invisible in the number. Naming them
+	// is what lets a reader judge how much of the judgement is actually there.
+	UnavailableInputs []string `json:"unavailable_inputs,omitempty"`
+
+	// Caveat travels WITH the score, not in a document-level block a reader
+	// may never reach. A priority is quoted onward — into a ticket, a slide, a
+	// status mail — and the qualification has to survive the quoting
+	// (OQ-P5-02's lesson, applied to the score itself).
+	Caveat string `json:"caveat,omitempty"`
 
 	// SecretOverride marks a score that bypassed the formula entirely.
 	SecretOverride bool `json:"secret_override,omitempty"`
@@ -104,13 +133,40 @@ func (s *Scorer) Score(in Input) Result {
 		r.Explain = append(r.Explain, fmt.Sprintf("base=%.2f from severity %s (no CVSS)", r.Base, in.Severity))
 	}
 
-	if in.KEV {
-		r.KEVBoost = s.Cal.Scoring.KEVBoost
-		r.Explain = append(r.Explain, fmt.Sprintf("kev_boost=+%.2f (in CISA KEV)", r.KEVBoost))
+	// The two enrichment inputs, and whether they answered at all.
+	//
+	// "Did not answer" and "answered zero" are different facts and are kept
+	// apart here for the same reason reachability is a tri-state: a missing
+	// lookup must not read as good news. Nothing in this system writes either
+	// input today, which the Producer-Coverage Audit found and which is why
+	// every score currently carries a caveat (OQ-AUDIT-01).
+	if in.KEVAvailable {
+		if in.KEV {
+			r.KEVBoost = s.Cal.Scoring.KEVBoost
+			r.Explain = append(r.Explain, fmt.Sprintf("kev_boost=+%.2f (in CISA KEV)", r.KEVBoost))
+		} else {
+			r.Explain = append(r.Explain, "kev=false (checked against CISA KEV)")
+		}
+	} else {
+		r.UnavailableInputs = append(r.UnavailableInputs, "KEV (CISA known-exploited)")
+		r.Explain = append(r.Explain, fmt.Sprintf(
+			"kev UNAVAILABLE: no feed is wired, so kev_boost=+%.2f can never apply. This is not "+
+				"kev=false — nobody looked (OQ-AUDIT-01)", s.Cal.Scoring.KEVBoost))
 	}
-	if in.EPSS > 0 {
-		r.EPSSBoost = s.Cal.Scoring.EPSSCoefficient * clamp(in.EPSS, 0, 1)
-		r.Explain = append(r.Explain, fmt.Sprintf("epss_boost=+%.3f (epss=%.4f)", r.EPSSBoost, in.EPSS))
+
+	if in.EPSSAvailable {
+		if in.EPSS > 0 {
+			r.EPSSBoost = s.Cal.Scoring.EPSSCoefficient * clamp(in.EPSS, 0, 1)
+			r.Explain = append(r.Explain, fmt.Sprintf("epss_boost=+%.3f (epss=%.4f)", r.EPSSBoost, in.EPSS))
+		} else {
+			r.Explain = append(r.Explain, "epss=0 (measured)")
+		}
+	} else {
+		r.UnavailableInputs = append(r.UnavailableInputs, "EPSS (exploit prediction)")
+		r.Explain = append(r.Explain, fmt.Sprintf(
+			"epss UNAVAILABLE: no feed is wired, so the epss coefficient of %.2f can never apply. "+
+				"This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+			s.Cal.Scoring.EPSSCoefficient))
 	}
 
 	// Reachability is consumed as a tri-state. Unknown has its own multiplier,
@@ -153,6 +209,7 @@ func (s *Scorer) Score(in Input) Result {
 	r.Score = (r.Base + r.KEVBoost + r.EPSSBoost) *
 		r.ReachMultiplier * r.DepMultiplier * r.TierMultiplier * r.FanOutMult
 	r.Priority = s.priorityOf(r.Score)
+	r.Caveat = caveatFor(r.UnavailableInputs)
 	r.Explain = append(r.Explain, fmt.Sprintf("score=%.4f priority=%s", r.Score, r.Priority))
 	return r
 }
@@ -208,4 +265,58 @@ func (s *Scorer) fanOutMultiplier(f FanOut) float64 {
 
 func clamp(v, lo, hi float64) float64 {
 	return math.Max(lo, math.Min(hi, v))
+}
+
+// declaredInputs is how many inputs the composite formula declares: base
+// severity or CVSS, KEV, EPSS, reachability, dependency class and tier
+// multipliers. Counted as five decision-changing inputs plus the tier
+// weighting, which is repository policy rather than a property of the defect.
+const declaredInputs = 5
+
+// caveatFor renders the qualification that travels WITH a score.
+//
+// With the score, not in a document-level block. A priority is the most-quoted
+// number this system produces — it reaches a ticket title, a slide, a status
+// mail — and a caveat that stays behind in the report is a caveat nobody
+// quoting the priority ever saw. That is the lesson of OQ-P5-02 and
+// OQ-P7b-03, applied one level in.
+//
+// The two missing inputs are not arbitrary ones. KEV answers "is this being
+// exploited right now" and EPSS answers "how likely is it to be", which are
+// the two questions that most often change what a human does about a finding.
+// A score computed without them is not slightly less informed; it is missing
+// the part that would have argued loudest.
+func caveatFor(unavailable []string) string {
+	if len(unavailable) == 0 {
+		return ""
+	}
+	available := declaredInputs - len(unavailable)
+	return fmt.Sprintf(
+		"This priority rests on %d of %d declared inputs: %s %s unavailable because no feed is "+
+			"wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now "+
+			"and how likely it is to be — the questions that most often change what a human does — "+
+			"so this score is not merely less precise, it is missing the input that would have "+
+			"argued loudest. Treat it as a floor, not an assessment.",
+		available, declaredInputs, strings.Join(unavailable, " and "),
+		plural(len(unavailable), "is", "are"))
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
+}
+
+// DeclaredInputs is how many inputs the composite formula declares.
+func DeclaredInputs() int { return declaredInputs }
+
+// UnavailableInputs names the declared inputs nothing writes today.
+//
+// A deployment-level fact rather than a per-finding one: until a feed is
+// wired, the answer is the same for every finding in every report. It exists
+// so a report can carry the qualification without having to score something
+// first (OQ-AUDIT-01).
+func UnavailableInputs() []string {
+	return []string{"KEV (CISA known-exploited)", "EPSS (exploit prediction)"}
 }

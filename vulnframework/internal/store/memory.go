@@ -44,18 +44,20 @@ type Memory struct {
 }
 
 type memFinding struct {
-	Fingerprint    string
-	Repo           string
-	Category       model.Category
-	State          model.State
-	ReasonCode     *model.ReasonCode
-	Priority       model.Priority
-	FirstSeenAt    time.Time
-	LastSeenAt     time.Time
-	ResolvedAt     *time.Time
-	NotReobserved  bool
-	GapRunID       string
-	VerifiedReason model.VerificationReason
+	Fingerprint      string
+	Repo             string
+	Category         model.Category
+	State            model.State
+	ReasonCode       *model.ReasonCode
+	Priority         model.Priority
+	FirstSeenAt      time.Time
+	LastSeenAt       time.Time
+	ResolvedAt       *time.Time
+	NotReobserved    bool
+	GapRunID         string
+	VerifiedReason   model.VerificationReason
+	ResidualPossible bool
+	ResidualDetail   string
 	// UpstreamFinding is the owner's fingerprint a blocked consumer waits on.
 	// Held on the record rather than in the projected document, for the same
 	// reason the ticket and pull request references are: the document is
@@ -337,7 +339,7 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 		if f.Repo != repo || observed[fp] {
 			continue
 		}
-		absent = append(absent, FindingState{Fingerprint: fp, State: f.State})
+		absent = append(absent, FindingState{Fingerprint: fp, State: f.State, Category: f.Category})
 	}
 	sort.Slice(absent, func(i, j int) bool { return absent[i].Fingerprint < absent[j].Fingerprint })
 
@@ -366,6 +368,11 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 			// finding it, and the worker's slot would never be returned
 			// (VM-AD §6.1.1).
 			f.LeaseOwner, f.LeaseExpiresAt = "", nil
+			// OQ-AUDIT-02's required condition: a verification that could be
+			// hiding a live same-file twin says so. The rule lives in the
+			// model so both backends word it identically.
+			f.ResidualDetail = a.ResidualDetail
+			f.ResidualPossible = a.ResidualDetail != ""
 			stats.Verified++
 			continue
 		}
@@ -558,12 +565,14 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 		LastSeenAt:     f.LastSeenAt,
 		ResolvedAt:     f.ResolvedAt,
 		Derived: model.Derived{
-			NotReobserved: f.NotReobserved,
-			GapRepoScan:   optionalString(f.GapRunID),
-			SLAStatus:     f.SLAStatus,
-			SLAWindowDays: f.SLAWindowDays,
-			SLABreachDays: f.SLABreachDays,
-			AgeDays:       f.AgeDays,
+			NotReobserved:    f.NotReobserved,
+			GapRepoScan:      optionalString(f.GapRunID),
+			SLAStatus:        f.SLAStatus,
+			SLAWindowDays:    f.SLAWindowDays,
+			SLABreachDays:    f.SLABreachDays,
+			AgeDays:          f.AgeDays,
+			ResidualPossible: f.ResidualPossible,
+			ResidualDetail:   f.ResidualDetail,
 		},
 		CredentialType: p.CredentialType,
 		Annotations:    p.Annotations,

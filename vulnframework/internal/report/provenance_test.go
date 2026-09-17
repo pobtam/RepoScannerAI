@@ -156,6 +156,11 @@ func TestCalibratedSLAWindowsDropTheCaveat(t *testing.T) {
 		cal.FanOut.Enabled = true
 
 		g := report.NewGenerator(s, cal)
+		// The enrichment feeds are wired in this scenario too, so the
+		// scoring-input caveat clears with the others. It is a separate,
+		// deployment-level fact (OQ-AUDIT-01) rather than a calibration flag,
+		// and it must be able to clear or it is decoration.
+		g.UnavailableScoringInputs = nil
 		g.Clock = func() time.Time { return base }
 		rep, err := g.Generate(context.Background(), report.Query{
 			Kind: report.KindFleet, AnchorRun: runID, Scope: store.ScopeAll, Template: "fleet.v1",

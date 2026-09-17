@@ -163,7 +163,7 @@ func TestScoringIsDeterministic(t *testing.T) {
 	s := scorer(t)
 	in := score.Input{
 		Category: model.CategoryDependency, Severity: model.SeverityHigh,
-		CVSS: 7.5, EPSS: 0.0421, KEV: true,
+		CVSS: 7.5, EPSS: 0.0421, KEV: true, KEVAvailable: true,
 		Reachable: model.ReachableTrue, DepClass: model.DepProduction, Tier: 1,
 	}
 	want := s.Score(in)
@@ -704,10 +704,16 @@ func TestFanOutMultiplierIsCapped(t *testing.T) {
 
 func TestScoreExplainsItself(t *testing.T) {
 	s := scorer(t)
+	// The availability flags are set because this test is about the
+	// ARITHMETIC of a fully-informed score. The Producer-Coverage Audit found
+	// that nothing writes EPSS or KEV in production, and a test that supplied
+	// them without saying the feed answered is exactly the shape that hid it —
+	// so saying so here is part of the fix, not a workaround.
 	got := s.Score(score.Input{
 		Category: model.CategoryDependency, Severity: model.SeverityHigh, CVSS: 7.5,
-		EPSS: 0.04, KEV: true, Reachable: model.ReachableUnknown,
-		DepClass: model.DepProduction, Tier: 1,
+		EPSS: 0.04, KEV: true, EPSSAvailable: true, KEVAvailable: true,
+		Reachable: model.ReachableUnknown,
+		DepClass:  model.DepProduction, Tier: 1,
 	})
 	if len(got.Explain) < 5 {
 		t.Fatalf("derivation has %d steps: %v", len(got.Explain), got.Explain)
