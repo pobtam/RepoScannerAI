@@ -26,7 +26,7 @@ green.
 | **10a** — `internal/remediate/agent` — guard inheritance + harness | **Green** | passing (extended gate) |
 | **10b** — headless client, §11.4 prompt, sandbox, VM-F-854 | **Green** | passing (extended gate) |
 | **11** — `internal/firstparty` — classification + wave propagation | **Green** | passing, OQ-P11-01 closed |
-| 12 — the GitHub App | Not started | |
+| **12** — the GitHub App: fleet sync, webhooks, publisher, VM-F-614 | **Green** | passing (extended gate) |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -2993,3 +2993,151 @@ explain. `TestADroppedDependencyStopsBeingAConsumer` has a failing mutation.
 **OQ-P11-02** (propagation memoisation unproven) and **OQ-P11-03** (spread
 split by equality rather than distance) are unchanged. Neither is an inertness
 defect.
+
+
+---
+
+## Phase 12 — the GitHub App (the last backend phase)
+
+**Status: green.** 970 tests with subtests. `go vet` and `gofmt` clean,
+`-race` clean, both store backends.
+
+This phase consumes the VM-OQ-10 dependent list accumulated across the build.
+
+### The webhook is untrusted external input
+
+Every property here follows from treating it that way rather than as a
+notification from a trusted peer. It arrives over the internet, from a sender
+authenticated only by a shared secret, and it asks the system to change state.
+
+- **Signature first**, constant-time. A byte-by-byte comparison leaks the
+  digest to anyone who can time the endpoint, and the endpoint is on the
+  internet.
+- **Exactly-once**, because GitHub guarantees at-least-once. A retry is
+  ordinary, not exceptional — it happens whenever the endpoint is slow.
+- **Order-independent**, because GitHub guarantees no order. A `closed`
+  arriving before the `opened` it closes must not leave the system believing a
+  merged pull request is open.
+- **A malformed event of a handled kind is loud**; an unhandled kind is
+  ignored. Collapsing the two would hide a real parser failure behind the same
+  path that harmlessly drops a `labeled`.
+
+A mutation pass found that my stage check was **masking** the delivery-ID
+check: `<=` absorbed every redelivery too, so removing the idempotency key
+entirely left the suite green. The two answer different questions — the
+identifier makes application exactly-once, the stage makes it
+order-independent — and they now do so independently.
+
+### The two paths must agree
+
+`ApplyWebhook` and `SyncPullRequests` both route through one
+`applyPRClosure`. Two code paths that can each move a finding drift unless
+something holds them together, and the drift is invisible: whichever fires
+first looks correct, and the bug surfaces only when an endpoint outage
+switches the system from one to the other — the moment nobody is watching.
+
+The webhook makes a transition **prompt**. It does not make it certain, so
+reconciliation stays. A design that removed the fallback would be correct
+exactly as often as the network is.
+
+`MERGED`, never `VERIFIED`: the webhook makes the framework learn sooner, not
+learn more (VM-F-533).
+
+### Fleet sync, and the number that would be worst to get wrong
+
+Coverage is measured against planned scope; planned scope comes from the
+registry. A registry read only from itself cannot discover a repository it has
+never seen — so an unsynced repository is not a gap, it is **outside the
+denominator**, and the fleet reports full coverage while never having looked.
+That is the most dangerous figure this system can produce: complete,
+confident, and wrong in the direction of safety.
+
+`FleetDrift` is read-only and reports it **before** any sync corrects it,
+because a sync that silently fixed the drift would leave nobody able to notice
+that a repository had been invisible for a week.
+
+Two refusals, both about the same thing — an empty result is not evidence of
+an empty fleet:
+
+- An empty listing with a non-empty registry is **refused**. It is what a
+  revoked installation, an expired credential and a lost pagination page all
+  look like, and acting on it would archive the whole fleet.
+- A repository GitHub no longer lists is **archived, not deleted**. Deleting
+  would make historical coverage unreadable — every run that scanned it would
+  reference a repository nobody can look up.
+
+### VM-F-614 — the most common silent failure
+
+Implemented and gated. The reason it is silent is that every individual signal
+is correct: the pull request merged, the upstream finding is handled, the
+consumers are legitimately blocked. Nothing is inconsistent. The combination is
+a fleet that has stopped moving, and no single check notices.
+
+A grace period keeps it from firing between a merge and the release job that
+follows minutes later — an escalation that fires on the ordinary case becomes
+noise, is filtered out, and takes the real one with it.
+
+### The publisher, with its precondition mechanical
+
+The git-backed publisher replaces the Phase 7 fake and **enforces** the Phase
+7b coupling rather than remembering it: external delivery is refused while
+`IdentityBindingAvailable` is false. Until VM-UI-OQ-01 closes, the privilege
+model trusts an authenticated caller's self-asserted level, and a redacted pack
+delivered externally on that basis is redacted in name only. That was
+acceptable while nothing left the process; it stopped being acceptable the
+moment a real publisher existed.
+
+Reports are immutable: a different document at a published path is refused,
+and identical content is idempotent because a retry after a network failure is
+ordinary.
+
+### Mutations verified
+
+| # | Mutation | Caught by |
+|---|---|---|
+| A | signature not verified | forged-event clause |
+| B | duplicate deliveries applied twice | **survived**; masking fixed, then caught |
+| C | out-of-order events applied | ordering clause |
+| D | eviction drops the newest | **survived**; same fix, then caught |
+| E | empty listing archives the fleet | empty-fleet refusal |
+| F | vanished repository deleted not archived | archive clause |
+| G | `FleetDrift` hides unsynced repositories | the coverage-denominator clause |
+| H | VM-F-614 grace ignored | grace clause |
+| I | VM-F-614 does not check tags | published-tag clause |
+| J | publisher allows unbound external delivery | the Phase 7b precondition |
+| K | publisher overwrites an issued report | immutability clause |
+
+### Stubbed / deferred
+
+- **No real GitHub transport.** `App`, `Git` and `PROps` have hostile fakes and
+  no HTTP implementation. Every behaviour above is tested against the
+  interfaces; the adapters are configuration and request-building, and they
+  need real credentials to be worth writing.
+- **No HTTP server.** `WebhookVerifier` parses and authenticates a delivery;
+  nothing serves the endpoint (VM-AD §7.4's `POST /v1/webhooks/github`).
+- **App authentication is a stub.** `InstallationToken` returns a fake; real
+  JWT signing and installation-token exchange are unwritten.
+- **OQ-P9b-03 / OQ-P9a-03 are resolved in design, not in wiring.** The webhook
+  replaces polling and both halves are addressed together, but nothing yet
+  turns polling *down* when webhooks are healthy — see below.
+
+### Open questions
+
+**OQ-P12-01 — polling is not actually reduced.** The coupled pair was to be
+resolved by the webhook replacing polling, and the webhook path exists. What
+does not exist is the decision to poll less: `SyncPullRequests` still runs
+every sweep over every open pull request. That is correct and safe, and it is
+not the resolution — the fan-out is unchanged and the backoff is still
+unconsumed. It needs a health signal (deliveries seen recently) and a reduced
+reconciliation cadence when it is good.
+
+**OQ-P12-02 — no real transport means the hostile fakes are unvalidated.**
+Every fake in this phase models what GitHub is documented to do. None has been
+checked against what it actually does. The first real deliveries will differ
+from the fixtures in ways nobody predicted — that is the normal outcome, and
+the Phase 3 experience (four defects found by real capture) is the precedent.
+Capture real deliveries before trusting the parser.
+
+**OQ-P12-03 — `PublishWatch` is constructed by the caller.** Nothing derives
+the watch list from open Wave 1 fixes, so VM-F-614 detects only what it is
+asked about. The information is all in the store; the wiring is not written.

@@ -52,41 +52,12 @@ func (o *Orchestrator) SyncPullRequests(ctx context.Context, prOps gh.PROps, rep
 			continue
 		}
 
-		to, reason := model.Declined, model.ReasonDeclined
-		if remote.Merged {
-			// MERGED, never VERIFIED. A merge is a claim about intent; only a
-			// scan of the merged default branch that no longer observes the
-			// finding is evidence (VM-F-533, VM-ADR-12).
-			to, reason = model.Merged, model.ReasonCode("")
-		}
-
-		moved := 0
-		for _, fp := range rec.Findings {
-			f, err := o.Store.GetFinding(ctx, fp)
-			if err != nil {
-				return stats, err
-			}
-			if f.State != model.PROpen {
-				continue
-			}
-			if reason != "" {
-				// Recorded before the transition, so a DECLINED finding is
-				// never left without an explanation of who declined it.
-				if err := o.Store.SetPriority(ctx, fp, f.Priority, &reason); err != nil {
-					return stats, err
-				}
-			}
-			if err := o.Store.ApplyTransition(ctx, fp, to, model.TransitionContext{
-				Actor: model.ActorOrchestrator,
-				Cause: fmt.Sprintf("pull request %s was %s on the remote", rec.URL, closedHow(remote)),
-				At:    now,
-			}); err != nil {
-				return stats, err
-			}
-			moved++
-		}
-
-		if err := o.Store.CloseRemediationPR(ctx, rec.Branch, now, remote.Merged); err != nil {
+		// The same implementation the webhook uses. Two paths that can each
+		// move a finding drift unless something holds them together, and the
+		// drift is invisible until an outage switches the system from one to
+		// the other.
+		moved, err := o.applyPRClosure(ctx, rec, remote.Merged)
+		if err != nil {
 			return stats, err
 		}
 		if remote.Merged {

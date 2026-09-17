@@ -23,6 +23,13 @@ const (
 	// RecoveryPRStateSync — a pull request a human merged or closed was
 	// discovered by asking rather than by a webhook (VM-F-545).
 	RecoveryPRStateSync RecoveryKind = "pr_state_sync"
+	// RecoveryFleetSync — the registry drifted from GitHub and was corrected.
+	// Loud because a repository absent from the registry was outside the
+	// coverage denominator for however long it took to notice.
+	RecoveryFleetSync RecoveryKind = "fleet_sync"
+	// RecoveryMergedWithoutPublish — a Wave 1 fix merged and never shipped
+	// (VM-F-614).
+	RecoveryMergedWithoutPublish RecoveryKind = "merged_without_publish"
 	// RecoveryAgentAbandoned — an agentic attempt was abandoned and its work
 	// discarded.
 	RecoveryAgentAbandoned RecoveryKind = "agent_abandoned"
