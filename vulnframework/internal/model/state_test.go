@@ -52,6 +52,11 @@ var legalTransitions = []struct {
 	{model.Declined, model.Verified, model.ActorScanWorker},
 	{model.WontFix, model.Verified, model.ActorScanWorker},
 
+	// VM-AD §6.1.4 — a consumer the wave cannot advance goes to a human.
+	// Without it, a consumer excluded by a replace directive waits for an
+	// upstream fix that has already shipped, indefinitely.
+	{model.BlockedUpstream, model.NeedsHuman, model.ActorOrchestrator},
+
 	// VM-AD §6.1.3 — DETECTED verifies by disappearance like every other
 	// active state. It was the one gap in §6.1.1's universality: a finding
 	// fixed out of band before triage had even routed it.

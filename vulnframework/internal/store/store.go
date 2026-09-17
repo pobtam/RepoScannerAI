@@ -359,6 +359,14 @@ type Store interface {
 	// many it released.
 	SweepExpiredRepoLocks(ctx context.Context, now time.Time) (int, error)
 
+	// SetUpstreamFinding records which upstream finding a consumer is blocked
+	// on (VM-F-604).
+	//
+	// Without it a blocked finding says "blocked" and names nothing: the
+	// consumer cannot discover what it is waiting for, and neither can anyone
+	// reading the report.
+	SetUpstreamFinding(ctx context.Context, fingerprint, upstream string) error
+
 	// SecretPaths returns the files in a repository that currently hold an
 	// unresolved secret finding (VM-F-854).
 	//

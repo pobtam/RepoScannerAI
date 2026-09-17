@@ -55,18 +55,23 @@ type memFinding struct {
 	NotReobserved  bool
 	GapRunID       string
 	VerifiedReason model.VerificationReason
-	Triage         *model.Triage
-	SLAStatus      model.SLAStatus
-	SLAWindowDays  int
-	SLABreachDays  int
-	AgeDays        int
-	LeaseOwner     string
-	LeaseExpiresAt *time.Time
-	FirstSeenRun   string
-	LastSeenRun    string
-	Location       model.Location
-	Module         string
-	ModuleMajor    string
+	// UpstreamFinding is the owner's fingerprint a blocked consumer waits on.
+	// Held on the record rather than in the projected document, for the same
+	// reason the ticket and pull request references are: the document is
+	// rebuilt from observations on every scan.
+	UpstreamFinding string
+	Triage          *model.Triage
+	SLAStatus       model.SLAStatus
+	SLAWindowDays   int
+	SLABreachDays   int
+	AgeDays         int
+	LeaseOwner      string
+	LeaseExpiresAt  *time.Time
+	FirstSeenRun    string
+	LastSeenRun     string
+	Location        model.Location
+	Module          string
+	ModuleMajor     string
 }
 
 // NewMemory builds an empty in-memory store.
@@ -559,8 +564,9 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 		},
 		CredentialType: p.CredentialType,
 		Refs: model.Refs{
-			Ticket:      ticketRef(m.tickets, f.Fingerprint),
-			PullRequest: prRef(m.remediationPRs, f.Fingerprint),
+			Ticket:          ticketRef(m.tickets, f.Fingerprint),
+			PullRequest:     prRef(m.remediationPRs, f.Fingerprint),
+			UpstreamFinding: optionalString(f.UpstreamFinding),
 		},
 	}
 }
@@ -1348,4 +1354,16 @@ func secretPathsOf(findings []model.Finding) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// SetUpstreamFinding records the upstream finding a consumer is blocked on.
+func (m *Memory) SetUpstreamFinding(_ context.Context, fingerprint, upstream string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, ok := m.findings[fingerprint]
+	if !ok {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fingerprint)
+	}
+	f.UpstreamFinding = upstream
+	return nil
 }

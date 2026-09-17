@@ -153,11 +153,16 @@ const (
 	// same branch from the same fix group and adopts the existing pull request
 	// rather than opening a second one (VM-F-502).
 	TriggerRemediationLinkLost Trigger = "remediation_link_lost"
-	TriggerHumanApproval       Trigger = "human_approval"
-	TriggerHumanRejection      Trigger = "human_rejection"
-	TriggerObservedAgain       Trigger = "observed_again"
-	TriggerReentry             Trigger = "reentry"
-	TriggerHumanReset          Trigger = "human_reset"
+	// TriggerWaveExcluded — the upstream fix shipped but this consumer cannot
+	// be advanced automatically: a replace directive (VM-F-608) or a version
+	// too far behind the fleet (VM-F-613). It is waiting for something that
+	// has already happened (VM-AD §6.1.4).
+	TriggerWaveExcluded   Trigger = "wave_excluded"
+	TriggerHumanApproval  Trigger = "human_approval"
+	TriggerHumanRejection Trigger = "human_rejection"
+	TriggerObservedAgain  Trigger = "observed_again"
+	TriggerReentry        Trigger = "reentry"
+	TriggerHumanReset     Trigger = "human_reset"
 
 	// TriggerQualifyingScanAbsent is the universal verification trigger
 	// (VM-AD §6.1.1): a qualifying scan no longer observes the finding.
@@ -269,6 +274,10 @@ var transitions = map[State]map[State]edge{
 	BlockedUpstream: {
 		AutoRemediating: {TriggerUpstreamPublished, ActorOrchestrator},
 		Verified:        {TriggerQualifyingScanAbsent, ActorScanWorker},
+		// The fix shipped and this consumer still cannot be advanced. Without
+		// this edge it waits for something that has already happened, for
+		// ever (VM-AD §6.1.4).
+		NeedsHuman: {TriggerWaveExcluded, ActorOrchestrator},
 	},
 	FPCandidate: {
 		Suppressed: {TriggerHumanApproval, ActorHuman},

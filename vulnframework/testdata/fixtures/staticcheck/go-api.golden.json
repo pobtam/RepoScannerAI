@@ -10,6 +10,7 @@
     "CheckID": "",
     "Module": "",
     "ModuleMajor": "",
+    "ImportPath": null,
     "Package": "",
     "Function": "",
     "File": "tmp/src/go-api/internal/api/legacy.go",

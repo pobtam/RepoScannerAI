@@ -315,6 +315,21 @@ type RawFinding struct {
 	// Location inputs.
 	Module      string // dependency: module path
 	ModuleMajor string // dependency: major version, e.g. "v0"
+
+	// ImportPath is how the vulnerable module is reached, from the consuming
+	// repository outwards: [repo, intermediate module, ..., vulnerable module].
+	//
+	// Structural output from the scanner's own module graph — govulncheck's
+	// trace, a lockfile's dependency tree — and not inference. It is the input
+	// first-party classification reads (VM-AD §12.2): what makes a
+	// third-party vulnerability a first-party problem is the hop in between,
+	// and nothing else in the finding records that hop.
+	//
+	// It is deliberately NOT part of the fingerprint. The path through which a
+	// module is reached changes when an unrelated dependency is added, and a
+	// fingerprint that moved on that would report the same defect as new
+	// (VM-ADR-04's reasoning, applied one level out).
+	ImportPath  []string
 	Package     string // code: package import path
 	Function    string // code: enclosing function name
 	File        string // code fallback, secret, config: file path

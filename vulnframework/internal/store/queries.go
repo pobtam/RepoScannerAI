@@ -114,7 +114,7 @@ FROM state_transitions WHERE fingerprint = $1 ORDER BY at, id`
 	qListFindingsBase = `
 SELECT f.fingerprint, f.repo, f.category, f.data, f.state, f.reason_code, f.priority,
        f.first_seen_run, f.last_seen_run, f.not_reobserved, f.gap_run_id, f.verified_reason,
-       f.first_seen_at, f.last_seen_at, f.resolved_at
+       f.first_seen_at, f.last_seen_at, f.resolved_at, f.upstream_finding
 FROM findings f`
 
 	qGetFinding = qListFindingsBase + ` WHERE f.fingerprint = $1`
@@ -364,3 +364,6 @@ FROM tickets WHERE backend = $1 AND ref = $2`
 	// reopening is a decision, not a side effect of a re-save (VM-F-806).
 	qReopenTicket = `UPDATE tickets SET closed_at = NULL WHERE fingerprint = $1`
 )
+
+// qSetUpstreamFinding records the owner's finding a consumer is blocked on.
+const qSetUpstreamFinding = `UPDATE findings SET upstream_finding = $2 WHERE fingerprint = $1`

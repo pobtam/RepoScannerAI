@@ -474,6 +474,33 @@ const (
 
 Every other transition is illegal and must be rejected with an error and a logged event (VM-F-152).
 
+### 6.1.4 A consumer the wave cannot advance goes to a human (normative)
+
+`BLOCKED_UPSTREAM → NEEDS_HUMAN`, trigger `wave_excluded`, actor orchestrator.
+
+`BLOCKED_UPSTREAM` means "waiting for an upstream fix", and the only exits the
+table offered were the fix arriving (`AUTO_REMEDIATING`) or the finding
+disappearing (`VERIFIED`). Both assume the wave can advance the consumer.
+
+Two ordinary cases break that assumption. A consumer with a `replace` directive
+is excluded from the wave (VM-F-608), and a consumer too far behind the fleet's
+version is deferred out of it (VM-F-613). For both, the upstream fix has
+**already shipped**. The consumer is waiting for something that has happened.
+Nothing further will arrive, nothing escalates it, and the finding reads as
+correctly-pending indefinitely — the same silent strand as §6.1.2, reached by a
+different route.
+
+The destination is a human because the remedy is a human's: removing a replace
+directive, or advancing a repository several versions, are judgements with
+consequences beyond this finding.
+
+**Pattern worth naming.** This is the third state found with no exit once its
+normal mechanism was absent (§6.1.2, §6.1.3, this). The transition table was
+written by walking the happy path, and each of these was discovered by asking
+the same question of an existing state: *if nothing else happens, what moves
+this?* Any state added to §6.1 in future should be asked it before it is
+merged.
+
 ### 6.1.3 DETECTED verifies by disappearance like every other active state (normative)
 
 `DETECTED → VERIFIED`, trigger `qualifying_scan_absent`, actor scan worker,
@@ -759,10 +786,13 @@ func Evaluate(f model.Finding, r model.Repo, cfg Config, s StoreView) Decision
 2. State is `PR_OPEN` or `AUTO_REMEDIATING` → `skip_in_progress`.
 3. State is `DECLINED` → `skip_declined` (VM-F-154).
 4. State is `SUPPRESSED` → `skip_suppressed`.
-5. `first_party_path != null` and this repo is not the owner → `defer_upstream`.
-6. Look up tier + language + finding class in policy config → `auto_remediate` or `open_ticket`.
-7. Class is `code_fix` and `repo.has_test_suite == false` → `open_ticket`, reason `NO_TEST_COVERAGE`.
-8. Fix-group size would exceed the per-pull-request cap → split; remainder deferred to the next run.
+5. State is `NEEDS_HUMAN` → `skip_in_progress`; state is `WONT_FIX` → `skip_suppressed`. Both are awaiting or reflecting a human decision, and re-proposing automation against either is the system arguing with a person who has already answered.
+6. `first_party_path != null` and this repo is not the owner → `defer_upstream`.
+7. Look up tier + language + finding class in policy config → `auto_remediate` or `open_ticket`.
+8. Class is `code_fix` and `repo.has_test_suite == false` → `open_ticket`, reason `NO_TEST_COVERAGE`.
+9. Fix-group size would exceed the per-pull-request cap → split; remainder deferred to the next run.
+
+Rule 5 was added in Phase 4, when `WONT_FIX` became its own partition, and this list was not updated at the time. The implementation has always evaluated it; the numbering here is the correction. It matters because VM-F-405 records the rule index on every decision, and a report citing rule 6 while this list called rule 6 something else would mislead exactly the reader who went looking.
 
 Every decision records the rule index that produced it (VM-F-405).
 

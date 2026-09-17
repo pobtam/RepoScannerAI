@@ -25,7 +25,8 @@ green.
 | **9b** — orchestrator ticket wiring, Drain, reopen, strand sweep | **Green** | passing (extended gate) |
 | **10a** — `internal/remediate/agent` — guard inheritance + harness | **Green** | passing (extended gate) |
 | **10b** — headless client, §11.4 prompt, sandbox, VM-F-854 | **Green** | passing (extended gate) |
-| 11–12 | Not started | |
+| **11** — `internal/firstparty` — classification + wave propagation | **Green** | passing (extended gate) |
+| 12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -2681,3 +2682,214 @@ script. The first live run needs: a repository clone, a real
 be a single supervised run on one low-tier repository with the pull request
 reviewed by hand before anything is scheduled — and the §11.4 prompt is a first
 draft that will need revision against what a real model actually does with it.
+
+---
+
+## Pre-production preconditions (recorded after Phase 10b)
+
+These are **not** open questions to be triaged later. They are hard gates, and
+they are recorded here because the honest state of the agent is that it has
+never run.
+
+### PRECONDITION 1 — the real sandbox must be proven (OQ-P10b-01)
+
+**HARD PRE-PRODUCTION GATE.** One Linux CI job with real `bwrap` (and a macOS
+job with `sandbox-exec`) so `Verify`'s canaries run against the **real**
+sandbox rather than the fake.
+
+> **Rule: no real API key on any machine where `Verify` has not passed against
+> the real sandbox.**
+
+Interim posture is confirmed correct: `Verify` failing is **expected** — a
+fail-closed refusal — and never a surprise.
+
+The fail-closed property must itself be **verified, not assumed**: a machine
+that cannot build the sandbox must be shown to be incapable of being coaxed
+into running the agent unconfined. Prove the refusal.
+
+### PRECONDITION 2 — the orphan-pipe hazard must be proven where it reproduces (OQ-P10b-02)
+
+Accepted as **honestly-recorded coverage debt**, not dressed up. Tied to the
+same Linux CI job, because that is the platform where the hazard reproduces;
+it is not provable on this development machine.
+
+> Recording something unproven beats a vacuous green.
+
+### PRECONDITION 3 — the first live agent run (OQ-P10b-03)
+
+A **named pre-production milestone**, out of band from the phased build. Gated
+behind Precondition 1: never a first live agent run on an unproven sandbox.
+
+**Checklist — all of it, in order:**
+
+1. Precondition 1 is green on the machine that will run the agent. Not a
+   sibling machine, not CI alone: the one that will hold the key.
+2. One repository. Low tier, owned by someone who has agreed to this.
+3. One finding. A source-level fix, so the path being exercised is the one the
+   deterministic bumper cannot do.
+4. Supervised — a person watching it run, not a scheduled job.
+5. The pull request is reviewed **by hand**, in full, including the diff the
+   guard passed and the verification output.
+6. The §11.4 prompt is treated as a **revisable draft**. Expect to change it
+   against what a real model actually does with it; that is the purpose of the
+   run, not a sign it went wrong.
+7. Nothing is scheduled until steps 1–6 have been done at least twice, on two
+   different repositories.
+
+This checklist is deliberately not folded into "green and continue". A phase
+gate asks whether the code does what it claims; this asks whether anyone has
+watched it do so.
+
+
+---
+
+## Phase 11 — first-party classification and wave propagation
+
+**Status: green.** 932 tests with subtests. `go vet` and `gofmt` clean,
+`-race` clean, both store backends.
+
+### The Phase 6 constraint, discharged
+
+Recorded at Phase 6 and deferred until real data flowed the path:
+*FirstPartyPath must be populated by real classification and survive to a
+`defer_upstream` outcome.*
+
+`TestFirstPartyPathSurvivesFromClassifierInputToPolicyOutcome` runs the whole
+chain — scanner import path → classifier → store → reprojection → triage →
+policy — and asserts at the far end. Ground truth is the classifier's input,
+never a projection compared against itself. Mutating the store projection to
+drop the field turns it red, which is exactly what the Phase 6 bug did
+silently.
+
+### And a second inertness, one layer further out
+
+Writing that test exposed something it would not have caught on its own: **no
+adapter populated `ImportPath`.** Classification reads that field and nothing
+else writes it, so the entire two-wave design would have been wired, tested,
+and dead in production — the Phase 6 bug's exact shape, moved out a layer.
+
+`govulncheck`'s trace carries the module chain, so the adapter now renders it
+(reversed, repository-prefixed, adjacent duplicates collapsed) and
+`TestARealAdapterPopulatesTheImportPathClassificationReads` anchors on the
+captured fixture. Golden files were regenerated for the new field, deliberately.
+
+`RawFinding.ImportPath` is **not** part of the fingerprint: the path through
+which a module is reached changes when an unrelated dependency is added, and a
+fingerprint that moved on that would report the same defect as new — VM-ADR-04's
+reasoning one level out.
+
+### Determinism and termination, again
+
+The same two properties as the cross-source merge and the fan-out traversal,
+because it is the same kind of computation. Wave planning is identical under
+every rotation of the dependency input; propagation terminates on mutual
+first-party dependencies and counts no repository twice.
+
+Two internal modules consuming each other is not pathological — a `common`
+that imports `telemetry` for metrics while `telemetry` imports `common` for
+config types is ordinary, if regrettable. The cycle is **reported** rather than
+absorbed: it is an architectural fact someone should know, and a propagation
+that quietly handled it would never surface it.
+
+### Blast-radius honesty
+
+Depend, reach and **unknown** are three figures, never one. Folding unknown
+into reach overstates; folding it into not-reached understates, and that is the
+more dangerous direction. `BlastRadius` with no per-consumer determination
+reports everything as unknown rather than inheriting the upstream verdict —
+VM-F-610's specific prohibition, and the mechanism behind the overstated number
+the specification warns about.
+
+### Spec amendments
+
+**VM-AD §6.1.4 — `BLOCKED_UPSTREAM → NEEDS_HUMAN`, trigger `wave_excluded`.**
+A consumer excluded by a replace directive (VM-F-608) or deferred by version
+spread (VM-F-613) is waiting for an upstream fix that has **already shipped**.
+Nothing further arrives, nothing escalates it, and it reads as
+correctly-pending indefinitely.
+
+This is the **third** state found with no exit once its normal mechanism was
+absent (§6.1.2, §6.1.3, this one). The table was written by walking the happy
+path. The question that found all three is the same one, and it is now recorded
+in the specification for any state added in future: *if nothing else happens,
+what moves this?*
+
+**VM-AD §10 rule numbering corrected.** The list omitted the
+`NEEDS_HUMAN`/`WONT_FIX` rule added in Phase 4, so every index after it was one
+low: first-party defer is rule **6**, not 5, and the fix-group cap is rule 9.
+The implementation was right and the specification was stale. It matters
+because VM-F-405 records the rule index on every decision, and a report citing
+rule 6 against a list where rule 6 means something else misleads precisely the
+reader who checks.
+
+### Mutations verified
+
+| # | Mutation | Caught by |
+|---|---|---|
+| A | store projection drops FirstPartyPath | the Phase 6 end-to-end clause |
+| B | adapter stops populating ImportPath | the real-adapter clause |
+| C | classifier does not exempt the owner | self-deadlock clauses (both) |
+| D | replace directive not excluded | VM-F-608 clause |
+| E | prefix match without a boundary | registry clause |
+| F | blast radius folds unknown away | VM-F-610/611 clauses |
+| G | propagation memoisation removed | **survived** — see OQ-P11-02 |
+| G′ | back-edge detection removed | cycle clause |
+| G″ | repository deduplication removed | double-count clause |
+| H | excluded consumer left BLOCKED_UPSTREAM | the liveness clause |
+
+### Stubbed / deferred
+
+- **`config/firstparty.yaml` does not exist.** The registry parses, and no
+  file ships: populating it is an organisational act, not a code change, and a
+  guessed one would route findings to repositories that do not own the code.
+- **The index is not populated from the store.** `module_deps` has existed
+  since migration 0001 and the scan worker does not write it. `Index.Add` takes
+  dependencies from any source; nothing yet supplies them from a scan.
+- **VM-F-614 — merged without publish** is not implemented. The specification
+  calls it "the most common silent failure of the two-wave design", and it
+  needs the webhook (Phase 12).
+- **VM-F-615** (Wave 1 age reported with blocked-consumer counts) is not
+  reported.
+- **Per-consumer reachability is an input, not yet a computation.**
+  `wave_consumers` exists; `BlastRadius` takes the map from its caller and
+  nothing determines it per consumer yet.
+- **No orchestrator wiring.** Waves are planned and driven by explicit calls;
+  no sweep invokes them.
+
+### Assumptions
+
+- **A51.** Classification takes the first-party hop **nearest the consumer**. A
+  deeper hop is the next wave's problem, and targeting it first would block the
+  consumer on a fix two releases away.
+- **A52.** The registry resolves subpackages to their module's owner by a
+  boundary-aware prefix match. Nobody lists every package, and requiring it
+  would silently treat most of a tree as third-party.
+- **A53.** A consumer with a replace directive is **blocked** in Wave 1 and
+  **excluded** in Wave 2. Its finding is real; only the automated advance is
+  impossible.
+- **A54.** Wave 2 moves only findings actually in `BLOCKED_UPSTREAM` for the
+  module, not everything matching the module name — which would reopen work a
+  human had settled, on the strength of a string.
+
+### Open questions
+
+**OQ-P11-01 — nothing populates the index from real scans.** `module_deps` has
+been in the schema since Phase 2 and the scan worker still does not write it,
+so `Consumers` answers from whatever a caller supplied. Until that lands, the
+whole of Phase 11 is exercised only against hand-built indexes — the same
+inertness class this phase found twice already, and the reason to say so
+plainly rather than count the phase complete. It needs the manifest read the
+scanner already performs (VM-F-602: at zero marginal cost).
+
+**OQ-P11-02 — propagation memoisation is unproven.** Correctness on a cyclic
+or diamond graph is covered and both of its guards have failing mutations. The
+memoisation that stops exponential re-walking does not: at a layer count small
+enough to keep the suite fast, its absence is not measurable. A threshold tuned
+until it happened to fail would be worse than recording this.
+
+**OQ-P11-03 — VM-F-613's split is by version equality, not by distance.** A
+consumer one patch behind and one three majors behind are both deferred. The
+specification says "more than one minor behind may need an intermediate step",
+which implies a distance judgement this does not make. Conservative in the safe
+direction — it defers more than it must — but it will defer consumers that
+would have built, and the operator cost of that is real.

@@ -23,7 +23,7 @@ import (
 // FallbackMaxPerPR bounds a group when configuration supplies no cap.
 //
 // A zero cap must not read as unlimited. That would produce exactly the
-// oversized pull request VM-AD §10 rule 8 forbids, silently, from a
+// oversized pull request VM-AD §10 rule 9 forbids, silently, from a
 // configuration mistake rather than a decision.
 const FallbackMaxPerPR = 8
 
@@ -55,7 +55,7 @@ func (g FixGroup) Fingerprints() []string {
 	return out
 }
 
-// Group partitions findings into fix groups under the cap (VM-AD §10 rule 8).
+// Group partitions findings into fix groups under the cap (VM-AD §10 rule 9).
 //
 // Splitting rather than truncating is the whole point. A cap that emitted one
 // oversized pull request would convert review into rubber-stamping — a

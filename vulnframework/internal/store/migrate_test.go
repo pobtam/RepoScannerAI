@@ -51,15 +51,16 @@ func TestMigrationsAreWellFormed(t *testing.T) {
 func TestMigrationChecksumsAreStable(t *testing.T) {
 	// The name is the part after the version prefix: 0001_init.up.sql -> "init".
 	want := map[int]string{
-		1: "init",
-		2: "merge_provenance",
-		3: "verification_reason",
-		4: "run_plan",
-		5: "reports",
-		6: "ticket_queue",
-		7: "repo_locks",
-		8: "remediation_prs",
-		9: "run_tickets",
+		1:  "init",
+		2:  "merge_provenance",
+		3:  "verification_reason",
+		4:  "run_plan",
+		5:  "reports",
+		6:  "ticket_queue",
+		7:  "repo_locks",
+		8:  "remediation_prs",
+		9:  "run_tickets",
+		10: "upstream_finding",
 	}
 	migrations, err := store.LoadMigrations()
 	if err != nil {

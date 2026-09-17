@@ -168,6 +168,7 @@ func (a *Govulncheck) Normalize(out scan.RawOutput) ([]model.RawFinding, error) 
 			},
 			ToolVersion: a.Version(),
 			AdvisoryURL: adv.DatabaseSpecific.URL,
+			ImportPath:  importPath(out.Repo, f.Trace),
 			Raw:         mustRaw(f),
 		}
 		raw = append(raw, rf)
@@ -176,4 +177,43 @@ func (a *Govulncheck) Normalize(out scan.RawOutput) ([]model.RawFinding, error) 
 	raw = dedupe(raw)
 	sortFindings(raw)
 	return raw, nil
+}
+
+// importPath renders govulncheck's trace as a path from the consuming
+// repository outwards (VM-AD §12.2).
+//
+// govulncheck orders its trace innermost first: trace[0] is the vulnerable
+// frame and later frames walk back toward repository code. First-party
+// classification needs the opposite order — it walks OUT from the consumer
+// looking for the first internal hop — so the trace is reversed and the
+// repository prefixed.
+//
+// Without this the whole first-party mechanism is inert: classification reads
+// this field, nothing else populates it, and every finding would look
+// third-party. That is the Phase 6 projection bug one layer further out, and
+// it would present identically — a feature that is wired, tested, and never
+// fires.
+func importPath(repo string, trace []gvcFrame) []string {
+	if len(trace) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(trace)+1)
+	out = append(out, repo)
+
+	var last string
+	for i := len(trace) - 1; i >= 0; i-- {
+		module := trace[i].Module
+		// Consecutive frames in one module collapse: the path is a chain of
+		// modules, not of call frames, and a module repeated adjacently would
+		// make an ordinary call stack look like a dependency chain.
+		if module == "" || module == last {
+			continue
+		}
+		out = append(out, module)
+		last = module
+	}
+	if len(out) < 2 {
+		return nil
+	}
+	return out
 }

@@ -13,6 +13,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -61,6 +65,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -108,6 +116,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -155,6 +167,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -203,6 +219,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -251,6 +271,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -299,6 +323,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -347,6 +375,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -394,6 +426,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -441,6 +477,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -488,6 +528,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -535,6 +579,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -582,6 +630,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -629,6 +681,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -676,6 +732,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -723,6 +783,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -771,6 +835,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -818,6 +886,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -865,6 +937,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -910,6 +986,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -956,6 +1036,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1003,6 +1087,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1050,6 +1138,10 @@
     "CheckID": "",
     "Module": "golang.org/x/crypto",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/crypto"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1098,6 +1190,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1146,6 +1242,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1194,6 +1294,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1241,6 +1345,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1288,6 +1396,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1335,6 +1447,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1382,6 +1498,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1429,6 +1549,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1476,6 +1600,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1523,6 +1651,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1570,6 +1702,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1617,6 +1753,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1664,6 +1804,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1711,6 +1855,10 @@
     "CheckID": "",
     "Module": "golang.org/x/net",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/net"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1758,6 +1906,10 @@
     "CheckID": "",
     "Module": "golang.org/x/text",
     "ModuleMajor": "v0",
+    "ImportPath": [
+      "org/wanaware-api",
+      "golang.org/x/text"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1805,6 +1957,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1852,6 +2008,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1899,6 +2059,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1946,6 +2110,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -1993,6 +2161,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2040,6 +2212,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2087,6 +2263,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2134,6 +2314,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2181,6 +2365,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2228,6 +2416,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2275,6 +2467,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2322,6 +2518,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2369,6 +2569,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2416,6 +2620,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2463,6 +2671,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2510,6 +2722,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2557,6 +2773,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2604,6 +2824,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2651,6 +2875,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2698,6 +2926,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2745,6 +2977,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2792,6 +3028,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2839,6 +3079,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2886,6 +3130,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2933,6 +3181,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -2980,6 +3232,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -3027,6 +3283,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",
@@ -3074,6 +3334,10 @@
     "CheckID": "",
     "Module": "stdlib",
     "ModuleMajor": "go1",
+    "ImportPath": [
+      "org/wanaware-api",
+      "stdlib"
+    ],
     "Package": "",
     "Function": "",
     "File": "",

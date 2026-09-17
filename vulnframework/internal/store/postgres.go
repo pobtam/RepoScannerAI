@@ -458,10 +458,11 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 			firstSeenAt   time.Time
 			lastSeenAt    time.Time
 			resolvedAt    sql.NullTime
+			upstream      sql.NullString
 		)
 		if err := rows.Scan(&f.Fingerprint, &f.Repo, &category, &data, &state,
 			&reason, &priority, &firstRun, &lastRun, &notReobserved, &gapRun, &verifiedBy,
-			&firstSeenAt, &lastSeenAt, &resolvedAt); err != nil {
+			&firstSeenAt, &lastSeenAt, &resolvedAt, &upstream); err != nil {
 			return nil, err
 		}
 
@@ -490,6 +491,10 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 		if verifiedBy.Valid {
 			vr := model.VerificationReason(verifiedBy.String)
 			projected.VerifiedReason = &vr
+		}
+		if upstream.Valid && upstream.String != "" {
+			u := upstream.String
+			projected.Refs.UpstreamFinding = &u
 		}
 		projected.FirstSeenAt = firstSeenAt.UTC()
 		projected.LastSeenAt = lastSeenAt.UTC()
@@ -1674,4 +1679,16 @@ func (p *Postgres) SecretPaths(ctx context.Context, repo string) ([]string, erro
 		return nil, err
 	}
 	return secretPathsOf(findings), nil
+}
+
+// SetUpstreamFinding records the upstream finding a consumer is blocked on.
+func (p *Postgres) SetUpstreamFinding(ctx context.Context, fingerprint, upstream string) error {
+	res, err := p.db.ExecContext(ctx, qSetUpstreamFinding, fingerprint, nullString(upstream))
+	if err != nil {
+		return fmt.Errorf("store: recording the upstream finding for %s: %w", fingerprint, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fingerprint)
+	}
+	return nil
 }
