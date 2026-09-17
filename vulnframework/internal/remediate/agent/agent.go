@@ -174,3 +174,39 @@ func (e *ErrNoTestSuite) Refusal() (model.ReasonCode, bool) {
 // a control, not a failure to fix something, and it gets the same response as
 // a deny-list violation: hard-fail the job and alert a human. Turning it into
 // a ticket would file it alongside ordinary work.
+
+// ErrTouchedSecretPath reports a change to a file that currently holds an
+// unresolved secret finding (VM-F-854).
+//
+// Distinct from a deny-list violation, and the distinction matters. The guard
+// stops the agent WRITING a protected path — an attempt to reach somewhere it
+// was told not to. This is a LEGITIMATE change that happens to touch a file
+// with a live credential in it, and it is still refused: an automated edit to
+// a file holding a live secret risks disclosing it in a diff, a pull request
+// body, a CI log or a reviewer's terminal, and it does so even when the change
+// itself is entirely benign.
+//
+// The response is not a hard failure either. The change was reasonable, the
+// file is simply not safe to touch until the credential is rotated, so the
+// finding goes to a human with NEEDS_HUMAN_SECRET and the run continues for
+// everything else (VM-F-853).
+type ErrTouchedSecretPath struct {
+	Repo  string
+	Paths []string
+}
+
+func (e *ErrTouchedSecretPath) Error() string {
+	return fmt.Sprintf(
+		"agent: reverting the change: it touches %v in %s, which currently hold unresolved secret "+
+			"findings. An automated edit to a file containing a live credential risks disclosing it in "+
+			"a diff, a pull request body or a CI log, even when the change itself is benign. The fix is "+
+			"reverted and the finding is routed to a human; rotate the credential first (VM-F-854)",
+		e.Paths, e.Repo)
+}
+
+// Refusal routes a secret-path collision to a human rather than hard-failing:
+// the agent did nothing wrong, and the run continues for other findings
+// (VM-F-853).
+func (e *ErrTouchedSecretPath) Refusal() (model.ReasonCode, bool) {
+	return model.ReasonNeedsHumanSecret, true
+}

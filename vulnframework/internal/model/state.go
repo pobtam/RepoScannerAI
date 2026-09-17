@@ -428,6 +428,43 @@ func AllowedTransitions(s State) []State {
 	return out
 }
 
+// ErrWrongActor reports a transition attempted by an actor the table does not
+// authorise for it (VM-F-152).
+//
+// Until Phase 10 the actor column was documentation: validation checked the
+// edge and the scan-outcome guard, and took the caller's word for who it was.
+// That was tolerable while every actor was framework code written in this
+// repository. It stopped being tolerable when an agent joined the set — the
+// actor set is no longer uniformly trusted, and "convention, not control" is
+// exactly the gap this system spends its effort closing everywhere else.
+type ErrWrongActor struct {
+	From, To State
+	Actor    Actor
+	Want     Actor
+	Cause    string
+}
+
+func (e *ErrWrongActor) Error() string {
+	return fmt.Sprintf(
+		"transition %s -> %s is authorised for actor %q, not %q (actor=%q cause=%q). "+
+			"The actor column of the VM-AD §6.1 table is enforced, not advisory: a caller cannot "+
+			"authorise itself for a transition by claiming to be something else (VM-F-152)",
+		e.From, e.To, e.Want, e.Actor, e.Actor, e.Cause)
+}
+
+// ActorFor returns the actor the table authorises for a transition.
+func ActorFor(from, to State) (Actor, bool) {
+	edges, ok := transitions[from]
+	if !ok {
+		return "", false
+	}
+	e, ok := edges[to]
+	if !ok {
+		return "", false
+	}
+	return e.Actor, true
+}
+
 // ValidateTransition checks a proposed state change against the normative
 // transition table and the guards that table does not express.
 //
@@ -443,6 +480,13 @@ func ValidateTransition(from, to State, ctx TransitionContext) error {
 	}
 	if !CanTransition(from, to) {
 		return &IllegalTransitionError{From: from, To: to, Actor: ctx.Actor, Cause: ctx.Cause}
+	}
+	// The actor column is enforced (OQ-P10a-02). A human may take any
+	// transition — a person with access to the system can always correct it,
+	// and pretending otherwise would just move the override somewhere less
+	// visible — but no automated actor may take another's.
+	if want, ok := ActorFor(from, to); ok && ctx.Actor != want && ctx.Actor != ActorHuman {
+		return &ErrWrongActor{From: from, To: to, Actor: ctx.Actor, Want: want, Cause: ctx.Cause}
 	}
 	// Guard: absence is not resolution (VM-ADR-12, VM-F-160). A finding reaches
 	// VERIFIED only where the scan that failed to observe it completed

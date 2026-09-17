@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 	"sync"
@@ -34,6 +35,13 @@ type Harness struct {
 	// repository whose tests simply failed to list.
 	RequireTestSuite bool
 	HasTestSuite     bool
+
+	// SecretPaths lists files in this repository that currently hold an
+	// unresolved secret finding (VM-F-854). A function rather than a slice so
+	// it is read at the moment of the check: a credential rotated during a
+	// long agent run should free its file, and a snapshot taken at
+	// construction would not know.
+	SecretPaths func(ctx context.Context, repo string) ([]string, error)
 
 	Clock func() time.Time
 
@@ -195,14 +203,33 @@ func (h *Harness) Apply(ctx context.Context, dir string, group remediate.FixGrou
 // forgot to add a test must be reported as the first: "no test added" is a
 // quality finding an operator triages tomorrow, and an attempted CI edit is an
 // alert tonight. Running these first would relabel the second as the first.
-func (h *Harness) PostGuardCheck(_ context.Context, _ string, group remediate.FixGroup) error {
+func (h *Harness) PostGuardCheck(ctx context.Context, dir string, group remediate.FixGroup) error {
 	h.mu.Lock()
 	before, after, manual := h.testsBefore, h.testsAfter, h.manualVerification
 	h.mu.Unlock()
 
+	applied, err := h.Toolchain.Collect(ctx, dir)
+	if err != nil {
+		return err
+	}
+	changed := applied.ChangedFiles
+
 	if removed := missing(before, after); len(removed) > 0 {
 		h.record("REJECTED: the change removed or disabled %d existing test(s): %v", len(removed), removed)
 		return &ErrTestsWeakened{Removed: removed}
+	}
+
+	// VM-F-854. Read from the tree's change set, and the secret paths read
+	// fresh: a credential rotated during the run frees its file.
+	if h.SecretPaths != nil {
+		secret, err := h.SecretPaths(ctx, group.Repo)
+		if err != nil {
+			return err
+		}
+		if touched := intersect(changed, secret); len(touched) > 0 {
+			h.record("REVERTED: the change touches %v, which hold unresolved secret findings (VM-F-854)", touched)
+			return &ErrTouchedSecretPath{Repo: group.Repo, Paths: touched}
+		}
 	}
 	added := missing(after, before)
 	if touchesSource(group) && len(added) == 0 && manual == "" {
@@ -248,6 +275,36 @@ func touchesSource(group remediate.FixGroup) bool {
 		}
 	}
 	return false
+}
+
+// intersect returns the members of a that appear in b, normalised so a path
+// spelled differently cannot slip past.
+func intersect(a, b []string) []string {
+	set := make(map[string]bool, len(b))
+	for _, s := range b {
+		set[normalisePath(s)] = true
+	}
+	var out []string
+	seen := map[string]bool{}
+	for _, s := range a {
+		key := normalisePath(s)
+		if set[key] && !seen[key] {
+			seen[key] = true
+			out = append(out, s)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// normalisePath matches the guard's normalisation, for the same reason: a
+// check that compares raw strings is evaded by spelling the path differently.
+func normalisePath(p string) string {
+	s := strings.ReplaceAll(p, `\\`, "/")
+	s = path.Clean(s)
+	s = strings.TrimPrefix(s, "/")
+	s = strings.TrimPrefix(s, "./")
+	return strings.ToLower(s)
 }
 
 // missing returns entries of a that are absent from b.

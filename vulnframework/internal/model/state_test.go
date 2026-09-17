@@ -453,3 +453,92 @@ func TestDetectedStillNeedsAQualifyingScan(t *testing.T) {
 		}
 	}
 }
+
+// --- The actor column is enforced (OQ-P10a-02) ------------------------------
+
+// TestActorColumnIsEnforced closes the last "convention, not control" gap.
+//
+// Until Phase 10 the actor was recorded and never checked. That was tolerable
+// while every actor was framework code in this repository; it stopped being
+// tolerable when an agent joined the set, because the actor set is no longer
+// uniformly trusted. A caller must not be able to authorise itself for a
+// transition by claiming to be something else (VM-F-152).
+//
+// Enforcing it immediately found a real defect: the remediation worker was
+// recording "orchestrator" for every failed attempt, so the audit trail named
+// the wrong party and nothing could have noticed.
+func TestActorColumnIsEnforced(t *testing.T) {
+	cases := []struct {
+		name       string
+		from, to   model.State
+		actor      model.Actor
+		wantActor  model.Actor
+		wantReject bool
+	}{
+		{"the authorised actor", model.AutoRemediating, model.NeedsHuman, model.ActorWorker, model.ActorWorker, false},
+		{"the orchestrator impersonating the worker", model.AutoRemediating, model.NeedsHuman, model.ActorOrchestrator, model.ActorWorker, true},
+		{"the worker impersonating triage", model.Detected, model.Triaged, model.ActorWorker, model.ActorTriage, true},
+		{"a worker claiming a scan observed something", model.Triaged, model.Verified, model.ActorWorker, model.ActorScanWorker, true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := model.TransitionContext{Actor: tc.actor, Cause: "test"}
+			if tc.to == model.Verified {
+				ctx.ScanOutcome = model.ScanComplete
+			}
+			_, err := model.ApplyTransition("fp", tc.from, tc.to, ctx)
+
+			if !tc.wantReject {
+				if err != nil {
+					t.Fatalf("the authorised actor was rejected: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("%s took a transition authorised for %s", tc.actor, tc.wantActor)
+			}
+			var wrong *model.ErrWrongActor
+			if !errors.As(err, &wrong) {
+				t.Fatalf("error is %T, want *model.ErrWrongActor", err)
+			}
+			if wrong.Want != tc.wantActor {
+				t.Errorf("error names %q as authorised, want %q", wrong.Want, tc.wantActor)
+			}
+		})
+	}
+}
+
+// TestAHumanMayTakeAnyTransition is the deliberate exception, and it is not a
+// loophole.
+//
+// A person with access to this system can always correct it. Refusing them at
+// the state machine would not prevent the change — it would push it into a
+// direct database edit, which is the same action with no audit record. The
+// override is allowed precisely so that it is recorded as one.
+func TestAHumanMayTakeAnyTransition(t *testing.T) {
+	// A transition the table authorises for the scan worker alone.
+	_, err := model.ApplyTransition("fp", model.Triaged, model.Verified, model.TransitionContext{
+		Actor: model.ActorHuman, Cause: "confirmed fixed by hand", ScanOutcome: model.ScanComplete,
+	})
+	if err != nil {
+		t.Errorf("a human was refused a transition: %v; the refusal would not prevent the change, it "+
+			"would move it to a direct database edit with no audit record", err)
+	}
+	// The other guards still apply to them: a human cannot verify against a
+	// scan that did not succeed, because that is a claim about evidence rather
+	// than about authority (VM-ADR-12).
+	_, err = model.ApplyTransition("fp", model.Triaged, model.Verified, model.TransitionContext{
+		Actor: model.ActorHuman, Cause: "looks fine", ScanOutcome: model.ScanFailed,
+	})
+	if err == nil {
+		t.Error("a human verified a finding against a failed scan; authority does not substitute for evidence")
+	}
+	// And a transition that is not in the table at all is still illegal.
+	_, err = model.ApplyTransition("fp", model.Detected, model.Merged, model.TransitionContext{
+		Actor: model.ActorHuman, Cause: "shortcut",
+	})
+	if err == nil {
+		t.Error("a human took a transition absent from the table; the exception is about WHO, not WHAT")
+	}
+}

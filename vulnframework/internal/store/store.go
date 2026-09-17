@@ -359,6 +359,15 @@ type Store interface {
 	// many it released.
 	SweepExpiredRepoLocks(ctx context.Context, now time.Time) (int, error)
 
+	// SecretPaths returns the files in a repository that currently hold an
+	// unresolved secret finding (VM-F-854).
+	//
+	// "Currently" is the load-bearing word: a rotated credential's finding is
+	// resolved, and its file is ordinary again. A list that included resolved
+	// findings would freeze a file out of automated remediation for ever,
+	// which is how a control becomes something people route around.
+	SecretPaths(ctx context.Context, repo string) ([]string, error)
+
 	// --- Remediation pull requests (VM-AD §11, VM-F-501/502) ---
 
 	// SaveRemediationPR records or updates a fix group's pull request.

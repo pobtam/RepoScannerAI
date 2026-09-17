@@ -480,8 +480,17 @@ func (w *Worker) routeToHuman(ctx context.Context, group FixGroup, reason model.
 		if err := w.Store.SetPriority(ctx, f.Fingerprint, current.Priority, &reason); err != nil {
 			return err
 		}
+		// The actor comes from the table, not from a constant at the call
+		// site. Enforcement (OQ-P10a-02) caught this claiming "orchestrator"
+		// for a transition the table authorises for the worker: the audit
+		// trail was naming the wrong party for every failed remediation, and
+		// nothing would have noticed while the column was advisory.
+		actor, ok := model.ActorFor(current.State, model.NeedsHuman)
+		if !ok {
+			actor = model.ActorOrchestrator
+		}
 		if err := w.Store.ApplyTransition(ctx, f.Fingerprint, model.NeedsHuman, model.TransitionContext{
-			Actor: model.ActorOrchestrator, Cause: cause, At: now,
+			Actor: actor, Cause: cause, At: now,
 		}); err != nil {
 			return err
 		}

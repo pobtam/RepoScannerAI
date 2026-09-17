@@ -24,7 +24,7 @@ green.
 | **9a** — guard, deterministic worker, repo lock, PR ops | **Green** | passing (extended gate) |
 | **9b** — orchestrator ticket wiring, Drain, reopen, strand sweep | **Green** | passing (extended gate) |
 | **10a** — `internal/remediate/agent` — guard inheritance + harness | **Green** | passing (extended gate) |
-| 10b — the real Claude Code headless client | Not started | |
+| **10b** — headless client, §11.4 prompt, sandbox, VM-F-854 | **Green** | passing (extended gate) |
 | 11–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
@@ -2487,3 +2487,197 @@ capabilities, but it says nothing about what the agent's own process can reach:
 the network, the filesystem outside the clone, the credentials in the
 environment. That is 10b's other half, and it should land with the real client
 rather than after it.
+
+---
+
+## Decisions taken after Phase 10a (2026-09-16)
+
+All three flags land **with** the real client, not after it.
+
+**OQ-P10a-03 — sandbox / §15.2. → MUST land with the client.**
+
+> It is the other half of the 10a capability-denial guarantee, not a later
+> hardening pass. The `Fixer` interface constrains the agent's **effect on the
+> framework** (its return value); it does not constrain the agent's
+> **process** — network, filesystem outside the clone, environment
+> credentials. Until §15.2 isolation is real, the agent is capability-denied on
+> paper and capability-rich in practice.
+>
+> **The headless client MUST NOT receive a real API key until its process is
+> isolated.**
+>
+> Gate, at the PROCESS boundary rather than the guard: the agent process
+> reaches no network except the LLM endpoint; reads no environment variable
+> outside an explicit allowlist; writes nothing outside the clone. An injected
+> instruction to exfiltrate the environment to a URL fails at the process
+> boundary.
+
+**OQ-P10a-01 — VM-F-854 / `NEEDS_HUMAN_SECRET`. → Implement in 10b.**
+
+> Distinct from the deny-list guard. That stops the agent **writing** protected
+> paths; this handles a **legitimate** agent change that touches a file
+> currently holding a flagged secret — revert it and escalate, because an
+> automated edit to a live-secret file is a disclosure risk even when benign.
+> Needs the store to expose active-secret paths per repository.
+>
+> Gate: an agent fix touching a live flagged-secret path is reverted and the
+> finding lands `NEEDS_HUMAN_SECRET`, proven with a real flagged-secret
+> fixture.
+
+**OQ-P10a-02 — the actor column is unenforced. → Fix in 10b.**
+
+> Make the actor an **enforced** part of the transition check: a transition
+> attempted by the wrong actor class is rejected like any other illegal
+> transition (VM-F-152). This closes the last "convention, not control" gap now
+> that the actor set is no longer uniformly trusted — an agent is in it.
+
+
+---
+
+## Phase 10b — the headless client, the sandbox, and the last two gaps
+
+**Status: green.** 898 tests with subtests. `go vet` and `gofmt` clean,
+`-race` clean, both store backends.
+
+### OQ-P10a-02 — the actor column is now enforced
+
+`ValidateTransition` checks the actor against the §6.1 table. Enforcing it
+found a real defect immediately: the remediation worker recorded
+`ActorOrchestrator` for every failed attempt, on a transition the table
+authorises for `ActorWorker`. The audit trail had been naming the wrong party
+for the whole of Phase 9, and nothing could have noticed while the column was
+advisory. The actor is now derived from the table at the call site rather than
+asserted.
+
+**A human may take any transition**, deliberately. Refusing them would not
+prevent the change — it would move it to a direct database edit with no audit
+record. The override is permitted precisely so that it is recorded as one. The
+evidence guards still apply to them: a human cannot verify against a failed
+scan, because that is a claim about evidence, not about authority.
+
+### OQ-P10a-03 — the sandbox, and why it is probed rather than declared
+
+`internal/sandbox` confines the agent's **process**. The 10a guarantee was
+about the agent's return value; this is about what its process can reach.
+
+The design decision that matters: **`Verify` probes the boundary by trying to
+cross it.** Three canaries run inside the sandbox and attempt egress to a
+non-model host, a read of a non-allowlisted variable, and a write outside the
+clone. An implementation reporting "denied" from its own configuration would
+be asserting that it is configured, which is a different claim and is exactly
+the self-confirming shape this build has spent its length removing.
+
+Two details that are load-bearing:
+
+- **A skipped probe never reads as denied.** A probe that did not run is
+  silent, and so is one that was blocked. `Verification.OK()` requires every
+  probe to have *run* and been denied.
+- **An allowlist, not a deny-list, for the environment.** A deny-list is
+  correct until someone adds a variable, and the failure is silent. A wildcard
+  entry is refused because it reads, in a config file, exactly like isolation.
+
+`Unisolated` exists so the absence of isolation is a value that can be passed
+and refused, rather than a nil that silently means unconfined. It never
+verifies.
+
+### The key gate
+
+`Client.Fix` proves the sandbox **before** asking for the credential, and the
+test's credential function counts its calls. An implementation that read the
+key first and checked the boundary second passes every behavioural test and
+fails this one — which is why the credential is a function rather than a
+field. A key handed to an unconfined process is already in reach of everything
+that process does; by the time anything notices, the exfiltration has happened.
+
+The key is also kept out of the prompt: a model can quote its prompt back, and
+an injected instruction would ask it to.
+
+### The §11.4 prompt
+
+Every constraint from the specification, and one addition: the prompt states
+that the constraints are **enforced independently of the agent**. A model told
+only "never do X" may treat its own compliance as the control; a model told "X
+is rejected downstream regardless" has accurate information about the system it
+is in. The prompt also names untrusted content as data rather than instruction,
+and passes the shared credential check before it leaves the process — the
+prompt travels further than anything else in this system.
+
+### Strict parsing
+
+Unparseable output is an error, never an empty success. Prose, an empty buffer
+or a truncated object parsed leniently all produce an empty `Report`, which is
+indistinguishable from "the agent ran and correctly decided there was nothing
+to do" — and that silently consumes the finding's turn while reporting success.
+
+### OQ-P10a-01 — VM-F-854, with a real fixture
+
+`SecretPaths` on both backends lists files holding an **unresolved** secret
+finding, and the harness reverts a change touching one, routing the finding to
+`NEEDS_HUMAN_SECRET` and letting the run continue (VM-F-853).
+
+This is not the deny-list case, and the distinction is the point. The guard
+stops the agent *writing* a protected path. This refuses a **legitimate**
+change to an ordinary file that happens to hold a live credential, because an
+automated edit to such a file risks disclosing it in a diff, a pull request
+body or a CI log even when the change itself is benign. The escalation names
+the file and never the credential.
+
+The fixture is the real captured gitleaks output, normalised by the real
+adapter, so the flagged path is a path the actual tool actually flagged.
+
+**A mutation found the missing half.** Switching the query from open findings
+to all findings survived every test, because none had a *resolved* secret. A
+file frozen out for ever is an obstruction rather than a control, and a
+routed-around control protects nothing while still appearing in the design.
+`TestARotatedSecretFreesItsFile` closes it.
+
+### Mutations verified
+
+| # | Mutation | Caught by |
+|---|---|---|
+| A | client fetches the key before verifying | key-gate clause (call count) |
+| B | `Verify` trusts config instead of probing | probe clause, and the key gate |
+| C | environment allowlist becomes pass-through | allowlist clause |
+| D | process-group containment removed | **survived** — see OQ-P10b-02 |
+| E | VM-F-854 check removed | secret-path clause |
+| F | `SecretPaths` includes resolved findings | **survived**; gap closed, then caught |
+| G | prompt drops its constraints | prompt clause |
+
+### Assumptions
+
+- **A47.** The model is replaced by a script in every test. Everything above it
+  — prompt, arguments, sandbox, parsing, guard — is the production path. A test
+  against a live model would prove something about today's model; these clauses
+  are about the framework holding whatever the model does.
+- **A48.** `bwrap` and `sandbox-exec` are the default backends. Both are
+  ordinary user-space tools; neither requires the framework to be privileged.
+- **A49.** The canary secret is injected *outside* the allowlist on purpose.
+  Probing for an unset variable proves nothing; the probe has to look for
+  something that exists outside the boundary and must not exist inside it.
+- **A50.** A human is exempt from actor enforcement; no automated actor is.
+
+### Open questions
+
+**OQ-P10b-01 — the real backends are unexercised.** Every sandbox test runs
+against `Fake` or `Unisolated`. `New` selects `bwrap` or `sandbox-exec` and
+builds the confinement arguments, but no test runs a canary through either:
+this machine has neither, and `New` correctly refuses. The probe machinery is
+designed for exactly this and the CI job is small — a Linux runner with
+bubblewrap, running `Verify` and asserting all three boundaries hold. **Until
+that job exists, the real sandbox is unproven**, and the production deployment
+should treat `Verify` failing as the expected state rather than a surprise.
+
+**OQ-P10b-02 — process-tree containment is implemented but unproven.** The
+mutation removing `Setpgid` and the process-group kill survives: the
+orphan-holds-the-pipe hazard does not reproduce on this platform and Go
+version, though it was observed once during development. The code is standard
+practice and defensible, but no test currently fails without it. It belongs
+with OQ-P10b-01's Linux job, where a real spawned tree can be checked with
+`pgrep` after cancellation.
+
+**OQ-P10b-03 — no real agent has ever run.** The client is exercised against a
+script. The first live run needs: a repository clone, a real
+`bwrap`-backed sandbox, and a key issued only after `Verify` passes. It should
+be a single supervised run on one low-tier repository with the pull request
+reviewed by hand before anything is scheduled — and the §11.4 prompt is a first
+draft that will need revision against what a real model actually does with it.

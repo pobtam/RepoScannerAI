@@ -1664,3 +1664,14 @@ func (p *Postgres) TicketByRef(ctx context.Context, backend, ref string) (Ticket
 	}
 	return t, true, nil
 }
+
+// SecretPaths returns files holding an unresolved secret finding (VM-F-854).
+func (p *Postgres) SecretPaths(ctx context.Context, repo string) ([]string, error) {
+	findings, err := p.ListFindings(ctx, Query{
+		Scope: ScopeOpen, Repo: repo, Categories: []model.Category{model.CategorySecret},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return secretPathsOf(findings), nil
+}

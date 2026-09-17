@@ -1320,3 +1320,32 @@ func (m *Memory) TicketByRef(_ context.Context, backend, ref string) (Ticket, bo
 	}
 	return Ticket{}, false, nil
 }
+
+// SecretPaths returns files holding an unresolved secret finding (VM-F-854).
+func (m *Memory) SecretPaths(ctx context.Context, repo string) ([]string, error) {
+	findings, err := m.ListFindings(ctx, Query{
+		Scope: ScopeOpen, Repo: repo, Categories: []model.Category{model.CategorySecret},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return secretPathsOf(findings), nil
+}
+
+// secretPathsOf extracts the distinct file paths, shared by both backends so
+// they cannot disagree about what counts.
+func secretPathsOf(findings []model.Finding) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, f := range findings {
+		if f.Location.File == nil || *f.Location.File == "" {
+			continue
+		}
+		if !seen[*f.Location.File] {
+			seen[*f.Location.File] = true
+			out = append(out, *f.Location.File)
+		}
+	}
+	sort.Strings(out)
+	return out
+}

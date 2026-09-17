@@ -3,6 +3,7 @@ package agent_test
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +15,8 @@ import (
 	"github.com/wanaware/vulnframework/internal/remediate"
 	"github.com/wanaware/vulnframework/internal/remediate/agent"
 	"github.com/wanaware/vulnframework/internal/remediate/guard"
+	"github.com/wanaware/vulnframework/internal/scan"
+	"github.com/wanaware/vulnframework/internal/scan/adapters"
 	"github.com/wanaware/vulnframework/internal/store"
 )
 
@@ -770,5 +773,255 @@ func TestNoTestSuiteMeansNoAgenticSourceFix(t *testing.T) {
 	}
 	if len(remote.AllPRs(repo)) != 0 {
 		t.Error("an agentic source fix was attempted in a repository with no test suite")
+	}
+}
+
+// --- VM-F-854: a legitimate change touching a live secret path -------------
+
+// TestAgentFixTouchingALiveSecretPathIsRevertedAndEscalated covers VM-F-854,
+// and the fixture is a real one: the finding comes from the gitleaks output
+// this repository captured from the actual tool, so the flagged path is a path
+// gitleaks actually flagged.
+//
+// This is NOT the deny-list case. The agent did nothing it was told not to —
+// `config/settings.yaml` is an ordinary file, not a protected path, and the
+// change is entirely reasonable. It is refused because that file currently
+// holds a live credential, and an automated edit to such a file risks
+// disclosing it in a diff, a pull request body or a CI log even when the
+// change itself is benign.
+func TestAgentFixTouchingALiveSecretPathIsRevertedAndEscalated(t *testing.T) {
+	ctx := context.Background()
+	s := newStore(t)
+
+	// Ground truth: the real gitleaks fixture, normalised by the real adapter.
+	rawOutput, err := os.ReadFile("../../../testdata/fixtures/gitleaks/go-api.json")
+	if err != nil {
+		t.Fatalf("reading the gitleaks fixture: %v", err)
+	}
+	secrets, err := adapters.NewGitleaks(nil, "v8.30.1").Normalize(scan.RawOutput{
+		Tool: "gitleaks", ToolVersion: "v8.30.1", Repo: repo, Stdout: rawOutput,
+	})
+	if err != nil {
+		t.Fatalf("normalising gitleaks output: %v", err)
+	}
+	if len(secrets) == 0 {
+		t.Fatal("the fixture produced no secret findings; the test would pass vacuously")
+	}
+
+	// The file the real tool flagged.
+	flagged := ""
+	for _, sec := range secrets {
+		if sec.File != "" {
+			flagged = sec.File
+			break
+		}
+	}
+	if flagged == "" {
+		t.Fatal("no flagged path in the fixture")
+	}
+
+	// A code finding to fix, alongside the live secrets.
+	code := codeFinding("G401")
+	fps := seed(t, s, append([]model.RawFinding{code}, secrets...)...)
+	codeFP := fps[0]
+
+	if paths, err := s.SecretPaths(ctx, repo); err != nil || len(paths) == 0 {
+		t.Fatalf("the store reports no active secret paths: %v (%v)", paths, err)
+	}
+
+	remote := gh.NewFake("main")
+	tc := toolchain()
+
+	// A perfectly reasonable fix that happens to touch the flagged file.
+	a := agent.NewFakeAgent().
+		WritesTo("internal/handler/auth.go", flagged).
+		AddsTest("TestAuthRejectsTamperedToken").
+		ClosesFinding("G401").
+		ClaimsFixed(codeFP)
+
+	h := &agent.Harness{
+		Agent: a, Toolchain: tc, Budget: defaultBudget(),
+		SecretPaths: s.SecretPaths,
+		Clock:       func() time.Time { return at },
+	}
+	w := &remediate.Worker{
+		Store: s, PR: remote, Guard: testGuard(t), Toolchain: tc, Fixer: h,
+		Owner: "agent-worker-1", LeaseTTL: 30 * time.Minute,
+		Clock: func() time.Time { return at },
+	}
+
+	group := groupOf(t, s, []string{codeFP})
+	res, err := w.Remediate(ctx, group)
+	if err != nil {
+		t.Fatalf("Remediate: %v", err)
+	}
+
+	if res.Reason == nil || *res.Reason != model.ReasonNeedsHumanSecret {
+		t.Fatalf("reason = %v, want NEEDS_HUMAN_SECRET (VM-F-854)", res.Reason)
+	}
+	if len(remote.AllPRs(repo)) != 0 {
+		t.Error("a change touching a live secret path was pushed")
+	}
+	if len(remote.Branches(repo)) != 0 {
+		t.Error("a branch survived the revert")
+	}
+
+	f, err := s.GetFinding(ctx, codeFP)
+	if err != nil {
+		t.Fatalf("get finding: %v", err)
+	}
+	if f.State != model.NeedsHuman {
+		t.Errorf("state = %s, want NEEDS_HUMAN", f.State)
+	}
+
+	// The escalation names the file, and does NOT name the credential: the
+	// whole point is that the value never travels (VM-F-263).
+	joined := strings.Join(h.Actions(), "\n")
+	if !strings.Contains(joined, flagged) {
+		t.Errorf("the action log does not name the file that caused the revert:\n%s", joined)
+	}
+	for _, secret := range []string{"REDACTED-FAKE-AWS-SECRET", "REDACTED-FAKE-AWS-KEY-ID"} {
+		if strings.Contains(joined, secret) {
+			t.Errorf("the escalation quoted the credential it was protecting")
+		}
+	}
+}
+
+// TestAnOrdinaryFileIsNotFrozenOut is the negative half, and it is what stops
+// this control becoming something people route around.
+//
+// Only a file with an UNRESOLVED secret finding is off limits. Once the
+// credential is rotated the finding resolves and the file is ordinary again —
+// a check that looked at all secret findings ever recorded would freeze a file
+// out of automated remediation permanently.
+func TestAnOrdinaryFileIsNotFrozenOut(t *testing.T) {
+	ctx := context.Background()
+	s := newStore(t)
+	fps := seed(t, s, codeFinding("G401"))
+
+	remote := gh.NewFake("main")
+	tc := toolchain()
+	a := agent.NewFakeAgent().
+		WritesTo("internal/handler/auth.go").
+		AddsTest("TestAuthRejectsTamperedToken").
+		ClosesFinding("G401").
+		ClaimsFixed(fps...)
+
+	h := &agent.Harness{
+		Agent: a, Toolchain: tc, Budget: defaultBudget(),
+		SecretPaths: s.SecretPaths,
+		Clock:       func() time.Time { return at },
+	}
+	w := &remediate.Worker{
+		Store: s, PR: remote, Guard: testGuard(t), Toolchain: tc, Fixer: h,
+		Owner: "agent-worker-1", LeaseTTL: 30 * time.Minute,
+		Clock: func() time.Time { return at },
+	}
+
+	res, err := w.Remediate(ctx, groupOf(t, s, fps))
+	if err != nil {
+		t.Fatalf("Remediate: %v", err)
+	}
+	if res.Outcome != remediate.OutcomePROpen {
+		t.Fatalf("outcome = %s, want pr_open: a repository with no live secrets must remediate "+
+			"normally, or the control becomes something people route around", res.Outcome)
+	}
+}
+
+// TestARotatedSecretFreesItsFile closes the gap a mutation found: nothing
+// asserted that a RESOLVED secret finding stops blocking its file.
+//
+// The distinction is the whole difference between a control and an
+// obstruction. A check over all secret findings ever recorded would freeze a
+// file out of automated remediation permanently — the credential is rotated,
+// the risk is gone, and the file is still untouchable. Controls that never
+// release are the ones people route around, and a routed-around control
+// protects nothing while still appearing in the design.
+//
+// A mutation switching the query from open findings to all findings survived
+// every other test in this file, because none of them had a resolved secret.
+func TestARotatedSecretFreesItsFile(t *testing.T) {
+	ctx := context.Background()
+	s := newStore(t)
+
+	secret := model.RawFinding{
+		Repo: repo, Category: model.CategorySecret,
+		DetectorRuleID: "aws-access-token", Tool: "gitleaks", ToolVersion: "v8.30.1",
+		File: "internal/handler/auth.go", Line: 12, CredentialType: "aws-access-token",
+		Classification: model.Classification{
+			Severity: model.SeverityCritical, Reachable: model.ReachableUnknown,
+			DepClass: model.DepNotApplicable,
+		},
+	}
+	code := codeFinding("G401")
+	fps := seed(t, s, code, secret)
+	codeFP, secretFP := fps[0], fps[1]
+
+	// While the secret is live, the file is off limits.
+	if paths, err := s.SecretPaths(ctx, repo); err != nil || len(paths) != 1 {
+		t.Fatalf("SecretPaths = %v (%v), want the one live path", paths, err)
+	}
+
+	// The credential is rotated and a later successful scan no longer sees it.
+	r2, err := s.CreateRun(ctx, store.KindSweep, "cron", "img@sha256:abc", map[string]string{"gitleaks": "v8.30.1"})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if err := s.RecordPlan(ctx, []store.PlanEntry{{RunID: r2.ID, Repo: repo, State: store.DispatchPlanned}}); err != nil {
+		t.Fatalf("record plan: %v", err)
+	}
+	if _, err := s.UpsertObservations(ctx, r2.ID, repo, []model.RawFinding{code}); err != nil {
+		t.Fatalf("upsert: %v", err)
+	}
+	if err := s.RecordScanResult(ctx, store.RepoScanResult{
+		RunID: r2.ID, Repo: repo, Outcome: model.ScanComplete, ToolsOK: []string{"gosec", "gitleaks"},
+	}); err != nil {
+		t.Fatalf("scan result: %v", err)
+	}
+	if _, err := s.Reconcile(ctx, r2.ID, repo); err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+
+	resolved, err := s.GetFinding(ctx, secretFP)
+	if err != nil {
+		t.Fatalf("get finding: %v", err)
+	}
+	if model.PartitionOf(resolved.State) != model.PartitionResolved {
+		t.Fatalf("the secret finding is %s, want resolved; the fixture does not exercise the rule", resolved.State)
+	}
+
+	// The file is ordinary again.
+	paths, err := s.SecretPaths(ctx, repo)
+	if err != nil {
+		t.Fatalf("SecretPaths: %v", err)
+	}
+	if len(paths) != 0 {
+		t.Fatalf("SecretPaths = %v after the credential was rotated, want none; a file frozen out for "+
+			"ever is an obstruction, not a control", paths)
+	}
+
+	// And a fix touching it now goes through.
+	remote := gh.NewFake("main")
+	tc := toolchain()
+	a := agent.NewFakeAgent().
+		WritesTo("internal/handler/auth.go").
+		AddsTest("TestAuthRejectsTamperedToken").
+		ClosesFinding("G401").
+		ClaimsFixed(codeFP)
+	h := &agent.Harness{Agent: a, Toolchain: tc, Budget: defaultBudget(),
+		SecretPaths: s.SecretPaths, Clock: func() time.Time { return at }}
+	w := &remediate.Worker{
+		Store: s, PR: remote, Guard: testGuard(t), Toolchain: tc, Fixer: h,
+		Owner: "agent-worker-1", LeaseTTL: 30 * time.Minute,
+		Clock: func() time.Time { return at },
+	}
+
+	res, err := w.Remediate(ctx, groupOf(t, s, []string{codeFP}))
+	if err != nil {
+		t.Fatalf("Remediate: %v", err)
+	}
+	if res.Outcome != remediate.OutcomePROpen {
+		t.Errorf("outcome = %s, want pr_open: the credential is rotated and the file is ordinary again",
+			res.Outcome)
 	}
 }
