@@ -296,27 +296,34 @@ WHERE repo_locks.owner = EXCLUDED.owner OR repo_locks.expires_at <= $4`
 
 const (
 	qUpsertRemediationPR = `
-INSERT INTO remediation_prs (branch, repo, fix_group_id, number, url, state, opened_at, closed_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO remediation_prs (branch, repo, fix_group_id, number, url, state, opened_at, closed_at, merged, ticket_ref, ticket_url)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (branch) DO UPDATE SET
-  number    = EXCLUDED.number,
-  url       = EXCLUDED.url,
-  state     = EXCLUDED.state,
-  closed_at = COALESCE(EXCLUDED.closed_at, remediation_prs.closed_at)`
+  number     = EXCLUDED.number,
+  url        = EXCLUDED.url,
+  state      = EXCLUDED.state,
+  closed_at  = COALESCE(EXCLUDED.closed_at, remediation_prs.closed_at),
+  merged     = remediation_prs.merged OR EXCLUDED.merged,
+  ticket_ref = COALESCE(NULLIF(EXCLUDED.ticket_ref, ''), remediation_prs.ticket_ref),
+  ticket_url = COALESCE(NULLIF(EXCLUDED.ticket_url, ''), remediation_prs.ticket_url)`
 
 	qGetRemediationPR = `
-SELECT branch, repo, fix_group_id, number, url, state, opened_at, closed_at
+SELECT branch, repo, fix_group_id, number, url, state, opened_at, closed_at, merged, ticket_ref, ticket_url
 FROM remediation_prs WHERE branch = $1`
 
 	qRemediationPRForFinding = `
-SELECT p.branch, p.repo, p.fix_group_id, p.number, p.url, p.state, p.opened_at, p.closed_at
+SELECT p.branch, p.repo, p.fix_group_id, p.number, p.url, p.state, p.opened_at, p.closed_at, p.merged, p.ticket_ref, p.ticket_url
 FROM remediation_prs p
 JOIN remediation_pr_findings f ON f.branch = p.branch
 WHERE f.fingerprint = $1 AND p.state = 'open'
 ORDER BY p.branch
 LIMIT 1`
 
-	qCloseRemediationPR = `UPDATE remediation_prs SET state = 'closed', closed_at = $2 WHERE branch = $1`
+	qCloseRemediationPR = `UPDATE remediation_prs SET state = 'closed', closed_at = $2, merged = $3 WHERE branch = $1`
+
+	qOpenRemediationPRs = `
+SELECT branch, repo, fix_group_id, number, url, state, opened_at, closed_at, merged, ticket_ref, ticket_url
+FROM remediation_prs WHERE repo = $1 AND state = 'open' ORDER BY branch`
 
 	qDeletePRFindings = `DELETE FROM remediation_pr_findings WHERE branch = $1`
 
@@ -334,4 +341,26 @@ FROM remediation_prs p
 JOIN remediation_pr_findings f ON f.branch = p.branch
 WHERE p.state = 'open' AND p.url <> ''
 GROUP BY f.fingerprint`
+)
+
+// --- Run parent tickets (VM-AD §13.3 row 1) ----------------------------------
+
+const (
+	qUpsertRunTicket = `
+INSERT INTO run_tickets (run_id, backend, ref, url, created_at)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (run_id) DO UPDATE SET backend = EXCLUDED.backend, ref = EXCLUDED.ref, url = EXCLUDED.url`
+
+	qGetRunTicket = `SELECT run_id, backend, ref, url, created_at FROM run_tickets WHERE run_id = $1`
+
+	// qTicketByRef is the reverse lookup the mirror falls back to when its
+	// in-process index misses (OQ-P8-01). The unique index on (backend, ref)
+	// is what makes it a lookup rather than a scan.
+	qTicketByRef = `
+SELECT fingerprint, backend, ref, url, mirror_backend, mirror_ref, created_at, closed_at
+FROM tickets WHERE backend = $1 AND ref = $2`
+
+	// qReopenTicket clears the closure. Separate from the upsert because
+	// reopening is a decision, not a side effect of a re-save (VM-F-806).
+	qReopenTicket = `UPDATE tickets SET closed_at = NULL WHERE fingerprint = $1`
 )

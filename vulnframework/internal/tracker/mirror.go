@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/store"
 )
 
 // Mirror wraps a primary tracker with a one-way copy into a secondary
@@ -23,13 +24,48 @@ type Mirror struct {
 	// in a planning tool is how the mirror comes to be ignored.
 	MirrorAt model.Priority
 
+	// Resolver is the DURABLE reverse lookup from a primary reference to the
+	// fingerprint that created it. The in-process index below is only a cache
+	// in front of it.
+	//
+	// Without this, a restart emptied the index and every later comment was
+	// skipped silently: the mirrored ticket simply stopped receiving updates
+	// and nothing anywhere said so. A one-sided audit trail looks exactly like
+	// a working one (OQ-P8-01).
+	Resolver Resolver
+
 	mu sync.Mutex
-	// index maps a primary ref id to the fingerprint that created it, so a
-	// later comment or transition can find the mirrored ticket by the same
-	// carrier the primary uses. Parsing it back out of ticket text is exactly
-	// what this package refuses to do everywhere else.
+	// index caches primary ref id -> fingerprint, so the common case needs no
+	// store round trip. It is a cache and nothing more: a miss falls through
+	// to Resolver, never to a skip.
 	index map[string]string
 	errs  []error
+}
+
+// Resolver maps a primary ticket reference back to its finding.
+type Resolver interface {
+	FingerprintFor(ctx context.Context, backend, ref string) (string, bool, error)
+}
+
+// ResolverFunc adapts a function to Resolver.
+type ResolverFunc func(ctx context.Context, backend, ref string) (string, bool, error)
+
+func (f ResolverFunc) FingerprintFor(ctx context.Context, backend, ref string) (string, bool, error) {
+	return f(ctx, backend, ref)
+}
+
+// StoreResolver reads the reverse lookup from the ticket record, which is the
+// durable source of the mapping.
+func StoreResolver(s interface {
+	TicketByRef(ctx context.Context, backend, ref string) (store.Ticket, bool, error)
+}) Resolver {
+	return ResolverFunc(func(ctx context.Context, backend, ref string) (string, bool, error) {
+		t, ok, err := s.TicketByRef(ctx, backend, ref)
+		if err != nil || !ok {
+			return "", false, err
+		}
+		return t.Fingerprint, true, nil
+	})
 }
 
 // NewMirror builds a mirror. mirrorAt is the least severe priority copied.
@@ -118,8 +154,17 @@ func (m *Mirror) mirrorSide(ctx context.Context, primary Ref, fn func(Ref) error
 	if m.Secondary == nil {
 		return
 	}
-	fp, ok := m.fingerprintOf(ctx, primary)
+	fp, ok, err := m.fingerprintOf(ctx, primary)
+	if err != nil {
+		m.note(fmt.Errorf("mirror resolve for %s: %w", primary, err))
+		return
+	}
 	if !ok {
+		// Recorded, never swallowed. A skipped mirror update is invisible from
+		// outside — the planning tool's copy simply diverges — so the one thing
+		// that must not happen here is silence (OQ-P8-01).
+		m.note(fmt.Errorf("mirror: cannot resolve primary reference %s to a finding; "+
+			"the mirrored ticket was NOT updated and its copy is now behind", primary))
 		return
 	}
 	secondary, found, err := m.Secondary.Find(ctx, fp)
@@ -135,15 +180,30 @@ func (m *Mirror) mirrorSide(ctx context.Context, primary Ref, fn func(Ref) error
 	}
 }
 
-// fingerprintOf recovers the fingerprint for a primary ref.
+// fingerprintOf recovers the fingerprint for a primary ref: cache, then the
+// durable record.
 //
-// The mirror keeps its own small index rather than parsing ticket text, because
-// parsing text is the thing this package refuses to do anywhere else.
-func (m *Mirror) fingerprintOf(_ context.Context, primary Ref) (string, bool) {
+// Never by parsing ticket text, which is the thing this package refuses to do
+// anywhere else. A cache miss costs a store lookup, which is the correct price:
+// a slower correct operation beats a dropped comment, because the dropped
+// comment is undetectable.
+func (m *Mirror) fingerprintOf(ctx context.Context, primary Ref) (string, bool, error) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	fp, ok := m.index[primary.ID]
-	return fp, ok
+	m.mu.Unlock()
+	if ok {
+		return fp, true, nil
+	}
+	if m.Resolver == nil {
+		return "", false, nil
+	}
+	fp, ok, err := m.Resolver.FingerprintFor(ctx, primary.Backend, primary.ID)
+	if err != nil || !ok {
+		return "", false, err
+	}
+	// Warm the cache so the next update on this ticket is cheap again.
+	m.remember(primary.ID, fp)
+	return fp, true, nil
 }
 
 func (m *Mirror) remember(refID, fingerprint string) {

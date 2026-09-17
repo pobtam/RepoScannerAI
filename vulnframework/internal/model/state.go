@@ -147,11 +147,17 @@ const (
 	TriggerNotObserved       Trigger = "post_merge_scan_absent"
 	TriggerStillObserved     Trigger = "post_merge_scan_present"
 	TriggerUpstreamPublished Trigger = "upstream_published"
-	TriggerHumanApproval     Trigger = "human_approval"
-	TriggerHumanRejection    Trigger = "human_rejection"
-	TriggerObservedAgain     Trigger = "observed_again"
-	TriggerReentry           Trigger = "reentry"
-	TriggerHumanReset        Trigger = "human_reset"
+	// TriggerRemediationLinkLost — the pull request record for a PR_OPEN
+	// finding is gone, so no state-sync can ever discover what became of it
+	// (VM-AD §6.1.2). The finding returns to the queue; re-planning derives the
+	// same branch from the same fix group and adopts the existing pull request
+	// rather than opening a second one (VM-F-502).
+	TriggerRemediationLinkLost Trigger = "remediation_link_lost"
+	TriggerHumanApproval       Trigger = "human_approval"
+	TriggerHumanRejection      Trigger = "human_rejection"
+	TriggerObservedAgain       Trigger = "observed_again"
+	TriggerReentry             Trigger = "reentry"
+	TriggerHumanReset          Trigger = "human_reset"
 
 	// TriggerQualifyingScanAbsent is the universal verification trigger
 	// (VM-AD §6.1.1): a qualifying scan no longer observes the finding.
@@ -242,6 +248,10 @@ var transitions = map[State]map[State]edge{
 	PROpen: {
 		Merged:   {TriggerMergeWebhook, ActorOrchestrator},
 		Declined: {TriggerClosedUnmerged, ActorOrchestrator},
+		// The pull request reference was lost, so nothing could otherwise move
+		// this finding again: every other exit from PR_OPEN needs to know
+		// which pull request it belongs to (VM-AD §6.1.2).
+		Triaged: {TriggerRemediationLinkLost, ActorOrchestrator},
 		// Verifying from here closes the now-moot pull request: the defect is
 		// gone, so the change is no longer wanted (VM-AD §6.1.1).
 		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},

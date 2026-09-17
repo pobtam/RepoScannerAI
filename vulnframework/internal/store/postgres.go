@@ -1221,6 +1221,14 @@ func (p *Postgres) SaveTicket(ctx context.Context, t Ticket) error {
 	if err != nil {
 		return fmt.Errorf("store: saving ticket for %s: %w", t.Fingerprint, err)
 	}
+	if t.Reopened {
+		// Explicit, because the upsert deliberately preserves closure: a
+		// routine re-save must never silently reopen a closed ticket
+		// (VM-F-806).
+		if _, err := p.db.ExecContext(ctx, qReopenTicket, t.Fingerprint); err != nil {
+			return fmt.Errorf("store: reopening ticket for %s: %w", t.Fingerprint, err)
+		}
+	}
 	return nil
 }
 
@@ -1452,7 +1460,8 @@ func (p *Postgres) SaveRemediationPR(ctx context.Context, pr RemediationPR) erro
 	defer func() { _ = tx.Rollback() }()
 
 	if _, err := tx.ExecContext(ctx, qUpsertRemediationPR,
-		pr.Branch, pr.Repo, pr.FixGroupID, pr.Number, pr.URL, pr.State, opened.UTC(), closed); err != nil {
+		pr.Branch, pr.Repo, pr.FixGroupID, pr.Number, pr.URL, pr.State, opened.UTC(), closed,
+		pr.Merged, pr.TicketRef, pr.TicketURL); err != nil {
 		return fmt.Errorf("store: saving remediation pull request %s: %w", pr.Branch, err)
 	}
 	// Membership is replaced wholesale, so a group recomputed with a different
@@ -1495,17 +1504,21 @@ func (p *Postgres) RemediationPRForFinding(ctx context.Context, fingerprint stri
 
 func (p *Postgres) scanRemediationPR(ctx context.Context, query string, arg any) (RemediationPR, error) {
 	var (
-		pr     RemediationPR
-		number sql.NullInt64
-		url    sql.NullString
-		closed sql.NullTime
+		pr        RemediationPR
+		number    sql.NullInt64
+		url       sql.NullString
+		closed    sql.NullTime
+		ticketRef sql.NullString
+		ticketURL sql.NullString
 	)
 	err := p.db.QueryRowContext(ctx, query, arg).Scan(
-		&pr.Branch, &pr.Repo, &pr.FixGroupID, &number, &url, &pr.State, &pr.OpenedAt, &closed)
+		&pr.Branch, &pr.Repo, &pr.FixGroupID, &number, &url, &pr.State, &pr.OpenedAt, &closed,
+		&pr.Merged, &ticketRef, &ticketURL)
 	if err != nil {
 		return RemediationPR{}, err
 	}
 	pr.Number, pr.URL = int(number.Int64), url.String
+	pr.TicketRef, pr.TicketURL = ticketRef.String, ticketURL.String
 	pr.OpenedAt = pr.OpenedAt.UTC()
 	if closed.Valid {
 		at := closed.Time.UTC()
@@ -1527,8 +1540,8 @@ func (p *Postgres) scanRemediationPR(ctx context.Context, query string, arg any)
 	return pr, rows.Err()
 }
 
-func (p *Postgres) CloseRemediationPR(ctx context.Context, branch string, at time.Time) error {
-	res, err := p.db.ExecContext(ctx, qCloseRemediationPR, branch, at.UTC())
+func (p *Postgres) CloseRemediationPR(ctx context.Context, branch string, at time.Time, merged bool) error {
+	res, err := p.db.ExecContext(ctx, qCloseRemediationPR, branch, at.UTC(), merged)
 	if err != nil {
 		return fmt.Errorf("store: closing remediation pull request %s: %w", branch, err)
 	}
@@ -1555,4 +1568,99 @@ func (p *Postgres) openPRURLs(ctx context.Context) (map[string]string, error) {
 		out[fp] = url
 	}
 	return out, rows.Err()
+}
+
+// OpenRemediationPRs returns a repository's open pull request records.
+func (p *Postgres) OpenRemediationPRs(ctx context.Context, repo string) ([]RemediationPR, error) {
+	rows, err := p.db.QueryContext(ctx, qOpenRemediationPRs, repo)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading open remediation pull requests for %s: %w", repo, err)
+	}
+	var branches []string
+	for rows.Next() {
+		var (
+			pr              RemediationPR
+			number          sql.NullInt64
+			url, tRef, tURL sql.NullString
+			closed          sql.NullTime
+		)
+		if err := rows.Scan(&pr.Branch, &pr.Repo, &pr.FixGroupID, &number, &url, &pr.State,
+			&pr.OpenedAt, &closed, &pr.Merged, &tRef, &tURL); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		branches = append(branches, pr.Branch)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	// Re-read each through the single-row path so membership is loaded the one
+	// way, rather than by a second query that could drift from it.
+	out := make([]RemediationPR, 0, len(branches))
+	for _, branch := range branches {
+		pr, ok, err := p.GetRemediationPR(ctx, branch)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			out = append(out, pr)
+		}
+	}
+	return out, nil
+}
+
+// --- Run parent tickets (VM-AD §13.3 row 1) ---------------------------------
+
+func (p *Postgres) SaveRunTicket(ctx context.Context, t RunTicket) error {
+	if t.RunID == "" {
+		return fmt.Errorf("store: a run parent ticket needs a run identifier")
+	}
+	created := t.CreatedAt
+	if created.IsZero() {
+		created = p.clock()
+	}
+	if _, err := p.db.ExecContext(ctx, qUpsertRunTicket, t.RunID, t.Backend, t.Ref, t.URL, created.UTC()); err != nil {
+		return fmt.Errorf("store: saving the run parent ticket for %s: %w", t.RunID, err)
+	}
+	return nil
+}
+
+func (p *Postgres) GetRunTicket(ctx context.Context, runID string) (RunTicket, bool, error) {
+	var t RunTicket
+	err := p.db.QueryRowContext(ctx, qGetRunTicket, runID).Scan(&t.RunID, &t.Backend, &t.Ref, &t.URL, &t.CreatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return RunTicket{}, false, nil
+	}
+	if err != nil {
+		return RunTicket{}, false, fmt.Errorf("store: reading the run parent ticket for %s: %w", runID, err)
+	}
+	t.CreatedAt = t.CreatedAt.UTC()
+	return t, true, nil
+}
+
+// TicketByRef reverse-resolves a backend reference (OQ-P8-01).
+func (p *Postgres) TicketByRef(ctx context.Context, backend, ref string) (Ticket, bool, error) {
+	var (
+		t                   Ticket
+		mirrorBackend, mRef sql.NullString
+		closed              sql.NullTime
+	)
+	err := p.db.QueryRowContext(ctx, qTicketByRef, backend, ref).Scan(
+		&t.Fingerprint, &t.Backend, &t.Ref, &t.URL, &mirrorBackend, &mRef, &t.CreatedAt, &closed)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Ticket{}, false, nil
+	}
+	if err != nil {
+		return Ticket{}, false, fmt.Errorf("store: reverse-resolving ticket %s:%s: %w", backend, ref, err)
+	}
+	t.MirrorBackend, t.MirrorRef = mirrorBackend.String, mRef.String
+	t.CreatedAt = t.CreatedAt.UTC()
+	if closed.Valid {
+		at := closed.Time.UTC()
+		t.ClosedAt = &at
+	}
+	return t, true, nil
 }

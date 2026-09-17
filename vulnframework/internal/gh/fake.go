@@ -320,6 +320,33 @@ func (f *Fake) OpenPR(_ context.Context, repo string, req OpenRequest) (PullRequ
 	return pr, nil
 }
 
+func (f *Fake) GetPR(_ context.Context, repo string, number int) (PullRequest, bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if err := f.record(fmt.Sprintf("GetPR %s#%d", repo, number)); err != nil {
+		return PullRequest{}, false, err
+	}
+	for _, pr := range f.prs[repo] {
+		if pr.Number == number {
+			return pr, true, nil
+		}
+	}
+	return PullRequest{}, false, nil
+}
+
+// MergePR marks a pull request merged, as a human clicking merge would.
+func (f *Fake) MergePR(repo string, number int) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for i, pr := range f.prs[repo] {
+		if pr.Number == number {
+			f.prs[repo][i].State = "closed"
+			f.prs[repo][i].Merged = true
+			return
+		}
+	}
+}
+
 func (f *Fake) ClosePR(_ context.Context, repo string, number int, comment string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -391,4 +418,21 @@ func (f *Fake) CallsMatching(s string) int {
 		}
 	}
 	return n
+}
+
+// SeedBranch makes a branch exist on the remote without going through a clone
+// and push.
+//
+// It models the state a remote is genuinely in after a worker pushed and the
+// framework then lost its own record: the branch is there, and a pull request
+// may be open on it, but nothing local knows. Reaching that state through the
+// normal path would require simulating the crash as well, which tests the
+// crash rather than the recovery.
+func (f *Fake) SeedBranch(repo, branch string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.branches[repo] == nil {
+		f.branches[repo] = map[string]string{}
+	}
+	f.branches[repo][branch] = "seeded"
 }

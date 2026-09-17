@@ -474,6 +474,29 @@ const (
 
 Every other transition is illegal and must be rejected with an error and a logged event (VM-F-152).
 
+### 6.1.2 A lost remediation link returns the finding to the queue (normative)
+
+`PR_OPEN → TRIAGED`, trigger `remediation_link_lost`, actor orchestrator.
+
+`PR_OPEN` is an **active-looking** state: policy rule 2 skips the finding as in
+progress, nothing escalates it, and no human is asked about it. Every other exit
+from `PR_OPEN` depends on knowing *which* pull request the finding belongs to —
+`MERGED` and `DECLINED` both come from state-sync against a recorded pull
+request, and `VERIFIED` comes from a scan. If the pull request record is lost,
+to a restore or a partial write, **no mechanism in the system can ever move the
+finding again**. It drops out silently, in the shape that is hardest to notice:
+a repository that looks like it has nothing to do.
+
+The recovery is self-healing rather than human: the finding returns to the
+queue, re-planning derives the same fix group identity from the same findings,
+the branch name derives from that identity, and the worker's adoption path finds
+the existing branch and pull request instead of opening a second one
+(VM-F-502). A human is not required, and no duplicate is produced.
+
+The sweep that drives it is deliberately conservative — it acts only where
+*nothing* could otherwise move the finding. A live lease or a genuinely open,
+recorded pull request is a mechanism, and both are left alone.
+
 ### 6.1.1 Disappearance is the universal verification trigger (normative)
 
 A vulnerability can stop being present for reasons the framework did not cause: a developer fixes it by hand, a dependency is removed, an upstream release lands. Reaching `VERIFIED` only from `MERGED` leaves every such finding open for ever, flagged not-re-observed but never closed, and the open count drifts permanently away from reality.

@@ -22,7 +22,7 @@ green.
 | **7c** — provisional SLA windows declare themselves (OQ-P7b-03) | **Green** | passing |
 | **8** — `internal/tracker` — three backends + mirror | **Green** | passing (extended gate) |
 | **9a** — guard, deterministic worker, repo lock, PR ops | **Green** | passing (extended gate) |
-| 9b — orchestrator ticket wiring, Drain, reopen | Not started | |
+| **9b** — orchestrator ticket wiring, Drain, reopen, strand sweep | **Green** | passing (extended gate) |
 | 10–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
@@ -2073,3 +2073,181 @@ worth fixing in 9b or Phase 12, not later.
 carries a retry-after and `IsRateLimited` exists, but the worker propagates it
 rather than backing off. The fake exercises the path; nothing consumes it. It
 belongs with the real `gh` implementation and the run budget.
+
+---
+
+## Decisions taken after Phase 9a (2026-09-16)
+
+**`FIX_INEFFECTIVE` (VM-FR §5.3) — APPROVED as a real spec amendment.**
+
+> "Applied, built, tested, re-scan still observes it" gets its own reason code.
+> It MUST keep the SLA clock running (unlike `NO_UPSTREAM_FIX`) and route to a
+> human, and must appear distinctly in the VM-F-704 not-fixed breakdown:
+> **"tried and failed" ≠ "nothing to do"**.
+
+Landed in 9a as the code and the SLA property. The remaining obligation is the
+**reporting** half — a distinct line in the VM-F-704 not-fixed breakdown — which
+is carried into Phase 9b below, because a code that collapses into "other" in
+the one place people read it has not actually been distinguished.
+
+**OQ-P9a-02 — human-closed remediation PR strands findings in `PR_OPEN`. →
+FOLD INTO 9b, not Phase 12.**
+
+> It is the same silent-strand family as the 9a lease bug, one layer out. 9b's
+> orchestrator reconciliation can detect a closed-unmerged pull request via
+> state-sync and drive `PR_OPEN → DECLINED` now (VM-F-545); the Phase 12 webhook
+> later only makes it **prompt instead of eventual** — the same
+> reconciliation-driven / webhook-accelerated pattern as OQ-P2-01.
+>
+> Gate: a **cold-path** test. A pull request closed unmerged with no webhook,
+> reconciliation transitions its findings to `DECLINED`, and policy no longer
+> skips them as in-progress.
+
+
+---
+
+## Phase 9b — orchestrator ticket wiring, Drain, reopen, the strand sweep
+
+**Status: green.** 322 top-level tests, 835 with subtests. `go vet` and `gofmt`
+clean, `-race` clean, both store backends.
+
+### What landed
+
+**Ticket wiring (`orchestrator.TicketPass`).** Run parent created once per RUN
+and recorded in `run_tickets` (migration 0009); children linked to it;
+`NeedsOwnTicket` decides own-ticket versus aggregate; the pull request gets its
+own ticket (§13.3 row 2) recorded on the pull request row. The drain runs
+FIRST, so a backlog is cleared before more is added to it.
+
+**OQ-P8-02 closed — the drain is automatic.** Every ticket pass drains, and
+`RunTicketSweeper` covers the gap between passes. The gate test calls `Drain`
+nowhere: the only thing between the outage and the ticket appearing is the next
+ordinary pass.
+
+**OQ-P8-03 and OQ-P8-01 closed together, cold.** `Service.Reopen` returns a
+REGRESSED finding's ORIGINAL ticket to open, resolving through local record →
+backend by fingerprint. Tested with every in-process structure discarded, and
+again with the local record also deleted. The mirror gained a `Resolver` backed
+by `TicketByRef`: a cold index now falls back to the durable record, and a miss
+it genuinely cannot resolve is RECORDED rather than skipped — a silently
+one-sided audit trail looks exactly like a working one.
+
+**OQ-P9a-02 closed — cold path.** `SyncPullRequests` asks the remote what became
+of each open pull request: closed-unmerged drives `PR_OPEN → DECLINED`
+(VM-F-545), merged drives `PR_OPEN → MERGED` and explicitly not VERIFIED. No
+webhook anywhere in the test. The gate also asserts the consequence that
+matters: policy no longer skips the finding as in progress.
+
+**The strand sweep.** The general form of the 9a bug. For every active-looking
+state, the question is: if nothing else happens, what moves this? `SweepStranded`
+recovers `AUTO_REMEDIATING` with no lease or an expired one, and `PR_OPEN` with
+no pull request record — and, deliberately, recovers nothing else.
+
+**VM-F-704 breakdown**, discharging the `FIX_INEFFECTIVE` reporting obligation:
+`Counts.NotFixedByReason` plus a rendered table that spells out the distinction
+between "tried and failed" (actionable today, clock running) and "nothing to do"
+(clock paused). `NotFixedUnexplained` is reported separately, because unresolved
+findings with no reason are a pipeline gap, not a category of risk.
+
+**Wired into `Sweep`:** `SyncPullRequests` and `SweepStranded` run every sweep
+when `Config.PR` is set. This also closes OQ-P9a-01 for the pull request half.
+
+### Spec amendment — VM-AD §6.1.2
+
+**`PR_OPEN → TRIAGED`, trigger `remediation_link_lost`.** The audit found that
+`PR_OPEN` with a lost pull request record has **no exit in the normative table**:
+`MERGED` and `DECLINED` both need to know which pull request the finding belongs
+to, and `VERIFIED` needs a scan. Without the edge, such a finding can never move
+again.
+
+The recovery is self-healing rather than human, and that is proven rather than
+assumed: re-planning derives the same fix group identity, hence the same branch,
+which the 9a adoption path finds already pushed with its pull request open.
+`TestRecoveredLinkLostFindingAdoptsRatherThanDuplicates` asserts exactly one
+pull request survives the round trip — a "recovery" that opened a second one
+would be strictly worse than the strand it replaced.
+
+### A backend divergence the conformance suite caught
+
+Pull request tickets were going through `Service.Ensure`, which records into the
+fingerprint-keyed `tickets` table. A pull request is not a finding, and the
+synthetic key `pr:<branch>` only looked workable because **the in-memory backend
+has no foreign keys**. Postgres refused it.
+
+Two fixes, and the second matters more: the pull request's ticket reference now
+lives on the pull request row where it belongs, **and `Memory.SaveTicket` now
+rejects a fingerprint with no finding**, so the backends cannot diverge here
+again. A fake that accepts what production refuses is the same defect as a fake
+that is kinder than production — this one just wore a different hat.
+
+### Mutations verified
+
+| # | Mutation | Caught by |
+|---|---|---|
+| A | ticket pass does not drain | automatic-drain clause |
+| B | run parent created per pass, not per run | **survived**; gap closed, then caught |
+| C | `NeedsOwnTicket` ignored | **survived**; gap closed, then caught |
+| D | `Reopen` creates instead of reopening | cold-index clause |
+| E | `locate` skips the backend | lost-record clause |
+| F | mirror miss skips silently | OQ-P8-01 clause |
+| G | closed-unmerged treated as merged | VM-F-545 clause |
+| H | strand sweep recovers live-leased work | **survived**; gap closed, then caught |
+| I | not-fixed breakdown folds reasons into "other" | VM-F-704 clause |
+
+Three survivors, all the same shape: every test asserted that something
+**is** done, and none asserted what must **not** be. B (a second parent), C (a
+ticket that should not exist) and H (work that must be left alone) were all
+invisible to a suite written entirely in the positive.
+
+### Stubbed / deferred
+
+- **No webhook** (VM-AD §7.4). Reconciliation makes the transitions eventual;
+  the webhook in Phase 12 makes them prompt. Nothing else changes.
+- **`Config.PR` is optional.** A sweep without it skips both new passes rather
+  than failing, because the real `gh` implementation does not exist yet
+  (VM-OQ-10).
+- **Codeowner assignment** still takes the first entry of `repo.Codeowners`;
+  resolving CODEOWNERS properly needs the App.
+- **VM-F-813 / VM-F-814** (coverage-gap tickets, Wave 1 stall escalation) remain
+  unimplemented; both need Phase 11.
+- **Rate limiting** is still modelled and unconsumed (OQ-P9a-03).
+
+### Assumptions
+
+- **A39.** The run parent is per RUN, not per repository. A fleet sweep over
+  forty repositories produces one parent, and each repository's pass links its
+  children to it.
+- **A40.** Policy is **re-evaluated** in the ticket pass rather than having the
+  routing pass persist its outcome. Policy is a pure function of finding,
+  repository and configuration, so the answer is identical; storing it would
+  create a second copy that can drift from the table meant to be authoritative.
+- **A41.** `TicketRequest` carries no scorer. Scoring belongs to the routing
+  pass; a second scorer here could assign a different priority to the same
+  finding within one run.
+- **A42.** The strand sweep returns findings to `TRIAGED`, never `NEEDS_HUMAN`.
+  Moving the state without making the finding actionable is the same strand
+  wearing a different label.
+
+### Open questions
+
+**OQ-P9b-01 — `DETECTED` findings have no disappearance exit.** The audit turned
+this up as a near-miss: `DETECTED` has no edge into `VERIFIED` (§6.1.1 lists
+eight, and that is not one), so a finding detected once and never triaged
+retains that state indefinitely if it stops being observed. It is not the same
+class as the strands fixed here — `DETECTED` is not an active-looking state,
+triage picks it up every run, and nothing claims it is being worked on — so it
+is visible rather than silent. Worth a decision before a real sweep: either
+triage is guaranteed to drain `DETECTED` every run, or the state needs the
+disappearance edge the other eight have.
+
+**OQ-P9b-02 — the strand sweep is corrective, not diagnostic.** `StrandStats.
+Reasons` records why each finding was stranded, but nothing surfaces it. A sweep
+quietly recovering the same repository every hour is hiding a bug upstream of
+itself, and today only a caller inspecting the struct would notice. It wants a
+report line or a metric before it runs unattended.
+
+**OQ-P9b-03 — `SyncPullRequests` is O(open pull requests) per sweep.** One
+`GetPR` per open pull request per repository per sweep. At fleet scale with the
+real GitHub adapter that is a rate-limit problem, and OQ-P9a-03's unconsumed
+backoff is the other half of it. The webhook removes the need for polling
+entirely, which is the real answer.

@@ -29,6 +29,14 @@ type Ticket struct {
 
 	CreatedAt time.Time  `json:"created_at"`
 	ClosedAt  *time.Time `json:"closed_at,omitempty"`
+
+	// Reopened is a write-only flag asking SaveTicket to clear ClosedAt.
+	//
+	// Without it a re-save cannot express "this ticket is open again": the
+	// upsert deliberately preserves closure, because a routine re-save must
+	// never silently reopen something. Reopening is a decision (VM-F-806), so
+	// it has to be said out loud.
+	Reopened bool `json:"-"`
 }
 
 // TicketOp is a queued tracker operation (VM-F-812, VM-AD §13.5).
@@ -84,6 +92,15 @@ type RemediationPR struct {
 	State      string     `json:"state"`
 	OpenedAt   time.Time  `json:"opened_at"`
 	ClosedAt   *time.Time `json:"closed_at,omitempty"`
+	// Merged distinguishes a pull request that landed from one a human closed.
+	// The difference decides between MERGED and DECLINED (VM-F-545), and a
+	// single "closed" state cannot express it.
+	Merged bool `json:"merged"`
+	// TicketRef and TicketURL are the pull request's own ticket (§13.3 row 2).
+	// They live here rather than in their own table because the ticket exists
+	// because the pull request does, and closes when it does.
+	TicketRef string `json:"ticket_ref,omitempty"`
+	TicketURL string `json:"ticket_url,omitempty"`
 	// Findings is the group membership that produced this branch. It is stored
 	// rather than recomputed: the membership is history, and recomputing it
 	// from current findings would disagree the moment one changed state.
@@ -92,3 +109,17 @@ type RemediationPR struct {
 
 // Open reports whether the pull request is still open.
 func (p RemediationPR) Open() bool { return p.State == "open" }
+
+// RunTicket is the parent ticket for one run (VM-AD §13.3 row 1).
+//
+// One per run, deliberately: it carries that run's counts and deltas, and the
+// aggregated table standing in for the findings that got no ticket of their
+// own. Sharing a parent across runs would attribute one run's numbers to
+// another.
+type RunTicket struct {
+	RunID     string    `json:"run_id"`
+	Backend   string    `json:"backend"`
+	Ref       string    `json:"ref"`
+	URL       string    `json:"url"`
+	CreatedAt time.Time `json:"created_at"`
+}

@@ -69,6 +69,19 @@ type Counts struct {
 	// a compliant one; it is one the SLA cannot speak to (VM-NF-304).
 	SLABreached int `json:"sla_breached"`
 	SLAPaused   int `json:"sla_paused"`
+	// NotFixedByReason is the VM-F-704 breakdown: unresolved findings by the
+	// reason they are not fixed.
+	//
+	// The distinctions are the point. FIX_INEFFECTIVE — a remediation that
+	// applied, built and tested and still did not close the defect — must not
+	// collapse into NO_UPSTREAM_FIX or into an "other" bucket: "tried and
+	// failed" and "nothing to do" are different states of the world, they have
+	// different owners, and only one of them pauses the SLA clock.
+	NotFixedByReason map[string]int `json:"not_fixed_by_reason,omitempty"`
+	// NotFixedUnexplained counts unresolved findings carrying no reason code
+	// at all. Reported rather than folded in, because a bucket of unexplained
+	// findings is a gap in the pipeline, not a category of risk.
+	NotFixedUnexplained int `json:"not_fixed_unexplained"`
 	// SLANotComputed counts findings whose SLA was never computed.
 	//
 	// It exists so a report can never present "0 breached" as assurance when
@@ -335,9 +348,10 @@ func caveatsFor(cal score.Calibration) []string {
 
 func countOf(findings []model.Finding) Counts {
 	c := Counts{
-		ByPriority: map[string]int{},
-		ByState:    map[string]int{},
-		ByCategory: map[string]int{},
+		ByPriority:       map[string]int{},
+		ByState:          map[string]int{},
+		ByCategory:       map[string]int{},
+		NotFixedByReason: map[string]int{},
 	}
 	for _, f := range findings {
 		c.Total++
@@ -354,6 +368,15 @@ func countOf(findings []model.Finding) Counts {
 		}
 		c.ByState[string(f.State)]++
 		c.ByCategory[string(f.Category)]++
+
+		// VM-F-704: not-fixed counts broken down by reason code.
+		if model.PartitionOf(f.State) != model.PartitionResolved {
+			if f.ReasonCode != nil && *f.ReasonCode != "" {
+				c.NotFixedByReason[string(*f.ReasonCode)]++
+			} else {
+				c.NotFixedUnexplained++
+			}
+		}
 		if f.Derived.NotReobserved {
 			c.NotReobserved++
 		}

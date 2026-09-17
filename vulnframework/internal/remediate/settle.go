@@ -82,7 +82,7 @@ func Settle(ctx context.Context, s store.Store, prOps gh.PROps, repo string, now
 		if err := prOps.ClosePR(ctx, pr.Repo, pr.Number, closureComment(f)); err != nil {
 			return stats, fmt.Errorf("remediate: closing pull request %s#%d: %w", pr.Repo, pr.Number, err)
 		}
-		if err := s.CloseRemediationPR(ctx, pr.Branch, now); err != nil {
+		if err := s.CloseRemediationPR(ctx, pr.Branch, now, false); err != nil {
 			return stats, err
 		}
 		stats.PRsClosed++

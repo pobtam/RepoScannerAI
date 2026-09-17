@@ -51,6 +51,15 @@ var legalTransitions = []struct {
 	{model.Regressed, model.Verified, model.ActorScanWorker},
 	{model.Declined, model.Verified, model.ActorScanWorker},
 	{model.WontFix, model.Verified, model.ActorScanWorker},
+
+	// VM-AD §6.1.2 — a lost remediation link returns the finding to the queue.
+	//
+	// PR_OPEN is an active-looking state: policy skips it as in progress and
+	// nothing escalates it. Every other exit from PR_OPEN needs to know WHICH
+	// pull request the finding belongs to, so if that record is lost, no
+	// mechanism can ever move the finding again. It is the only edge out of
+	// PR_OPEN that does not depend on the pull request being identifiable.
+	{model.PROpen, model.Triaged, model.ActorOrchestrator},
 }
 
 func TestEveryNormativeTransitionIsAccepted(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/wanaware/vulnframework/internal/gh"
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/scan"
 	"github.com/wanaware/vulnframework/internal/score"
@@ -50,6 +51,11 @@ type Config struct {
 	// EscalationThreshold is how many consecutive runs without a qualifying
 	// scan trigger escalation (VM-F-215, VM-OQ-10's working default of 2).
 	EscalationThreshold int
+
+	// PR is the pull-request surface. When set, every sweep reconciles open
+	// remediation pull requests against the remote and recovers stranded
+	// findings — neither of which any human has to trigger.
+	PR gh.PROps
 
 	// SLAWindows are the remediation windows per tier and priority
 	// (VM-NF-301). Nil uses the working defaults; VM-OQ-02 is still open.
@@ -123,6 +129,14 @@ type RunStats struct {
 	// Escalations are repositories whose streak without a qualifying scan has
 	// crossed the threshold, whatever the cause (VM-F-215).
 	Escalations []store.Escalation
+
+	// PRSync is what reconciling against the remote found: pull requests a
+	// human merged or closed since the last sweep (VM-F-545).
+	PRSync SyncStats
+	// Stranded is what the recovery sweep found. A non-zero Recovered is worth
+	// reading as a signal, not just an outcome: it means something upstream
+	// left findings in a state nothing could move.
+	Stranded StrandStats
 }
 
 // Sweep plans, dispatches, closes and reconciles one run.
@@ -192,6 +206,32 @@ func (o *Orchestrator) Sweep(ctx context.Context, kind store.RunKind, trigger st
 	}
 	stats.Staleness = store.Staleness(coverage, o.clock())
 	stats.Escalations = store.Escalations(coverage, o.Config.EscalationThreshold)
+
+	// 6. Reconcile the remediation side against the remote, and recover
+	//    anything stranded.
+	//
+	//    Both run every sweep and neither needs a human. A pull request a
+	//    reviewer closed, and a finding whose mechanism disappeared, are both
+	//    invisible until something asks: they present as a repository with
+	//    nothing to do (VM-F-545, VM-AD §6.1.2).
+	if o.Config.PR != nil {
+		for _, e := range plan {
+			sync, err := o.SyncPullRequests(ctx, o.Config.PR, e.Repo)
+			if err != nil {
+				return stats, fmt.Errorf("syncing pull requests for %s: %w", e.Repo, err)
+			}
+			stats.PRSync.Examined += sync.Examined
+			stats.PRSync.Merged += sync.Merged
+			stats.PRSync.Declined += sync.Declined
+
+			strands, err := o.SweepStranded(ctx, StrandSweep{Repo: e.Repo, PR: o.Config.PR})
+			if err != nil {
+				return stats, fmt.Errorf("sweeping stranded findings in %s: %w", e.Repo, err)
+			}
+			stats.Stranded.Examined += strands.Examined
+			stats.Stranded.Recovered += strands.Recovered
+		}
+	}
 
 	failed := closeStats.NotDispatched + closeStats.NoResult
 	if err := o.Store.FinishRun(ctx, run.ID, len(plan), closeStats.Produced, failed); err != nil {

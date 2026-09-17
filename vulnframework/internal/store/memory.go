@@ -37,6 +37,7 @@ type Memory struct {
 	tickets        map[string]Ticket // keyed by fingerprint
 	repoLocks      map[string]RepoLock
 	remediationPRs map[string]RemediationPR
+	runTickets     map[string]RunTicket
 	ticketOps      []TicketOp
 	nextOpID       int64
 }
@@ -1022,11 +1023,22 @@ func (m *Memory) SaveTicket(_ context.Context, t Ticket) error {
 	if t.Fingerprint == "" {
 		return fmt.Errorf("store: a ticket record needs a fingerprint; it is the idempotency key (VM-F-804)")
 	}
-	if existing, ok := m.tickets[t.Fingerprint]; ok && t.ClosedAt == nil {
+	// Postgres enforces this with a foreign key. Memory has to enforce it too,
+	// or a caller inventing a synthetic key passes here and fails only in
+	// production — which is exactly what happened with pull request tickets:
+	// a pull request is not a finding, and its ticket does not belong in this
+	// table.
+	if _, ok := m.findings[t.Fingerprint]; !ok {
+		return fmt.Errorf("store: no finding %q; a ticket record must reference a real finding "+
+			"(the Postgres backend enforces this with a foreign key, and the two must not diverge)", t.Fingerprint)
+	}
+	if existing, ok := m.tickets[t.Fingerprint]; ok && t.ClosedAt == nil && !t.Reopened {
 		// A re-save must not silently reopen a closed ticket: closure is a fact
 		// about the backend, not something a later create should overwrite.
+		// Reopened is the explicit, deliberate exception (VM-F-806).
 		t.ClosedAt = existing.ClosedAt
 	}
+	t.Reopened = false
 	m.tickets[t.Fingerprint] = t
 	return nil
 }
@@ -1246,7 +1258,7 @@ func (m *Memory) RemediationPRForFinding(_ context.Context, fingerprint string) 
 	return best, found, nil
 }
 
-func (m *Memory) CloseRemediationPR(_ context.Context, branch string, at time.Time) error {
+func (m *Memory) CloseRemediationPR(_ context.Context, branch string, at time.Time, merged bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	pr, ok := m.remediationPRs[branch]
@@ -1254,7 +1266,57 @@ func (m *Memory) CloseRemediationPR(_ context.Context, branch string, at time.Ti
 		return fmt.Errorf("%w: remediation pull request for branch %q", ErrNotFound, branch)
 	}
 	when := at.UTC()
-	pr.State, pr.ClosedAt = "closed", &when
+	pr.State, pr.ClosedAt, pr.Merged = "closed", &when, merged
 	m.remediationPRs[branch] = pr
 	return nil
+}
+
+func (m *Memory) OpenRemediationPRs(_ context.Context, repo string) ([]RemediationPR, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []RemediationPR
+	for _, pr := range m.remediationPRs {
+		if pr.Repo == repo && pr.Open() {
+			out = append(out, pr)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Branch < out[j].Branch })
+	return out, nil
+}
+
+// --- Run parent tickets (VM-AD §13.3 row 1) ---------------------------------
+
+func (m *Memory) SaveRunTicket(_ context.Context, t RunTicket) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if t.RunID == "" {
+		return fmt.Errorf("store: a run parent ticket needs a run identifier")
+	}
+	if m.runTickets == nil {
+		m.runTickets = map[string]RunTicket{}
+	}
+	if t.CreatedAt.IsZero() {
+		t.CreatedAt = m.clock()
+	}
+	m.runTickets[t.RunID] = t
+	return nil
+}
+
+func (m *Memory) GetRunTicket(_ context.Context, runID string) (RunTicket, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	t, ok := m.runTickets[runID]
+	return t, ok, nil
+}
+
+// TicketByRef reverse-resolves a backend reference (OQ-P8-01).
+func (m *Memory) TicketByRef(_ context.Context, backend, ref string) (Ticket, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, t := range m.tickets {
+		if t.Backend == backend && t.Ref == ref {
+			return t, true, nil
+		}
+	}
+	return Ticket{}, false, nil
 }

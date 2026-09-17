@@ -44,6 +44,10 @@ type PullRequest struct {
 	Head   string `json:"head"`
 	Base   string `json:"base"`
 	State  string `json:"state"`
+	// Merged distinguishes a pull request that landed from one a human closed
+	// without merging. "closed" alone cannot express the difference, and the
+	// difference decides between MERGED and DECLINED (VM-F-545).
+	Merged bool `json:"merged"`
 }
 
 // PROps is every repository-mutating operation the framework performs.
@@ -66,6 +70,12 @@ type PROps interface {
 	Push(ctx context.Context, dir, repo, branch string) error
 
 	FindPR(ctx context.Context, repo, head string) (PullRequest, bool, error)
+	// GetPR returns a pull request by number, whatever its state.
+	//
+	// This is what lets reconciliation discover that a human closed a pull
+	// request without a webhook: the framework asks rather than waiting to be
+	// told. A webhook later only makes it prompt instead of eventual.
+	GetPR(ctx context.Context, repo string, number int) (PullRequest, bool, error)
 	OpenPR(ctx context.Context, repo string, req OpenRequest) (PullRequest, error)
 	ClosePR(ctx context.Context, repo string, number int, comment string) error
 }

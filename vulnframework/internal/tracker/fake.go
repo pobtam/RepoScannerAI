@@ -199,3 +199,10 @@ func (f *Fake) Everything() string {
 	}
 	return b.String()
 }
+
+// LinksOf returns the parent a ticket was linked to, zero if unlinked.
+func (f *Fake) LinksOf(child Ref) Ref {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.links[child.ID]
+}

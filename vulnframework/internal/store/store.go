@@ -369,8 +369,27 @@ type Store interface {
 	// finding, if any. This is what tells the settle path there is a pull
 	// request to close when a finding is fixed elsewhere.
 	RemediationPRForFinding(ctx context.Context, fingerprint string) (RemediationPR, bool, error)
-	// CloseRemediationPR marks a pull request closed.
-	CloseRemediationPR(ctx context.Context, branch string, at time.Time) error
+	// CloseRemediationPR marks a pull request closed. merged distinguishes a
+	// pull request that landed from one a human closed, which is the
+	// difference between MERGED and DECLINED (VM-F-545).
+	CloseRemediationPR(ctx context.Context, branch string, at time.Time, merged bool) error
+	// OpenRemediationPRs returns a repository's open pull request records, so
+	// reconciliation can ask the remote what became of each.
+	OpenRemediationPRs(ctx context.Context, repo string) ([]RemediationPR, error)
+
+	// --- Run parent tickets (VM-AD §13.3 row 1) ---
+
+	// SaveRunTicket records a run's parent ticket.
+	SaveRunTicket(ctx context.Context, t RunTicket) error
+	// GetRunTicket returns a run's parent ticket, if one exists.
+	GetRunTicket(ctx context.Context, runID string) (RunTicket, bool, error)
+
+	// TicketByRef reverse-resolves a backend reference to its ticket record.
+	//
+	// This is the durable path the mirror falls back to when its in-process
+	// index misses — after a restart, every reference misses, and skipping
+	// would leave the mirrored ticket silently un-updated (OQ-P8-01).
+	TicketByRef(ctx context.Context, backend, ref string) (Ticket, bool, error)
 
 	// --- Ticket operation queue (VM-F-812) ---
 

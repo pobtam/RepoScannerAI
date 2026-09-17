@@ -108,6 +108,25 @@ func Render(rep Report) []byte {
 			rep.Counts.SLAPaused)
 	}
 
+	// --- Not fixed, by reason (VM-F-704) ---
+	if len(rep.Counts.NotFixedByReason) > 0 || rep.Counts.NotFixedUnexplained > 0 {
+		b.WriteString("## Why findings are not fixed\n\n")
+		b.WriteString("| Reason | Count | |\n|---|---:|---|\n")
+		reasons := make([]string, 0, len(rep.Counts.NotFixedByReason))
+		for k := range rep.Counts.NotFixedByReason {
+			reasons = append(reasons, k)
+		}
+		sort.Strings(reasons)
+		for _, r := range reasons {
+			fmt.Fprintf(&b, "| `%s` | %d | %s |\n", r, rep.Counts.NotFixedByReason[r], reasonNote(r))
+		}
+		if rep.Counts.NotFixedUnexplained > 0 {
+			fmt.Fprintf(&b, "| _no reason recorded_ | %d | A gap in the pipeline, not a category of risk: "+
+				"these findings are unresolved and nothing says why. |\n", rep.Counts.NotFixedUnexplained)
+		}
+		b.WriteString("\n")
+	}
+
 	// --- Coverage ---
 	b.WriteString("## Coverage\n\n")
 	c := rep.Coverage
@@ -192,6 +211,37 @@ func windowNote(rep Report) string {
 		return ""
 	}
 	return " _(measured against PROVISIONAL windows — VM-OQ-02 unanswered; not a commitment)_"
+}
+
+// reasonNote distinguishes the reasons a reader is most likely to conflate.
+//
+// FIX_INEFFECTIVE and NO_UPSTREAM_FIX look adjacent in a table and are opposite
+// in what they ask of the reader: one is work that was attempted and did not
+// succeed and is still owned by someone, the other is work nobody can do yet.
+// Only the second pauses the SLA clock, so leaving them to read as neighbours
+// would let a table of actionable failures pass for a table of blocked ones.
+func reasonNote(r string) string {
+	switch r {
+	case "FIX_INEFFECTIVE":
+		return "**Tried and failed.** A fix was applied, built and tested, and a re-scan still reports the " +
+			"finding — usually the fully-closing version is not yet available from the proxy. Actionable " +
+			"today, and the SLA clock keeps running."
+	case "NO_UPSTREAM_FIX":
+		return "**Nothing to do yet.** No upstream fix exists. The SLA clock is paused, so these findings " +
+			"cannot breach — and are not compliant either (VM-NF-304)."
+	case "BUILD_FAILED", "TESTS_FAILED":
+		return "The repository could not be built or tested, so no fix can be verified against it."
+	case "NO_TEST_COVERAGE":
+		return "No executable test suite, so an automated source fix cannot be verified (VM-F-524)."
+	case "BLOCKED_UPSTREAM_FIRST_PARTY":
+		return "Waiting on a first-party module release; the fix belongs in the owning repository."
+	case "MAJOR_BUMP_POLICY":
+		return "A major version bump, which policy does not automate (VM-F-406)."
+	case "DECLINED":
+		return "A reviewer closed the pull request without merging (VM-F-545)."
+	default:
+		return ""
+	}
 }
 
 func signed(n int, comparable bool) string {

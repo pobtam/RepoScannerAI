@@ -229,6 +229,22 @@ func (s *Service) apply(ctx context.Context, op store.TicketOp) error {
 		}
 		return s.record(ctx, spec.Fingerprint, ref)
 
+	case "reopen":
+		var p closePayload
+		if err := json.Unmarshal(op.Payload, &p); err != nil {
+			return fmt.Errorf("tracker: undecodable queued reopen: %w", err)
+		}
+		if err := s.Tracker.Comment(ctx, p.Ref, p.Body); err != nil {
+			return err
+		}
+		if err := s.Tracker.Transition(ctx, p.Ref, StateOpen); err != nil {
+			return err
+		}
+		return s.Store.SaveTicket(ctx, store.Ticket{
+			Fingerprint: op.Fingerprint, Backend: p.Ref.Backend, Ref: p.Ref.ID, URL: p.Ref.URL,
+			CreatedAt: s.now(), Reopened: true,
+		})
+
 	case "close":
 		var p closePayload
 		if err := json.Unmarshal(op.Payload, &p); err != nil {
@@ -281,4 +297,84 @@ func (s *Service) queue(ctx context.Context, fingerprint, kind string, payload a
 		LastError:     cause.Error(),
 		CreatedAt:     s.now(),
 	})
+}
+
+// ErrNotRegressed is returned by Reopen for a finding that has not regressed.
+//
+// The symmetric guard to ErrNotVerified. Reopening a closed ticket on anything
+// less than an observation would reopen settled work on no evidence, and the
+// evidence for a regression is specific: a scan saw the finding again
+// (VM-F-105).
+var ErrNotRegressed = errors.New(
+	"tracker: refusing to reopen a ticket for a finding that has not regressed; " +
+		"a regression means a scan observed the finding again (VM-F-105, VM-F-806)")
+
+// Reopen returns a regressed finding's ORIGINAL ticket to the open state
+// (VM-F-806).
+//
+// It never creates. A new ticket for a recurrence discards the entire history
+// of the first occurrence — what was tried, what was decided, who decided it —
+// which is precisely the context a reviewer needs most when something comes
+// back.
+//
+// It resolves through the same chain as Ensure: local record, then the backend
+// by fingerprint. That matters after a restart, when nothing is cached and the
+// record may itself have been lost: the durable path is the only path, and a
+// version of this that depended on a warm cache would create duplicates
+// exactly when a fresh process met a regression.
+func (s *Service) Reopen(ctx context.Context, f model.Finding) (Ref, error) {
+	if f.State != model.Regressed {
+		return Ref{}, fmt.Errorf("%w: %s is in state %s", ErrNotRegressed, f.Fingerprint, f.State)
+	}
+
+	ref, found, err := s.locate(ctx, f.Fingerprint)
+	if err != nil {
+		return Ref{}, err
+	}
+	if !found {
+		// No ticket ever existed for this finding. Not an error: most findings
+		// never get one, and a regression does not change that.
+		return Ref{}, nil
+	}
+
+	body := ReopenComment(f)
+	if err := s.Tracker.Comment(ctx, ref, body); err != nil {
+		return ref, s.queue(ctx, f.Fingerprint, "reopen", closePayload{Ref: ref, Body: body}, err)
+	}
+	if err := s.Tracker.Transition(ctx, ref, StateOpen); err != nil {
+		return ref, s.queue(ctx, f.Fingerprint, "reopen", closePayload{Ref: ref, Body: body}, err)
+	}
+
+	// The durable record has to reflect the reopening, or the next cold start
+	// reads the ticket as closed and the one after that opens a duplicate.
+	return ref, s.Store.SaveTicket(ctx, store.Ticket{
+		Fingerprint: f.Fingerprint, Backend: ref.Backend, Ref: ref.ID, URL: ref.URL,
+		CreatedAt: s.now(), Reopened: true,
+	})
+}
+
+// locate resolves a finding's ticket: local record first, backend second.
+//
+// The same chain as Ensure, for the same reason. A cache miss must degrade to a
+// slower correct lookup, never to "no ticket exists" — treating absence as
+// proof is the error that produces duplicates here and false resolutions
+// elsewhere (VM-ADR-12).
+func (s *Service) locate(ctx context.Context, fingerprint string) (Ref, bool, error) {
+	if rec, ok, err := s.Store.GetTicket(ctx, fingerprint); err != nil {
+		return Ref{}, false, err
+	} else if ok {
+		return Ref{Backend: rec.Backend, ID: rec.Ref, URL: rec.URL}, true, nil
+	}
+	return s.Tracker.Find(ctx, fingerprint)
+}
+
+// ReopenComment says what came back, and on what evidence.
+func ReopenComment(f model.Finding) string {
+	return fmt.Sprintf(
+		"Reopening: a scan of `%s` observed this finding again, so it has REGRESSED.\n\n"+
+			"This is the original ticket rather than a new one (VM-F-806): the history of the first "+
+			"occurrence — what was tried, what was decided and by whom — is the context this recurrence "+
+			"needs most.\n\n"+
+			"_Regression means a scan saw it again, not that anyone inferred it had come back._\n",
+		f.Repo)
 }
