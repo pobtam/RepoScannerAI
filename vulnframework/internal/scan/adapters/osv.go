@@ -150,8 +150,9 @@ func (a *OSVScanner) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 					ModuleMajor: moduleMajor(pkg.Package.Name, pkg.Package.Version),
 					File:        lockfile,
 					Versions: model.Versions{
-						Current: pkg.Package.Version,
-						Fixed:   firstFixed(v),
+						Current:    pkg.Package.Version,
+						Fixed:      firstFixed(v),
+						Introduced: firstIntroduced(v),
 					},
 					Classification: model.Classification{
 						// Go advisories carry no severity band in
@@ -202,6 +203,25 @@ func (a *OSVScanner) annotate(analysed, called bool) map[string]string {
 
 // firstFixed returns the first fixed version across the advisory's ranges,
 // normalised to the Go "v" prefix convention where the ecosystem uses it.
+// firstIntroduced returns the version the advisory's range opens at.
+//
+// Written because the schema declares it (findings.v1, VM-AD §4.1) and osv
+// supplies it. A declared field no producer writes is the defect the
+// Producer-Coverage Audit exists to find: it renders as an always-empty value
+// downstream and looks like a feature.
+func firstIntroduced(v osvVulnerability) string {
+	for _, aff := range v.Affected {
+		for _, r := range aff.Ranges {
+			for _, e := range r.Events {
+				if e.Introduced != "" {
+					return e.Introduced
+				}
+			}
+		}
+	}
+	return ""
+}
+
 func firstFixed(v osvVulnerability) string {
 	for _, aff := range v.Affected {
 		for _, r := range aff.Ranges {

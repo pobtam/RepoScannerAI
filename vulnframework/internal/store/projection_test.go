@@ -1,11 +1,13 @@
 package store_test
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/wanaware/vulnframework/internal/fingerprint"
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/store"
 )
@@ -374,4 +376,66 @@ func uniq(in []string) []string {
 		}
 	}
 	return out
+}
+
+// TestNewlyCarriedFieldsSurviveBothBackends is the conformance clause for the
+// fields the Producer-Coverage Audit found being dropped.
+//
+// All four were written by real adapters and lost on the way into the store —
+// RuleID, Annotations, Versions.Introduced and, after a Phase 8 regression,
+// Refs.AdvisoryURL. Carrying them is only half the fix: the two backends
+// rebuild the finding document by different routes, and a field carried in one
+// and not the other is the same defect wearing a backend.
+func TestNewlyCarriedFieldsSurviveBothBackends(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		ctx := context.Background()
+		seedRepo(t, s)
+		r := newRun(t, s, store.KindSweep)
+
+		raw := cryptoFinding("osv-scanner")
+		raw.Versions.Introduced = "v0.0.0"
+		raw.AdvisoryURL = "https://osv.dev/GHSA-hcg3-q754-cr77"
+		raw.Annotations = map[string]string{
+			"osv-scanner.reachability": "experimental; not a determiner (OQ-P3-01)",
+		}
+		code := model.RawFinding{
+			Repo: testRepo, Category: model.CategoryCode,
+			RuleID: "G404", Tool: "gosec", ToolVersion: "v2.22.9",
+			File: "internal/token/token.go", Line: 13,
+			Classification: model.Classification{
+				Severity: model.SeverityHigh, Reachable: model.ReachableUnknown,
+				DepClass: model.DepNotApplicable,
+			},
+		}
+		if _, err := s.UpsertObservations(ctx, r.ID, testRepo, []model.RawFinding{raw, code}); err != nil {
+			t.Fatalf("upsert: %v", err)
+		}
+
+		dep, err := s.GetFinding(ctx, cryptoFP())
+		if err != nil {
+			t.Fatalf("get finding: %v", err)
+		}
+		if dep.Versions.Introduced != "v0.0.0" {
+			t.Errorf("Versions.Introduced = %q, want v0.0.0", dep.Versions.Introduced)
+		}
+		if dep.Refs.AdvisoryURL == nil || *dep.Refs.AdvisoryURL == "" {
+			t.Error("Refs.AdvisoryURL was dropped; the interface would show an empty advisory link " +
+				"on every row while the adapters populate it on nearly all of them")
+		}
+		if len(dep.Annotations) == 0 {
+			t.Error("Annotations were dropped. OQ-P3-01 decided to RETAIN osv-scanner's experimental " +
+				"reachability as non-determining provenance; discarding it here discarded the whole " +
+				"point of that decision")
+		}
+
+		codeFinding, err := s.GetFinding(ctx, fingerprint.Compute(code))
+		if err != nil {
+			t.Fatalf("get code finding: %v", err)
+		}
+		if codeFinding.Identity.RuleID == nil || *codeFinding.Identity.RuleID != "G404" {
+			t.Errorf("Identity.RuleID = %v, want G404; without it a static-analysis ticket title "+
+				"reads \"unspecified\" and a reviewer cannot tell one finding from another",
+				codeFinding.Identity.RuleID)
+		}
+	})
 }

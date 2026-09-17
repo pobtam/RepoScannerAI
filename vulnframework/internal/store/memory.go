@@ -535,11 +535,13 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 		Identity: model.Identity{
 			PrimaryID: p.PrimaryID,
 			Aliases:   p.Aliases,
+			RuleID:    optionalString(p.RuleID),
 		},
 		Location: p.LocationOf(),
 		Versions: model.Versions{
-			Current: p.CurrentVersion,
-			Fixed:   p.FixedVersion,
+			Current:    p.CurrentVersion,
+			Fixed:      p.FixedVersion,
+			Introduced: p.IntroducedIn,
 		},
 		Classification: withFirstParty(p.Classification, p.FirstPartyPath),
 		Provenance: model.Provenance{
@@ -564,9 +566,16 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 			AgeDays:       f.AgeDays,
 		},
 		CredentialType: p.CredentialType,
+		Annotations:    p.Annotations,
 		Refs: model.Refs{
-			Ticket:          ticketRef(m.tickets, f.Fingerprint),
-			PullRequest:     prRef(m.remediationPRs, f.Fingerprint),
+			Ticket:      ticketRef(m.tickets, f.Fingerprint),
+			PullRequest: prRef(m.remediationPRs, f.Fingerprint),
+			// Dropped in Phase 8 when the ticket and pull request references
+			// were added here, and unnoticed until the Producer-Coverage
+			// Audit: the adapters populate it on 267 of 271 real findings and
+			// the interface would have shown an empty advisory link on every
+			// row.
+			AdvisoryURL:     optionalString(p.AdvisoryURL),
 			UpstreamFinding: optionalString(f.UpstreamFinding),
 		},
 	}

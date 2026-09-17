@@ -24,7 +24,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.17.0"
+      "fixed": "0.17.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -118,7 +119,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.31.0"
+      "fixed": "0.31.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "CRITICAL",
@@ -207,7 +209,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.35.0"
+      "fixed": "0.35.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "HIGH",
@@ -288,7 +291,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.43.0"
+      "fixed": "0.43.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -372,7 +376,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.45.0"
+      "fixed": "0.45.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -457,7 +462,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.45.0"
+      "fixed": "0.45.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -542,7 +548,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "CRITICAL",
@@ -627,7 +634,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "CRITICAL",
@@ -716,7 +724,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "HIGH",
@@ -801,7 +810,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -886,7 +896,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -971,7 +982,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -1056,7 +1068,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "CRITICAL",
@@ -1145,7 +1158,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "HIGH",
@@ -1234,7 +1248,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "CRITICAL",
@@ -1319,7 +1334,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "CRITICAL",
@@ -1404,7 +1420,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "CRITICAL",
@@ -1489,7 +1506,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "CRITICAL",
@@ -1574,7 +1592,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.52.0"
+      "fixed": "0.52.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -1656,7 +1675,8 @@
     "Line": 0,
     "CredentialType": "",
     "Versions": {
-      "current": "0.16.0"
+      "current": "0.16.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -1724,7 +1744,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.55.0"
+      "fixed": "0.55.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -1802,7 +1823,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.56.0"
+      "fixed": "0.56.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -1884,7 +1906,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.16.0",
-      "fixed": "0.56.0"
+      "fixed": "0.56.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -1968,7 +1991,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "1.21.9"
+      "fixed": "1.21.9",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -2079,7 +2103,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.33.0"
+      "fixed": "0.33.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -2163,7 +2188,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "1.23.7"
+      "fixed": "1.23.7",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -2273,7 +2299,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.38.0"
+      "fixed": "0.38.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -2358,7 +2385,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.45.0"
+      "fixed": "0.45.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -2441,7 +2469,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.45.0"
+      "fixed": "0.45.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -2524,7 +2553,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.53.0"
+      "fixed": "0.53.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -2636,7 +2666,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.55.0"
+      "fixed": "0.55.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -2718,7 +2749,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "1.25.13"
+      "fixed": "1.25.13",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -2837,7 +2869,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.55.0"
+      "fixed": "0.55.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -2920,7 +2953,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.55.0"
+      "fixed": "0.55.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "MEDIUM",
@@ -3004,7 +3038,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.55.0"
+      "fixed": "0.55.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -3086,7 +3121,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "0.55.0"
+      "fixed": "0.55.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -3169,7 +3205,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.17.0",
-      "fixed": "1.26.6"
+      "fixed": "1.26.6",
+      "introduced": "1.26.0-0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -3277,7 +3314,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.15.0",
-      "fixed": "0.44.0"
+      "fixed": "0.44.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",
@@ -3359,7 +3397,8 @@
     "CredentialType": "",
     "Versions": {
       "current": "0.14.0",
-      "fixed": "0.39.0"
+      "fixed": "0.39.0",
+      "introduced": "0"
     },
     "Classification": {
       "severity": "UNKNOWN",

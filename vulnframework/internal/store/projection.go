@@ -51,8 +51,22 @@ type SourceObservation struct {
 
 	CurrentVer   string `json:"current_version,omitempty"`
 	FixedVer     string `json:"fixed_version,omitempty"`
+	IntroducedIn string `json:"introduced_version,omitempty"`
 	AdvisoryURL  string `json:"advisory_url,omitempty"`
 	CredentialTy string `json:"credential_type,omitempty"`
+
+	// RuleID is the tool's own rule identifier — G404, SA1019, a semgrep
+	// check id. Carried because it is the only human-readable name a code
+	// finding has: without it a ticket title reads "unspecified" and a
+	// reviewer cannot tell one static-analysis finding from another.
+	RuleID string `json:"rule_id,omitempty"`
+
+	// Annotations are the non-determining, version-tagged observations
+	// OQ-P3-01 decided to RETAIN — osv-scanner's experimental reachability
+	// among them. Dropping them here discarded the whole point of that
+	// decision: the provenance was recorded on the raw finding and then lost
+	// on the way into the store.
+	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
 // SourceOf builds a SourceObservation from an adapter's raw finding.
@@ -81,8 +95,11 @@ func SourceOf(fp, runID string, observedAt time.Time, raw model.RawFinding) Sour
 		Line:           raw.Line,
 		CurrentVer:     raw.Versions.Current,
 		FixedVer:       raw.Versions.Fixed,
+		IntroducedIn:   raw.Versions.Introduced,
 		AdvisoryURL:    raw.AdvisoryURL,
 		CredentialTy:   raw.CredentialType,
+		RuleID:         firstNonEmpty(raw.RuleID, raw.DetectorRuleID, raw.CheckID),
+		Annotations:    raw.Annotations,
 	}
 }
 
@@ -95,6 +112,9 @@ type Projection struct {
 	FixedVersion   string
 	CurrentVersion string
 	AdvisoryURL    string
+	IntroducedIn   string
+	RuleID         string
+	Annotations    map[string]string
 	CredentialType string
 	FirstPartyPath string
 
@@ -221,6 +241,24 @@ func Project(obs []SourceObservation) Projection {
 		}
 		if p.AdvisoryURL == "" && o.AdvisoryURL != "" {
 			p.AdvisoryURL = o.AdvisoryURL
+		}
+		if p.IntroducedIn == "" && o.IntroducedIn != "" {
+			p.IntroducedIn = o.IntroducedIn
+		}
+		if p.RuleID == "" && o.RuleID != "" {
+			p.RuleID = o.RuleID
+		}
+		// Merged across sources rather than taken from one: two tools may each
+		// annotate the same finding, and keeping only the first would discard
+		// the other's provenance (OQ-P3-01). The tool name prefixes each key,
+		// so there is nothing to collide.
+		for k, v := range o.Annotations {
+			if p.Annotations == nil {
+				p.Annotations = map[string]string{}
+			}
+			if _, exists := p.Annotations[k]; !exists {
+				p.Annotations[k] = v
+			}
 		}
 		if p.CredentialType == "" && o.CredentialTy != "" {
 			p.CredentialType = o.CredentialTy
@@ -379,4 +417,18 @@ func (p Projection) LocationOf() model.Location {
 		loc.Line = &v
 	}
 	return loc
+}
+
+// firstNonEmpty returns the first non-empty string.
+//
+// The three rule-identifier fields are populated by different tool families —
+// RuleID by gosec, DetectorRuleID by gitleaks, CheckID by semgrep and
+// staticcheck — and exactly one is set per finding.
+func firstNonEmpty(in ...string) string {
+	for _, s := range in {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
 }

@@ -681,13 +681,18 @@ func reprojectTx(ctx context.Context, tx *sql.Tx, fp string) error {
 	p := Project(LatestPerSource(obs))
 
 	view := model.Finding{
-		Identity:       model.Identity{PrimaryID: p.PrimaryID, Aliases: p.Aliases},
-		Location:       p.LocationOf(),
-		Versions:       model.Versions{Current: p.CurrentVersion, Fixed: p.FixedVersion},
+		Identity: model.Identity{
+			PrimaryID: p.PrimaryID, Aliases: p.Aliases, RuleID: optionalString(p.RuleID),
+		},
+		Location: p.LocationOf(),
+		Versions: model.Versions{
+			Current: p.CurrentVersion, Fixed: p.FixedVersion, Introduced: p.IntroducedIn,
+		},
 		Classification: withFirstParty(p.Classification, p.FirstPartyPath),
 		Provenance:     model.Provenance{Tools: p.Tools},
 		Refs:           model.Refs{AdvisoryURL: optionalString(p.AdvisoryURL)},
 		CredentialType: p.CredentialType,
+		Annotations:    p.Annotations,
 		Derived:        existingDerived,
 		Triage:         existingTriage,
 	}

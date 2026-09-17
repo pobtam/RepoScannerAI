@@ -3141,3 +3141,165 @@ Capture real deliveries before trusting the parser.
 **OQ-P12-03 — `PublishWatch` is constructed by the caller.** Nothing derives
 the watch list from open Wave 1 fixes, so VM-F-614 detects only what it is
 asked about. The information is all in the store; the wiring is not written.
+
+---
+
+## Backend status after Phase 12
+
+**CODE-COMPLETE against VM-AD §17. NOT "complete".**
+
+All twelve phases are green and committed. Three gates remain, and **none of
+them is code**:
+
+| # | Gate | State |
+|---|---|---|
+| 1 | **Producer-Coverage Audit** | NEXT — before the frontend |
+| 2 | **Precondition 1** — real sandbox proven on Linux CI | Not started; no API key anywhere until it passes |
+| 3 | **Precondition 3** — first supervised agent run | Gated behind 2, never reordered |
+
+### Why the audit comes before the frontend
+
+The UI projects the same fields. An unwritten field renders as an
+always-empty column and **looks like a feature** — the Phase 6 bug arriving at
+the last layer, where it is hardest to see and most expensive to find. Phase 11
+hit this three times (`FirstPartyPath`, `ImportPath`, `module_deps`); more are
+expected.
+
+Findings are treated as a **fix-set**: each is fixed, and the affected suites
+re-run against real producer data rather than the audit merely being reported.
+
+### Pre-production hardening (before real traffic, not part of the build)
+
+- **OQ-P12-01 — make the webhook REPLACE polling.** Tear down the poll fan-out
+  (OQ-P9b-03) and consume the backoff (OQ-P9a-03). The coupled pair is resolved
+  in design, not in wiring. Assert polling is **gone**, not merely
+  supplemented.
+- **External delivery stays refused** until identity→level (VM-UI-OQ-01)
+  closes. Already enforced in code, not remembered.
+
+### Then the frontend
+
+VM-UI U0–U10 rebuilds `report-browser-prototype.jsx` properly: generated types
+(UI-ADR-05), Zod validation, a real API client, server-side filtering with
+cursor pagination (UI-ADR-06), URL-as-view-state (UI-ADR-03).
+
+It requires an HTTP API surface. **VM-AD §7.4 specifies one and nothing
+implements it** — there is no server in this repository at all. Confirming that
+is the first frontend-phase deliverable.
+
+
+---
+
+## Gate 1 — the Producer-Coverage Audit
+
+**Status: green.** 978 tests with subtests. `go vet` and `gofmt` clean,
+`-race` clean, both store backends.
+
+`internal/audit` inverts the question every previous test asked. Instead of
+"does the consumer handle this field", it asks **"does any real producer ever
+set it"**, and answers by running the producers: the captured scanner fixtures
+through the real adapters, a real `go.mod` through the real manifest reader,
+and then the whole pipeline — store, triage, scoring, policy, tickets,
+remediation — over that output. Nothing constructs a finding, because a
+constructed finding is exactly what hid this defect three times.
+
+Two censuses, at the two layers that matter:
+
+| Layer | Fields | Written by a real producer | Exempt |
+|---|---|---|---|
+| `RawFinding` (adapters) | 32 | 26 | 6 |
+| `Finding` (full pipeline — what the UI reads) | 54 | 38 | 16 |
+
+An **exemption names the producer that does write the field**. That is what
+separates it from a dismissal: "written by internal/score" is checkable and
+"not applicable" is not. The audit fails on a stale exemption (the field turned
+out to be written) and on an unknown one (the field was renamed or removed) —
+because an exemption that is no longer true is a comment asserting something
+false, and the next reader will believe it.
+
+### What it found — five defects, four of them fixed
+
+**`Versions.Introduced`** — declared in `findings.v1`, supplied by osv-scanner,
+assigned by nobody. Now populated from the advisory's range.
+
+**`Identity.RuleID`** — written by gosec, gitleaks, semgrep and staticcheck
+under three different field names, and dropped by the store projection. It is
+the only human-readable name a static-analysis finding has: without it a ticket
+title read "unspecified" and a reviewer could not tell one finding from
+another.
+
+**`Annotations`** — dropped by the projection, which **discarded the whole
+point of OQ-P3-01**. That decision was to retain osv-scanner's experimental
+reachability as non-determining, version-tagged provenance. It was recorded on
+the raw finding and then lost on the way into the store, so the decision had
+been implemented and undone in the same build.
+
+**`Refs.AdvisoryURL`** — a regression I introduced in Phase 8, when the ticket
+and pull request references were added to the same struct literal. The adapters
+populate it on **267 of 271** real findings; the interface would have shown an
+empty advisory link on every row. Nothing else noticed for four phases.
+
+**`Location.Function` / `Location.Package`** — **not fixed, and not exempted
+away.** No code-analysis tool pinned in `tools.lock` reports either: gosec,
+staticcheck and semgrep all emit file, line and column and nothing about the
+enclosing symbol, verified against the captured fixtures rather than assumed.
+See OQ-AUDIT-02 for the consequence.
+
+Four of the five were **projection drops** — the Phase 6 defect, four more
+times. Each carried field now has a conformance test across both backends and
+a mutation that reddens the suite when it is dropped again.
+
+### The audit guards itself
+
+`TestTheAuditItselfFailsWhenAProducerStops` removes `ImportPath` from real
+producer output and asserts the census notices. An audit that cannot fail is
+worse than none: it reports coverage nobody has.
+
+`TestTheSchemaEnumerationReachesNestedFields` asserts the census descends into
+nested structs and does **not** report the containing struct as a leaf — a
+census over top-level fields would call `Classification` populated the moment
+any one of its eight fields was, and the other seven would hide behind it.
+Which is where `FirstPartyPath` hid.
+
+### Open questions the audit surfaced
+
+**OQ-AUDIT-01 — `Classification.EPSS` and `Classification.KEV` are never
+written by anything.** Both are read by the scorer: `kev_boost` is 3.0 in
+`calibration.yaml` and `epss_coefficient` is 2.0. Neither can ever apply, so
+two of the five scoring inputs contribute nothing to any priority the system
+has ever computed. VM-OQ-07 is open on the EPSS source and no KEV feed is
+wired. The scoring tests pass because they construct the input. **This should
+be stated in the report's provenance caveats** alongside the uncalibrated
+thresholds — a priority resting on three of five declared inputs is exactly the
+kind of thing OQ-P5-02 and OQ-P7b-03 established must be visible in output.
+
+**OQ-AUDIT-02 — the fingerprint's `Package#Function` branch is unreachable.**
+`fingerprint.Location` prefers `Package#Function` for a code finding and falls
+back to the file path. Since no pinned tool reports either, **every code
+finding is fingerprinted by file alone**, and two occurrences of the same rule
+in different functions of one file are ONE finding. Fixing one and not the
+other would verify the finding while the other remains. Deriving a function
+name by parsing gosec's code snippet would be a guess feeding a fingerprint,
+which is the one place this system refuses to guess — so the honest options are
+a tool that reports symbols, or removing the dead branch and accepting
+file-level granularity deliberately.
+
+**OQ-AUDIT-03 — `Provenance.ToolVersions` is per-run, not per-finding.** The
+per-finding copy is unpopulated and read by nothing. Either populate it from
+the run or remove it; a declared field nobody writes is what this audit exists
+to find.
+
+**OQ-AUDIT-04 — the audit covers `RawFinding` and `Finding`, not the store's
+own types.** `store.Report`, `store.Ticket`, `store.RemediationPR`,
+`store.ModuleDep` and the coverage types have no census. The two audited types
+are where the UI reads and where the recurrence happened, so this is the right
+first cut — but it is a first cut, and the remaining types are where the next
+instance will be.
+
+### Remaining backend-complete gates
+
+| # | Gate | State |
+|---|---|---|
+| 1 | Producer-Coverage Audit | **GREEN** |
+| 2 | Precondition 1 — real sandbox on Linux CI | Not started; no API key until it passes |
+| 3 | Precondition 3 — first supervised agent run | Gated behind 2 |
