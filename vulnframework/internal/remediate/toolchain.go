@@ -25,6 +25,18 @@ type Toolchain interface {
 	// guard inspects that, never a claim.
 	Apply(ctx context.Context, dir string, targets []Target) (Applied, error)
 
+	// TestInventory lists the test functions present in the tree.
+	//
+	// Taken before and after a change, it is what detects a build made green
+	// by deleting the test that objected. It reads the TREE: an agent that
+	// removed a test and did not mention it is precisely the case it exists
+	// for, so nothing here consults any account of what changed.
+	TestInventory(ctx context.Context, dir string) ([]string, error)
+
+	// Collect reports what the tree currently shows as changed, for a fixer
+	// that edits files directly rather than through a known set of targets.
+	Collect(ctx context.Context, dir string) (Applied, error)
+
 	// Verify runs the full post-change gate (VM-F-531): build, vet, test with
 	// the race detector, tidy check, and a RE-RUN of the scanners that produced
 	// these findings. The re-run is what distinguishes a fix from a change.

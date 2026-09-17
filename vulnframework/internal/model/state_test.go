@@ -52,6 +52,11 @@ var legalTransitions = []struct {
 	{model.Declined, model.Verified, model.ActorScanWorker},
 	{model.WontFix, model.Verified, model.ActorScanWorker},
 
+	// VM-AD §6.1.3 — DETECTED verifies by disappearance like every other
+	// active state. It was the one gap in §6.1.1's universality: a finding
+	// fixed out of band before triage had even routed it.
+	{model.Detected, model.Verified, model.ActorScanWorker},
+
 	// VM-AD §6.1.2 — a lost remediation link returns the finding to the queue.
 	//
 	// PR_OPEN is an active-looking state: policy skips it as in progress and
@@ -138,13 +143,11 @@ func TestSpecificIllegalTransitions(t *testing.T) {
 		from, to model.State
 		why      string
 	}{
-		{"detected straight to verified", model.Detected, model.Verified, "skips triage, remediation and merge"},
 		{"detected straight to merged", model.Detected, model.Merged, "no pull request was ever opened"},
 		{"declined auto-remediated", model.Declined, model.AutoRemediating, "VM-F-154: a declined finding is never automatically re-remediated"},
 		{"suppressed reopened automatically", model.Suppressed, model.Triaged, "suppression is a human decision to undo"},
 		{"suppressed auto-verified", model.Suppressed, model.Verified, "VM-AD §6.1.1: a suppression is a human judgement the finding was never real; verifying it would overwrite that with a machine's"},
 		{"verified straight back to triaged", model.Verified, model.Triaged, "re-observation must pass through REGRESSED (VM-F-105)"},
-		{"detected verifies before triage", model.Detected, model.Verified, "a finding that has never been triaged has no verifiable claim to close"},
 		{"false positive candidate auto-verified", model.FPCandidate, model.Verified, "it is awaiting a human decision"},
 		{"triaged straight to pr open", model.Triaged, model.PROpen, "dispatch must pass through AUTO_REMEDIATING and take a lease"},
 		{"same-state no-op", model.Triaged, model.Triaged, "a no-op transition would write a spurious audit record"},
@@ -399,6 +402,54 @@ func TestWontFixIsUnreachable(t *testing.T) {
 		if model.CanTransition(from, model.WontFix) {
 			t.Fatalf("WONT_FIX is now reachable from %s — the specification gap (OQ-P0-01) has been resolved; "+
 				"update BUILD-LOG.md and this test", from)
+		}
+	}
+}
+
+// TestDetectedVerifiesByDisappearance covers VM-AD §6.1.3, and it REVERSES two
+// assertions this file used to make.
+//
+// The earlier reading was that DETECTED → VERIFIED "skips triage, remediation
+// and merge" and that "a finding that has never been triaged has no verifiable
+// claim to close". Both are wrong for the same reason: they describe what the
+// FRAMEWORK did, and verification is not a statement about the framework. It is
+// a statement about the repository — a successful scan looked and the finding
+// was not there.
+//
+// A vulnerability can be fixed between the scan that first saw it and the
+// triage pass that would have routed it: a dependency bot, an unrelated
+// refactor, a deleted repository. Under the old reading that finding stayed
+// DETECTED for ever, which is a false open finding rather than a false closed
+// one — less dangerous, but still a lie, and one that inflates every backlog it
+// appears in.
+func TestDetectedVerifiesByDisappearance(t *testing.T) {
+	if !model.CanTransition(model.Detected, model.Verified) {
+		t.Fatal("DETECTED cannot verify by disappearance; §6.1.1 made the trigger universal and this was " +
+			"the one state left out (VM-AD §6.1.3)")
+	}
+	// The attribution is the part that must not drift: a finding that vanished
+	// before the framework had even triaged it was certainly not fixed BY the
+	// framework.
+	if got := model.VerificationReasonFor(model.Detected); got != model.VerifiedExternal {
+		t.Errorf("verified_reason from DETECTED = %q, want external; claiming any other attribution for a "+
+			"finding this framework never acted on would be a false record", got)
+	}
+}
+
+// TestDetectedStillNeedsAQualifyingScan is the half that does NOT change. The
+// new edge widens which states can verify; it does not weaken what verifying
+// requires. Absence in a scan that failed or ran partially is still not
+// evidence of anything (VM-ADR-12).
+func TestDetectedStillNeedsAQualifyingScan(t *testing.T) {
+	for _, outcome := range []model.ScanOutcome{model.ScanFailed, model.ScanPartial} {
+		if outcome.Succeeded() {
+			t.Fatalf("fixture error: %s must not count as a successful scan", outcome)
+		}
+		_, err := model.ApplyTransition("fp", model.Detected, model.Verified, model.TransitionContext{
+			Actor: model.ActorScanWorker, Cause: "absent", ScanOutcome: outcome,
+		})
+		if err == nil {
+			t.Errorf("DETECTED verified on a %s scan; absence is not resolution (VM-ADR-12)", outcome)
 		}
 	}
 }

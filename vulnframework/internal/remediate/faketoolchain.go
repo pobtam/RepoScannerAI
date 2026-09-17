@@ -40,6 +40,12 @@ type FakeToolchain struct {
 	// closes. The re-scan consults this, not the caller's intent.
 	advisories map[string]advisory
 
+	tests          map[string]bool
+	sourceFindings map[string]string
+	closedSource   map[string]bool
+	edited         []string
+	addedLines     []string
+
 	baselineFailure  *Check
 	verifyBuildFails bool
 	verifyTestsFails bool
@@ -57,7 +63,8 @@ type advisory struct {
 func NewFakeToolchain() *FakeToolchain {
 	return &FakeToolchain{
 		modules: map[string]string{}, ceilings: map[string]string{},
-		advisories: map[string]advisory{},
+		advisories: map[string]advisory{}, tests: map[string]bool{},
+		sourceFindings: map[string]string{}, closedSource: map[string]bool{},
 	}
 }
 
@@ -208,6 +215,14 @@ func (f *FakeToolchain) Verify(_ context.Context, _ string, targets []Target, to
 			remaining = append(remaining, id)
 		}
 	}
+	// Source-level findings close only when the fixer actually closed them.
+	// A fake that inferred a fix from a touched file would agree with any
+	// change at all, and the re-scan would stop being evidence.
+	for id := range f.sourceFindings {
+		if !f.closedSource[id] {
+			remaining = append(remaining, id)
+		}
+	}
 	sort.Strings(remaining)
 	v.Remaining = remaining
 	v.RescanClean = len(remaining) == 0
@@ -221,4 +236,138 @@ func (f *FakeToolchain) Verify(_ context.Context, _ string, targets []Target, to
 	}
 	v.Output = log.String()
 	return v, nil
+}
+
+// --- Source-level state, for the agentic worker -----------------------------
+//
+// The fake models a tree well enough that the green-by-deletion check has
+// something real to compare: a set of test names, and a set of findings that
+// close only when the file carrying them is actually changed.
+
+// WithTests declares the tests present before any change.
+func (f *FakeToolchain) WithTests(names ...string) *FakeToolchain {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.tests == nil {
+		f.tests = map[string]bool{}
+	}
+	for _, n := range names {
+		f.tests[n] = true
+	}
+	return f
+}
+
+// WithFinding declares a source-level finding that closes only when its file
+// is changed AND the fixer says it closed it.
+//
+// Two conditions, deliberately. A fake that closed the finding merely because
+// a file was touched would agree with any change at all, and the re-scan would
+// stop being evidence of anything.
+func (f *FakeToolchain) WithFinding(id, file string) *FakeToolchain {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.sourceFindings == nil {
+		f.sourceFindings = map[string]string{}
+	}
+	f.sourceFindings[id] = file
+	return f
+}
+
+// TestInventory lists the tests currently in the tree.
+func (f *FakeToolchain) TestInventory(_ context.Context, _ string) ([]string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := make([]string, 0, len(f.tests))
+	for name, present := range f.tests {
+		if present {
+			out = append(out, name)
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+// Collect reports what the tree currently shows as changed.
+func (f *FakeToolchain) Collect(_ context.Context, _ string) (Applied, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	changed := append([]string(nil), f.edited...)
+	changed = append(changed, f.extraChanged...)
+	sort.Strings(changed)
+	changed = dedupe(changed)
+
+	var diff strings.Builder
+	diff.WriteString("--- a/tree\n+++ b/tree\n")
+	for _, line := range f.addedLines {
+		fmt.Fprintf(&diff, "+%s\n", line)
+	}
+	return Applied{
+		Bumped: map[string]string{}, Dropped: map[string]string{},
+		ChangedFiles: changed, Diff: []byte(diff.String()),
+	}, nil
+}
+
+// --- what a fixer does to the tree, for fakes that edit source --------------
+
+// EditFile records that a file was changed.
+func (f *FakeToolchain) EditFile(paths ...string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.edited = append(f.edited, paths...)
+}
+
+// AddLine records a line added to the tree, which the content guard inspects.
+func (f *FakeToolchain) AddLine(lines ...string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.addedLines = append(f.addedLines, lines...)
+}
+
+// AddTest adds a test to the inventory.
+func (f *FakeToolchain) AddTest(names ...string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.tests == nil {
+		f.tests = map[string]bool{}
+	}
+	for _, n := range names {
+		f.tests[n] = true
+	}
+}
+
+// RemoveTest deletes a test from the inventory — what a green-by-deletion
+// change looks like from the tree's point of view. A skipped test is modelled
+// the same way, because a test that always skips is a test that is gone.
+func (f *FakeToolchain) RemoveTest(names ...string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, n := range names {
+		delete(f.tests, n)
+	}
+}
+
+// CloseSourceFinding marks a source finding as genuinely fixed, which the
+// re-scan then stops reporting.
+func (f *FakeToolchain) CloseSourceFinding(ids ...string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.closedSource == nil {
+		f.closedSource = map[string]bool{}
+	}
+	for _, id := range ids {
+		f.closedSource[id] = true
+	}
+}
+
+func dedupe(in []string) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, s := range in {
+		if !seen[s] {
+			seen[s] = true
+			out = append(out, s)
+		}
+	}
+	return out
 }

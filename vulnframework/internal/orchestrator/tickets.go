@@ -66,6 +66,14 @@ func (o *Orchestrator) TicketPass(ctx context.Context, req TicketRequest) (Ticke
 		return stats, err
 	}
 	stats.Drained = drained
+	if drained > 0 {
+		// A drain that works silently hides the outage it recovered from.
+		o.Recovery.Record(RecoveryEvent{
+			Kind: RecoveryTicketDrained, Repo: req.Repo.Name,
+			Reason: fmt.Sprintf("%d ticket operations queued behind a tracker outage were replayed", drained),
+			At:     now,
+		})
+	}
 
 	open, err := o.Store.ListFindings(ctx, store.Query{Scope: store.ScopeOpen, Repo: req.Repo.Name})
 	if err != nil {

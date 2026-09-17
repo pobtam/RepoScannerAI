@@ -85,14 +85,22 @@ type Orchestrator struct {
 	Budget     *RateBudget
 	Config     Config
 	Clock      func() time.Time
+
+	// Recovery accumulates every self-healing action taken.
+	//
+	// Always non-nil after New, and nil-safe regardless: a recovery nobody
+	// records is the observability gap that lets a repeating fault present as
+	// reliability (OQ-P9b-02).
+	Recovery *RecoveryLog
 }
 
 // New builds an orchestrator.
 func New(s store.Store, d Dispatcher, b *RateBudget, cfg Config) *Orchestrator {
 	return &Orchestrator{
 		Store: s, Dispatcher: d, Budget: b,
-		Config: cfg.withDefaults(),
-		Clock:  func() time.Time { return time.Now().UTC() },
+		Config:   cfg.withDefaults(),
+		Clock:    func() time.Time { return time.Now().UTC() },
+		Recovery: &RecoveryLog{},
 	}
 }
 
@@ -395,7 +403,33 @@ func (o *Orchestrator) record(ctx context.Context, res scan.Result) error {
 // Run every 60 seconds. This is the only thing preventing a crashed worker from
 // stranding a finding in AUTO_REMEDIATING permanently.
 func (o *Orchestrator) SweepLeases(ctx context.Context) (int, error) {
-	return o.Store.SweepExpiredLeases(ctx, o.clock())
+	now := o.clock()
+	n, err := o.Store.SweepExpiredLeases(ctx, now)
+	if n > 0 {
+		// Loud, even though the sweep is routine. A lease reclaimed once is
+		// the machinery working; leases reclaimed every cycle mean workers are
+		// dying, and nothing else in the system would say so.
+		o.Recovery.Record(RecoveryEvent{
+			Kind:   RecoveryLeaseExpired,
+			Reason: fmt.Sprintf("%d finding leases lapsed and were reclaimed; their findings returned to the queue", n),
+			At:     now,
+		})
+	}
+	return n, err
+}
+
+// SweepRepoLocks reclaims repository locks whose holder died.
+func (o *Orchestrator) SweepRepoLocks(ctx context.Context) (int, error) {
+	now := o.clock()
+	n, err := o.Store.SweepExpiredRepoLocks(ctx, now)
+	if n > 0 {
+		o.Recovery.Record(RecoveryEvent{
+			Kind:   RecoveryRepoLockExpired,
+			Reason: fmt.Sprintf("%d repository remediation locks outlived their holders and were reclaimed", n),
+			At:     now,
+		})
+	}
+	return n, err
 }
 
 // RunLeaseSweeper sweeps on an interval until the context is cancelled.

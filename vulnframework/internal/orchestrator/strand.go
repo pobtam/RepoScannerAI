@@ -94,6 +94,12 @@ func (o *Orchestrator) SyncPullRequests(ctx context.Context, prOps gh.PROps, rep
 		} else {
 			stats.Declined += moved
 		}
+		o.Recovery.Record(RecoveryEvent{
+			Kind: RecoveryPRStateSync, Repo: rec.Repo,
+			Reason: fmt.Sprintf("pull request %s was %s on the remote and no webhook reported it; "+
+				"%d findings moved", rec.URL, closedHow(remote), moved),
+			At: now,
+		})
 	}
 	return stats, nil
 }
@@ -176,6 +182,13 @@ func (o *Orchestrator) SweepStranded(ctx context.Context, cfg StrandSweep) (Stra
 		}
 		stats.Recovered++
 		stats.Reasons[f.Fingerprint] = why
+		// Recovery must be loud: recorded with enough context that the same
+		// repository recovering every sweep is a visible recurring event
+		// rather than an absorbed one.
+		o.Recovery.Record(RecoveryEvent{
+			Kind: RecoveryStranded, Repo: f.Repo, Fingerprint: f.Fingerprint,
+			Reason: why, At: now,
+		})
 	}
 	return stats, nil
 }

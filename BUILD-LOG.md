@@ -23,7 +23,9 @@ green.
 | **8** — `internal/tracker` — three backends + mirror | **Green** | passing (extended gate) |
 | **9a** — guard, deterministic worker, repo lock, PR ops | **Green** | passing (extended gate) |
 | **9b** — orchestrator ticket wiring, Drain, reopen, strand sweep | **Green** | passing (extended gate) |
-| 10–12 | Not started | |
+| **10a** — `internal/remediate/agent` — guard inheritance + harness | **Green** | passing (extended gate) |
+| 10b — the real Claude Code headless client | Not started | |
+| 11–12 | Not started | |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -2251,3 +2253,237 @@ report line or a metric before it runs unattended.
 real GitHub adapter that is a rate-limit problem, and OQ-P9a-03's unconsumed
 backoff is the other half of it. The webhook removes the need for polling
 entirely, which is the real answer.
+
+---
+
+## Decisions taken after Phase 9b (2026-09-16)
+
+**OQ-P9b-01 — `DETECTED` has no disappearance edge. → RESOLVED: add it.**
+
+> This completes the OQ-P2-01 universality: disappearance on a qualifying scan
+> verifies from ANY active state. A finding can be fixed out of band before
+> triage has even routed it.
+>
+> `DETECTED → VERIFIED` on qualifying-scan-absence, same predicate,
+> `verified_reason=external`. A §6.1 edge; the partial/failed guard applies
+> unchanged. Do before a real sweep.
+
+**OQ-P9b-02 — recovery is corrective but silent. → RESOLVED as a standing
+principle, with the cheap half now.**
+
+> **RECOVERY MUST BE LOUD.** Every self-heal, sweep, drain and strand-recovery
+> action records why it fired — reason, repository, finding — so a repeating
+> recovery is a *visible recurring event*, not an absorbed one.
+>
+> A silent successful recovery is an **observability coverage gap**: the one
+> gap class this build has not yet hunted systematically. Full diagnostics
+> ("same repository recovered N times") can come later; the `Reasons` data
+> starts accumulating now, on the same first-sweep-accumulation logic as
+> annotations, `calibrated: false` and fan-out.
+
+**OQ-P9b-03 — poll fan-out, and OQ-P9a-03's unconsumed backoff. → DEFERRED TO
+PHASE 12 AS A COUPLED PAIR.**
+
+> Jointly resolved by the webhook. Do not fix one and strand the other.
+
+### Consolidated VM-OQ-10 dependent list
+
+| Dependent | Recorded in |
+|---|---|
+| Fleet registry sync — and the OQ-P2-02 coverage guarantee | A18, Phase 4 |
+| Git-backed report publisher (VM-ADR-08) | OQ-P7-02, Phase 7 |
+| Identity→level binding for external delivery (with VM-UI-OQ-01) | OQ-P7b-01, Phase 7b |
+| Pull request state sync and rate-limit backoff (with the webhook) | OQ-P9b-03 + OQ-P9a-03, Phase 9 |
+
+### Standing principle — every test asserts what MUST NOT happen
+
+> From the 9b mutation survival: every test asserts what must not happen, not
+> only what must. Every recovery and reliability path — sweeper, drain,
+> self-heal, and in Phase 10 the agent — needs a **negative** test proving it
+> does not fire against work that is genuinely in flight.
+>
+> The reliability machinery is itself a source of the concurrency and
+> duplication hazards the safety machinery guards against.
+
+All three 9b survivors were this shape: a second run parent, a ticket that
+should not exist, and work that had to be left alone. A suite written entirely
+in the positive cannot see any of them.
+
+
+---
+
+## Phase 10a — the agentic fix worker: inheritance, not re-implementation
+
+**Split:** **10a** (this entry) is the harness, the guard inheritance and every
+safety clause, exercised against a deliberately hostile agent. **10b** is the
+real Claude Code headless client behind the same interface.
+
+**Status: green.** 336 top-level tests, 861 with subtests. `go vet` and `gofmt`
+clean, `-race` clean, both store backends.
+
+### Landed first: the two items marked "do now"
+
+**OQ-P9b-01 — `DETECTED → VERIFIED` (VM-AD §6.1.3).** This **reverses** two
+assertions the model tests used to make: that the transition "skips triage,
+remediation and merge", and that "a finding that has never been triaged has no
+verifiable claim to close". Both were wrong in the same way — they described
+what the *framework* did, and verification is not a statement about the
+framework. It is a statement about the repository: a successful scan looked and
+the finding was not there. `verified_reason=external`, and the partial/failed
+guard is unchanged.
+
+**OQ-P9b-02 — recovery is loud.** `orchestrator.RecoveryLog` records every
+self-heal with its reason, repository and finding: lease expiry, repo-lock
+expiry, strand recovery, ticket drain, pull request state sync. `Repeating(n)`
+surfaces the signal the log exists for — one recovery is the machinery working,
+the same repository recovered every sweep is a defect wearing the machinery as
+a disguise.
+
+### The design answer to "the agent can edit its own CI"
+
+It cannot, and the reason is structural rather than procedural. The agent is a
+`remediate.Fixer`: it is handed a working directory and a fix group, and it has
+no store, no pull-request surface, no credentials and no guard. Everything
+dangerous lives on the far side of that interface, **in the Phase 9a worker the
+agent shares with the deterministic bumper**.
+
+So the guard is not re-implemented here, and it is not called here. It runs in
+the worker, after the agent has finished, against the tree. A future agent — a
+better model, a different vendor — inherits that without anyone remembering to
+wire it, and a mutation deleting the guard call turns both the deterministic
+and the agentic suites red at once.
+
+§3 lists a `guard.go` inside this package. There deliberately is none: a second
+guard implementation would be a second thing to keep correct, and the weaker of
+the two would decide.
+
+### Ordering: the guard is unconditionally first
+
+`PostGuard` is a new optional Fixer capability, and it exists for one reason.
+An agent that edits a CI workflow **and** forgets to add a test must be
+reported as the first. "No test added" is a quality finding someone triages
+tomorrow; an attempted CI edit is an alert tonight. The harness's quality checks
+therefore run behind the guard, not inside `Apply` where they pre-empted it —
+a mutation that reorders them is caught.
+
+### What the harness adds
+
+Only what is agent-specific:
+
+- **Budget**, enforced by the harness with a context the agent cannot extend.
+  A self-imposed limit fails in the case it exists for: an agent that has lost
+  the thread is the one least likely to notice.
+- **Test inventory**, taken from the tree before and after. Deleting the test
+  that fails is a locally rational way to make a build pass, and every
+  downstream signal agrees it worked — build green, tests green, a coverage
+  delta nobody reads. The only signal that disagreed is the one removed.
+- **VM-F-525 in both directions** from the same mechanism: nothing removed, and
+  for a source fix, something added.
+- **VM-F-524**: no test suite, no agentic source fix.
+- **An action log**: recovery-must-be-loud extended to autonomy. A change nobody
+  can attribute is a change nobody can review.
+
+### The hostile agent fake
+
+Per the standing sentinel, and the weakest permitted guarantee for a model
+driving a write-capable tool is *nothing at all*. `FakeAgent` can write to any
+path including protected ones, misreport its own diff, add a suppression or a
+credential, delete or skip a test, exceed any budget, crash mid-run, and block
+indefinitely. Every one of those exists because a real agent could do it.
+
+### Prompt injection, with a write-capable actor
+
+The instruction arrives where a real one would: in the finding's own
+annotations, which are a scanner's verbatim words. The agent then **complies
+fully** — a test against a model that happens to refuse would be worthless.
+Five instructions, all rejected: edit the CI, take over CODEOWNERS, add a
+`nolint`, paste a credential, delete the test that would catch it.
+
+A mutation here found a weak test. Three of the five cases were being rejected
+for the *wrong reason* — the missing-test check caught them before the guard
+looked — so disabling the suppression patterns left the suite green. Each
+injection is now an otherwise-**model** change: source edited, test added,
+finding closed, and the injected instruction the only thing wrong. The guard is
+now load-bearing rather than incidental.
+
+### Mutations verified
+
+| # | Mutation | Caught by |
+|---|---|---|
+| A | agent path skips the guard | protected-path clause, and the 9a suite |
+| B | quality checks run before the guard | protected-path clause (error type) |
+| C | harness trusts the agent's report, not the tree | protected-path clause (VM-F-510) |
+| D | budget not enforced by the harness | budget clause (iteration cap; wall clock hangs) |
+| E | test-weakening check disabled | green-by-deletion clause |
+| F | suppression patterns disabled | **weak test found**; strengthened, then caught |
+| G | worker treats any error as a refusal | crash and no-test-suite clauses |
+| H | credential guard disabled | injection clause |
+
+### Two bugs the tests found
+
+**Every source-level group was silently a no-op.** The worker's "no bump
+targets, nothing to do" check is dependency-specific, and a code finding has no
+module. Plugging in an agent would have produced `nothing_to_do` for every
+source fix — no error, no ticket, nothing. Actionability is now the fixer's
+judgement.
+
+**Agentic changes produced no commits.** The commit loop iterated over bump
+targets, of which a source fix has none, so the push failed with nothing staged.
+One commit per logical fix (VM-F-505) now means per module for a bump and per
+finding for a source change, each naming its producer so a reviewer can tell a
+deterministic bump from an agent's diff.
+
+### Stubbed / deferred (10b)
+
+- **No real agent.** `Agent` has only the hostile fake; wrapping Claude Code
+  headless is 10b. Every clause above is tested against the interface.
+- **The prompt is not written.** §11.4's constraint list is encoded in
+  `WorkOrder.Policy` and the budget, but the prompt text itself is 10b.
+- **VM-F-522's "consult upstream release documentation"** needs a real agent
+  with tool access.
+- **VM-F-534** (coverage delta against baseline) is not implemented.
+- **VM-F-854** (a fix touching a file with an active secret finding is reverted
+  and marked `NEEDS_HUMAN_SECRET`) is **not** implemented — see below.
+
+### Assumptions
+
+- **A43.** A skipped test is treated as a deleted one. A test that always skips
+  is a test that is gone, and a check distinguishing them would be evadable by
+  choosing the other.
+- **A44.** `ErrTestsWeakened` and `ErrNoTestAdded` do NOT implement
+  `FixerRefusal`, so they hard-fail rather than becoming tickets. Removing a
+  test to make a build pass is an attempt to subvert a control, not a failure
+  to fix something, and it gets a deny-list violation's response.
+- **A45.** An error that does not implement `FixerRefusal` hard-fails by
+  default. A failure mode nobody has classified should stop the job, not quietly
+  become a ticket.
+- **A46.** The deny paths travel in the work order for the agent's benefit —
+  it should not spend budget discovering them — but they are explicitly not the
+  enforcement.
+
+### Open questions
+
+**OQ-P10a-01 — VM-F-854 is not implemented.** §11.5 requires that before the
+push, the harness check whether any changed file is on the repository's active
+secret-finding path list, revert that specific fix, and mark it
+`NEEDS_HUMAN_SECRET`. Nothing does this. The related invariants hold — a secret
+never enters a work order (tested, Phase 9a), and the credential guard rejects
+a reintroduced value — but the specific case of an ordinary fix *touching a file
+that currently holds a flagged secret* is unguarded. It wants doing in 10b, and
+it needs the store to expose active secret paths per repository.
+
+**OQ-P10a-02 — the transition table's actor column is documentation, not
+enforcement.** `ValidateTransition` checks the edge and the scan-outcome guard;
+it does not check that the actor matches the table. It has been true since Phase
+0 and mattered little while every actor was framework code. It matters more now:
+the table says `AUTO_REMEDIATING → PR_OPEN` is `ActorWorker`, and nothing stops
+a caller claiming to be one. Cheap to enforce; needs a decision about whether
+any existing caller is currently lying.
+
+**OQ-P10a-03 — no sandbox.** §15.2 specifies isolation for the agent's
+execution, and the harness currently assumes the agent is in-process or
+otherwise already contained. The `Fixer` seam means the agent has no framework
+capabilities, but it says nothing about what the agent's own process can reach:
+the network, the filesystem outside the clone, the credentials in the
+environment. That is 10b's other half, and it should land with the real client
+rather than after it.

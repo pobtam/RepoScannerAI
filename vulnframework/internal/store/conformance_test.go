@@ -689,13 +689,17 @@ func TestStoreRejectsIllegalTransitions(t *testing.T) {
 		mustUpsert(t, s, r.ID, cryptoFinding("govulncheck"))
 		fp := cryptoFP()
 
-		// DETECTED -> VERIFIED is not in the table, and would also bypass the
-		// scan-outcome guard.
-		err := s.ApplyTransition(ctx, fp, model.Verified, model.TransitionContext{
-			Actor: model.ActorOrchestrator, Cause: "should be rejected", ScanOutcome: model.ScanComplete,
+		// DETECTED -> MERGED is not in the table: no pull request was ever
+		// opened, so there is nothing that could have merged.
+		//
+		// This used to be DETECTED -> VERIFIED, which became legal in
+		// VM-AD §6.1.3: disappearance verifies from every active state, and a
+		// finding can be fixed out of band before triage routes it.
+		err := s.ApplyTransition(ctx, fp, model.Merged, model.TransitionContext{
+			Actor: model.ActorOrchestrator, Cause: "should be rejected",
 		})
 		if err == nil {
-			t.Fatal("store applied DETECTED -> VERIFIED")
+			t.Fatal("store applied DETECTED -> MERGED")
 		}
 		var ite *model.IllegalTransitionError
 		if !errors.As(err, &ite) {

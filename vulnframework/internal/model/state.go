@@ -229,6 +229,12 @@ var transitions = map[State]map[State]edge{
 	},
 	Detected: {
 		Triaged: {TriggerTriageComplete, ActorTriage},
+		// Disappearance is universal (VM-AD §6.1.3). A finding can be fixed
+		// out of band between the scan that first saw it and the triage pass
+		// that would have routed it — a dependency bot, an unrelated
+		// refactor, a deleted repository. Leaving DETECTED out was the one
+		// state where that went unnoticed.
+		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	Triaged: {
 		AutoRemediating: {TriggerPolicyAuto, ActorOrchestrator},

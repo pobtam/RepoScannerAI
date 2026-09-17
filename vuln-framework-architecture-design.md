@@ -474,6 +474,27 @@ const (
 
 Every other transition is illegal and must be rejected with an error and a logged event (VM-F-152).
 
+### 6.1.3 DETECTED verifies by disappearance like every other active state (normative)
+
+`DETECTED → VERIFIED`, trigger `qualifying_scan_absent`, actor scan worker,
+`verified_reason = external`.
+
+§6.1.1 made disappearance the universal verification trigger and then listed
+eight states. `DETECTED` was not among them, which left one state where a
+finding could be fixed and the system would not notice: a vulnerability
+remediated out of band between the scan that first saw it and the triage pass
+that would have routed it. The window is small and entirely real — a dependency
+bot, an unrelated refactor, a repository deleted.
+
+The reason is `external` and nothing else is defensible. A finding that
+disappeared before this framework had even triaged it was certainly not fixed
+by this framework.
+
+The partial/failed guard applies unchanged: only a *successful* scan of the
+finding's repository may verify it (VM-ADR-12). Absence in a scan that did not
+complete retains the state and flags the finding not-re-observed, exactly as it
+does from every other state.
+
 ### 6.1.2 A lost remediation link returns the finding to the queue (normative)
 
 `PR_OPEN → TRIAGED`, trigger `remediation_link_lost`, actor orchestrator.

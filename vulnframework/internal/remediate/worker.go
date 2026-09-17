@@ -38,6 +38,10 @@ const (
 	OutcomePushRejected Outcome = "push_rejected"
 	// OutcomeNothingToDo — the group implied no bumps.
 	OutcomeNothingToDo Outcome = "nothing_to_do"
+	// OutcomeFixerRefused — the fixer declined the attempt for a reason that
+	// belongs on the finding: an agent out of budget, a repository with no
+	// test suite. The run continues; the finding goes to a human.
+	OutcomeFixerRefused Outcome = "fixer_refused"
 )
 
 // Result is one attempt's outcome, with everything needed to explain it.
@@ -62,6 +66,13 @@ type Worker struct {
 	Guard     *guard.Guard
 	Toolchain Toolchain
 
+	// Fixer produces the working tree. Nil means the deterministic bumper.
+	//
+	// The agentic worker is a different Fixer behind this same Worker, which
+	// is what makes "the agent inherits the guard" structural rather than a
+	// promise: an agent cannot bypass a guard it has no way to reach.
+	Fixer Fixer
+
 	// Owner identifies this worker in the repository lock and finding leases.
 	Owner string
 	// LeaseTTL bounds how long a crashed worker can hold a repository or a
@@ -81,6 +92,14 @@ func (w *Worker) now() time.Time {
 		return w.Clock().UTC()
 	}
 	return time.Now().UTC()
+}
+
+// fixer returns the configured fixer, defaulting to the deterministic bumper.
+func (w *Worker) fixer() Fixer {
+	if w.Fixer != nil {
+		return w.Fixer
+	}
+	return DeterministicFixer{Toolchain: w.Toolchain}
 }
 
 func (w *Worker) ttl() time.Duration {
@@ -139,7 +158,9 @@ func (w *Worker) Remediate(ctx context.Context, group FixGroup) (Result, error) 
 	}
 
 	targets := group.Targets()
-	if len(targets) == 0 {
+	if !w.fixer().Actionable(group) {
+		// Fixer-specific: a group with no module bumps is nothing for the
+		// deterministic bumper and ordinary work for an agent.
 		res.Outcome = OutcomeNothingToDo
 		return res, nil
 	}
@@ -228,8 +249,24 @@ func (w *Worker) Remediate(ctx context.Context, group FixGroup) (Result, error) 
 	if err := w.PR.CreateBranch(ctx, dir, group.Branch); err != nil {
 		return res, err
 	}
-	applied, err := w.Toolchain.Apply(ctx, dir, targets)
+	applied, err := w.fixer().Apply(ctx, dir, group)
 	if err != nil {
+		// A refusal routes the finding to a human and the run continues. Any
+		// other error hard-fails: a failure mode nobody has classified should
+		// stop the job, not quietly become a ticket.
+		var refusal FixerRefusal
+		if errors.As(err, &refusal) {
+			reason, toHuman := refusal.Refusal()
+			res.Outcome, res.Reason = OutcomeFixerRefused, &reason
+			res.Verification = Verification{Output: err.Error()}
+			if toHuman {
+				if rerr := w.routeToHuman(ctx, group, reason, err.Error()); rerr != nil {
+					return res, rerr
+				}
+			}
+			completed = true
+			return res, nil
+		}
 		return res, err
 	}
 	res.Applied = applied
@@ -263,6 +300,27 @@ func (w *Worker) Remediate(ctx context.Context, group FixGroup) (Result, error) 
 		return res, err
 	}
 
+	// Quality checks come AFTER the guard, never before: an agent that edited
+	// a workflow and also forgot a test must be reported as the first.
+	if pg, ok := w.fixer().(PostGuard); ok {
+		if err := pg.PostGuardCheck(ctx, dir, group); err != nil {
+			var refusal FixerRefusal
+			if errors.As(err, &refusal) {
+				reason, toHuman := refusal.Refusal()
+				res.Outcome, res.Reason = OutcomeFixerRefused, &reason
+				res.Verification = Verification{Output: err.Error()}
+				if toHuman {
+					if rerr := w.routeToHuman(ctx, group, reason, err.Error()); rerr != nil {
+						return res, rerr
+					}
+				}
+				completed = true
+				return res, nil
+			}
+			return res, err
+		}
+	}
+
 	// --- Step 7: verify, including a re-run of the scanners ---------------
 	verification, err := w.Toolchain.Verify(ctx, dir, targets, w.toolsFor(group))
 	if err != nil {
@@ -282,9 +340,12 @@ func (w *Worker) Remediate(ctx context.Context, group FixGroup) (Result, error) 
 	}
 
 	// --- Step 9: commit, push, open the pull request ----------------------
-	for _, t := range targets {
-		message := fmt.Sprintf("security: bump %s to %s\n\nCloses %s\nFix group %s",
-			t.Module, t.To, strings.Join(t.Closes, ", "), group.ID)
+	// One commit per logical fix (VM-F-505). For a bump that is one per
+	// module; for a source change there are no modules, so it is one per
+	// finding — the loop used to be targets-only, which meant an agentic
+	// change produced no commits at all and the push failed with nothing
+	// staged.
+	for _, message := range commitMessages(group, targets, w.fixer().Name()) {
 		if err := w.PR.Commit(ctx, dir, gh.Commit{
 			Message:     message,
 			AuthorName:  "wanaware-security[bot]",
@@ -455,6 +516,42 @@ func (w *Worker) openPR(ctx context.Context, group FixGroup, targets []Target, v
 	return gh.PullRequest{}, err
 }
 
+// commitMessages renders one message per logical fix (VM-F-505).
+//
+// Each carries the finding identifier, so `git log` answers "why did this
+// change" without a round trip to the findings store, and the producer, so a
+// change is attributable to the thing that made it — a deterministic bump and
+// an agent are different claims about how much a reviewer should trust the
+// diff.
+func commitMessages(group FixGroup, targets []Target, producer string) []string {
+	if len(targets) > 0 {
+		out := make([]string, 0, len(targets))
+		for _, t := range targets {
+			out = append(out, fmt.Sprintf("security: bump %s to %s\n\nCloses %s\nFix group %s\nProduced by %s",
+				t.Module, t.To, strings.Join(t.Closes, ", "), group.ID, producer))
+		}
+		return out
+	}
+
+	out := make([]string, 0, len(group.Findings))
+	for _, f := range group.Findings {
+		id := f.Identity.PrimaryID
+		if id == "" {
+			id = deref(f.Identity.RuleID)
+		}
+		if id == "" {
+			id = f.Fingerprint
+		}
+		where := deref(f.Location.File)
+		if where == "" {
+			where = f.Repo
+		}
+		out = append(out, fmt.Sprintf("security: fix %s in %s\n\nCloses %s\nFingerprint %s\nFix group %s\nProduced by %s",
+			id, where, id, f.Fingerprint, group.ID, producer))
+	}
+	return out
+}
+
 func (w *Worker) title(group FixGroup) string {
 	if len(group.Findings) == 1 {
 		f := group.Findings[0]
@@ -502,4 +599,11 @@ func (w *Worker) explainVerification(v Verification) string {
 		return "the change built and tested, but a re-run of the scanners still reports " +
 			strings.Join(v.Remaining, ", ") + " — the bump did not close the defect (VM-F-531)"
 	}
+}
+
+func deref(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
 }
