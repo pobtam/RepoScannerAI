@@ -157,8 +157,30 @@ table { border-collapse: collapse; width: 100%; background: var(--ground); }
 th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--ground-sunk); vertical-align: top; }
 thead th { position: sticky; top: 0; background: var(--ground-sunk); z-index: 1; font-size: 12px; }
 tbody tr:hover { background: var(--ground-alt); }
-.findings tbody { display: block; }
-.findings tbody tr { display: table; table-layout: fixed; }
+
+/* The findings table is VIRTUALISED and is still an ordinary table.
+ *
+ * It used to take the body out of the table box — `tbody { display: block }`
+ * with absolutely positioned rows — so that the virtualiser could place rows
+ * by offset. That is what broke it: a `display: block` box inside a <table>
+ * is wrapped by CSS table fixup in an anonymous table-cell, which lands in
+ * COLUMN ONE. The whole body became one cell the width of the first column
+ * (115px inside a 1,223px table), every row was crushed into it, and because
+ * the rows were absolutely positioned at a 44px estimate while measuring
+ * 190px tall, all sixteen row pairs overlapped. The header was untouched and
+ * therefore correct, which is why the page looked like a good header above a
+ * column of rubble.
+ *
+ * Virtualisation is now done with spacer rows, which the table lays out
+ * itself, and the columns are pinned by a <colgroup> so they cannot shift as
+ * the window of rendered rows changes under the reader.
+ */
+.findings { table-layout: fixed; }
+/* A long module path must wrap rather than widen the column; a WORD must
+   break only when it genuinely cannot fit, so "uncalibrated" is not split
+   across two lines beside the number it qualifies. */
+.findings td { overflow-wrap: anywhere; }
+.findings .caveat, .findings .badge, .findings .sla { overflow-wrap: normal; }
 .row.restricted { background: repeating-linear-gradient(45deg, var(--ground), var(--ground) 8px, var(--ground-sunk) 8px, var(--ground-sunk) 16px); }
 .sort { border: 0; background: none; font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
 

@@ -31,18 +31,39 @@ import {
 } from '../../lib/format';
 import type { ExplorerState } from '../../lib/view-state';
 
-const COLUMNS: { key: ExplorerState['sort'] | null; label: string; hint?: string }[] = [
-  { key: 'priority', label: 'Priority' },
-  { key: 'severity', label: 'Severity' },
-  { key: null, label: 'Finding' },
-  { key: 'repo', label: 'Repository' },
-  { key: null, label: 'Component' },
-  { key: null, label: 'Reachable', hint: 'a tri-state: unknown is not "not reachable"' },
-  { key: null, label: 'Exploitation', hint: 'KEV and EPSS; "not looked up" is not zero' },
-  { key: null, label: 'State' },
-  { key: null, label: 'SLA', hint: 'age is never shown without its SLA status' },
-  { key: 'first_seen', label: 'First seen' },
-  { key: 'last_seen', label: 'Last seen' },
+/**
+ * The columns, each with the share of the table it occupies.
+ *
+ * The width lives here rather than in the stylesheet because the <colgroup>
+ * and the header are generated from this one list: a column added to the
+ * header without a width would otherwise silently unpin the table.
+ *
+ * Widths are needed at all because the body is virtualised. Under automatic
+ * table layout the column widths are computed from whichever rows happen to
+ * be rendered, so they would shift as the reader scrolled.
+ */
+const COLUMNS: {
+  key: ExplorerState['sort'] | null;
+  label: string;
+  width: string;
+  hint?: string;
+}[] = [
+  // Priority is wider than its content needs because the CAVEAT sits with the
+  // number rather than in a header, and a column that breaks "uncalibrated"
+  // across two lines makes the qualification harder to read than the figure
+  // it qualifies. State is wider than its longest label for the same reason:
+  // BLOCKED_UPSTREAM must not be clipped to BLOCKED_UPSTREA.
+  { key: 'priority', label: 'Priority', width: '9%' },
+  { key: 'severity', label: 'Severity', width: '8%' },
+  { key: null, label: 'Finding', width: '11%' },
+  { key: 'repo', label: 'Repository', width: '10%' },
+  { key: null, label: 'Component', width: '12%' },
+  { key: null, label: 'Reachable', width: '7%', hint: 'a tri-state: unknown is not "not reachable"' },
+  { key: null, label: 'Exploitation', width: '9%', hint: 'KEV and EPSS; "not looked up" is not zero' },
+  { key: null, label: 'State', width: '12%' },
+  { key: null, label: 'SLA', width: '9%', hint: 'age is never shown without its SLA status' },
+  { key: 'first_seen', label: 'First seen', width: '6.5%' },
+  { key: 'last_seen', label: 'Last seen', width: '6.5%' },
 ];
 
 export function FindingTable({
@@ -69,13 +90,39 @@ export function FindingTable({
   const windowed = rows.getVirtualItems();
   const items =
     windowed.length === 0 && findings.length > 0
-      ? findings.map((_, index) => ({ index, key: index, start: index * 44, size: 44 }))
+      ? findings.map((_, index) => ({
+          index,
+          key: index,
+          start: index * 44,
+          end: (index + 1) * 44,
+          size: 44,
+        }))
       : windowed;
   const virtualised = windowed.length > 0;
+
+  // The window is placed with SPACER ROWS rather than by positioning each row
+  // absolutely.
+  //
+  // An absolutely positioned row is out of the table's flow, so the table
+  // cannot size its columns from it and cannot stop two rows overlapping —
+  // which is exactly what happened: the offsets came from the 44px estimate
+  // while the rows measured 190px. Two empty rows of the right height put the
+  // window in the right place and leave every other decision to the table.
+  const first = items[0];
+  const last = items[items.length - 1];
+  const padTop = virtualised && first ? first.start : 0;
+  const padBottom = virtualised && last ? Math.max(0, rows.getTotalSize() - last.end) : 0;
 
   return (
     <div className="table-scroll" ref={parentRef}>
       <table className="findings">
+        {/* The columns are pinned here, from the same list the header is
+            built from, so a virtual window cannot change their widths. */}
+        <colgroup>
+          {COLUMNS.map((col) => (
+            <col key={col.label} style={{ width: col.width }} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             {COLUMNS.map((col) => (
@@ -97,38 +144,48 @@ export function FindingTable({
             ))}
           </tr>
         </thead>
-        <tbody
-          style={
-            virtualised ? { height: rows.getTotalSize(), position: 'relative' } : undefined
-          }
-        >
+        <tbody>
+          {padTop > 0 && <Spacer height={padTop} columns={COLUMNS.length} />}
           {items.map((item) => {
             const f = findings[item.index]!;
             return (
               <Row
                 key={f.fingerprint}
                 finding={f}
-                offset={virtualised ? item.start : undefined}
-                height={item.size}
+                index={item.index}
                 measure={rows.measureElement}
               />
             );
           })}
+          {padBottom > 0 && <Spacer height={padBottom} columns={COLUMNS.length} />}
         </tbody>
       </table>
     </div>
   );
 }
 
+/**
+ * Spacer stands in for the rows outside the window.
+ *
+ * aria-hidden because it carries no data: a screen reader counting rows
+ * should not find two empty ones, and every assertion about the table
+ * excludes them for the same reason.
+ */
+function Spacer({ height, columns }: { height: number; columns: number }) {
+  return (
+    <tr aria-hidden="true" className="spacer" style={{ height }}>
+      <td colSpan={columns} />
+    </tr>
+  );
+}
+
 function Row({
   finding: f,
-  offset,
-  height,
+  index,
   measure,
 }: {
   finding: Finding;
-  offset: number | undefined;
-  height: number;
+  index: number;
   measure: (el: HTMLElement | null) => void;
 }) {
   const reach = reachableLabel(f.classification.reachable);
@@ -138,13 +195,10 @@ function Row({
 
   return (
     <tr
+      // data-index is what the virtualiser's measurer reads to attribute a
+      // measured height to the right row.
       ref={measure}
-      data-index={offset}
-      style={
-        offset === undefined
-          ? undefined
-          : { position: 'absolute', top: offset, height, width: '100%' }
-      }
+      data-index={index}
       className={f.restricted ? 'row restricted' : 'row'}
     >
       <td>

@@ -4395,3 +4395,150 @@ unwritten, the sandbox is unproven off Linux, no live feed and no GitHub App
 is wired, no agent has ever run, and no line of this has been near a real
 repository. Every one of those is behind an interface with a hostile fake, and
 every one is listed with the human step that closes it.
+
+---
+
+## Layout defect: the findings table collapsed into its first column
+
+**Reported:** the header laid out correctly across the full width; every body
+row's cells collapsed into the leftmost column and the rows overlapped each
+other. Data correct, 17 rows, filters populated — layout only, and only in the
+findings table.
+
+**Status: fixed, with a regression guard proven to fail against the defect.**
+
+### What it was not
+
+The reported diagnostic order was checked first, and the first two did not
+apply:
+
+1. **Not a CSS-grid table.** No `display: contents`, no
+   `grid-template-columns` anywhere near the table — it is an ordinary
+   `<table>`. (`.explorer` and `.record` use grid; the table does not.)
+2. **Not a missing dynamic class.** There is no Tailwind in this project and
+   no computed column class: the stylesheet is hand-written CSS, and the
+   rules that applied were present in the compiled output.
+3. **Virtualisation — yes, and this is where it was**, though the mechanism
+   was upstream of the offsets.
+
+### What it was
+
+Two lines of CSS written to make `@tanstack/react-virtual` place rows by
+offset:
+
+```css
+.findings tbody { display: block; }
+.findings tbody tr { display: table; table-layout: fixed; }
+```
+
+A `display: block` box inside a `<table>` is wrapped by **CSS table fixup** in
+an anonymous table-cell — and that cell lands in **column one**. The entire
+body therefore became a single cell the width of the first column, and every
+row's `width: 100%` resolved against it. The header was untouched, so it alone
+defined the table's columns and rendered correctly above the wreckage, which
+is exactly the reported symptom.
+
+The overlap was the same cause one step further on: rows were positioned
+`absolute` at `top = index × 44` from the virtualiser's **estimate**, while the
+squeezed rows measured **190px** tall.
+
+Measured in Chrome before the fix, by the probe described below:
+
+```
+tbody display        : block          row position: absolute
+table width          : 1223           first row width: 115   (= header column 1)
+header cells         : 11             body cells: 11
+MAX COLUMN DRIFT     : 1002 px
+OVERLAPPING ROW PAIRS: 16 of 16
+```
+
+The cell counts matched all along. Nothing structural was wrong; the body had
+simply been lifted out of the column model the header defines.
+
+### The fix
+
+Put the body back in the table and let the table do the layout:
+
+* **deleted** the two `display` rules;
+* **virtualise with spacer rows** — two `aria-hidden` rows of the right height
+  above and below the window — instead of absolute positioning. The table then
+  lays the rows out itself, so nothing can overlap and nothing can drift;
+* **pinned the columns** with a `<colgroup>` and `table-layout: fixed`,
+  generated from the same `COLUMNS` list as the header. Under automatic layout
+  the widths would be computed from whichever rows happened to be in the
+  virtual window, so the columns would shift under the reader as they scrolled;
+* widened two columns whose content the collapse had been hiding
+  (`uncalibrated` was breaking mid-word beside the number it qualifies;
+  `BLOCKED_UPSTREAM` was clipped).
+
+No per-row positioning remains. After the fix, in the running app:
+
+```
+tbody display        : table-row-group   row position: static
+table width          : 1240              row width: 1240
+per-column drift     : [0,0,0,0,0,0,0,0,0,0,0]
+overlapping row pairs: 0
+```
+
+### The regression guard
+
+`src/features/explorer/layout.test.tsx`, in two halves, because **jsdom
+reports every rectangle as zero** — no test that runs in it can see where
+anything landed. That is why 73 passing tests, a type checker and a Zod
+validator all missed this.
+
+**Structure (always runs, jsdom).** The real stylesheet is loaded so
+`getComputedStyle` cascades what a browser would, and the test asserts the
+*inputs* to the layout: every body row has the header's cell count, the body
+computes to `table-row-group` and its rows to `table-row`, no row is
+positioned absolutely, and a `<colgroup>` pins one width per column.
+
+**Geometry (runs where a browser exists).** `scripts/layout-probe.mjs` bundles
+the **real component** with the **real stylesheet** and the captured API
+fixture into one self-contained HTML file, loads it in headless Chrome with
+`--dump-dom`, and reads back the measurements the page took of itself. It
+asserts every body cell sits within 2px of its header column, that no two rows
+overlap, that a row spans the table rather than one column, and that the
+columns are more than a word apart.
+
+Two deliberate choices in it:
+
+* **No new dependency.** esbuild already ships inside Vite and Chrome is
+  driven by a command-line flag, so `setup.sh` is unchanged for a
+  non-technical user. Where no browser is found the geometry half skips with a
+  **loud warning** — a geometry check that quietly did not run reads as a
+  pass, which is the failure this project exists to avoid.
+* **The probe must believe its own numbers.** It re-measures until two
+  readings agree and reports `settled`; the test fails on an unsettled
+  measurement. The first version depended on `requestAnimationFrame` and
+  passed under vitest while failing standalone — a flaky guard is worse than
+  none, so it now forces a synchronous first commit with `flushSync` and
+  polls. Five consecutive runs are identical.
+
+**Verified non-vacuous.** Against the defect, with the final guard: 3 of 6
+fail — `expected 'block' to be 'table-row-group'`, `the table declares no
+<colgroup>`, and `a body cell sits 1002px from the header column it belongs
+under`. Against the fix: 6 of 6 pass.
+
+One detail worth recording, because it nearly produced a useless test: the
+broken rows **did** have eleven distinct cell positions — 328, 339, 349… ten
+pixels apart. A guard asserting only that cells occupy *distinct* horizontal
+positions would have passed on the bug. The assertion has to be against the
+**header's** columns, and there is now also a minimum-gap check so that
+"distinct by ten pixels" cannot satisfy it.
+
+### Assumption
+
+* **A70.** Column widths are percentages declared beside their labels in
+  `COLUMNS`, rather than in the stylesheet. The `<colgroup>` and the header are
+  generated from that one list, so a column added to the header without a
+  width cannot silently unpin the table.
+
+### Open question
+
+* **OQ-UI-04.** This is the only layout assertion in the project. The other
+  views — the run overview's figure grid, the coverage strip, the wave graph —
+  are still covered only by DOM assertions, which this defect has just shown
+  are blind to layout. The probe is general enough to point at another
+  component; nothing has been done for them yet, and the same class of defect
+  could be sitting in any of them.
