@@ -7,6 +7,18 @@ U0–U10).
 One entry per phase. A phase is recorded here only once its acceptance gate is
 green.
 
+**Where to start reading.** `FINAL-STATUS.md` says what is real and what is a
+stub, and what stands between this and production. `DECISIONS-NEEDED.md` lists
+the decisions this build deliberately did not make. `README.md`, `SETUP.md` and
+`USAGE.md` are for someone who wants to run it and look at it.
+
+**The recurring defect this log keeps returning to** is a schema field that a
+consumer READS and no real producer WRITES — invisible to any test that
+constructs the value, and indistinguishable downstream from a feature nobody
+has used yet. It occurred **eleven** times across the build. The
+Producer-Coverage Audit (`internal/audit`, and its counterparts in the API and
+the interface) exists to make that class detectable, and it guards itself.
+
 | Phase | Status | Gate |
 |---|---|---|
 | **0** — module scaffold, `internal/model`, `internal/fingerprint` | **Green** | passing |
@@ -29,7 +41,10 @@ green.
 | **12** — the GitHub App: fleet sync, webhooks, publisher, VM-F-614 | **Green** | passing (extended gate) |
 | **Gate 1** — the Producer-Coverage Audit (finding schema) | **Green** | passing |
 | **Gate 1b** — the Producer-Coverage Audit (store schema, OQ-AUDIT-04) | **Green** | passing (both backends) |
-| U0–U10 — frontend | Not started | |
+| **OQ-P12-01** — the webhook replaces the poll | **Green** | passing (both backends) |
+| **OQ-AUDIT-01(b)** — the exploitation feeds get a producer | **Green** | passing (both backends) |
+| **API** — the HTTP server (VM-AD §7.4, VM-UI §6.2) | **Green** | passing (both backends) |
+| **U0–U10** — the interface, the demonstration, `setup.sh` / `run.sh` | **Green** | passing (67 interface tests) |
 
 ---
 
@@ -4308,3 +4323,75 @@ database rather than to browse.
   structurally satisfied — the table is virtualised and pages at 500 — and has
   not been measured against 10,000 rows, because the demonstration corpus has
   eighteen findings. A benchmark needs a fleet-sized store (see OQ-API-01).
+
+---
+
+## Closing state
+
+**Green, end to end, on a laptop with no credentials.**
+
+| | |
+|---|---|
+| Go tests | **519** top-level, **816** including subtests, across 26 packages |
+| Interface tests | **67** |
+| Backends | in-memory **and** PostgreSQL, one conformance suite, 33 queries × 6 orderings compared row for row |
+| Clean | `go vet`, `gofmt`, `go test -race`, `tsc --noEmit` |
+| Go source | ~58,000 lines across 193 files |
+| Interface source | ~5,800 lines, excluding generated types |
+| Migrations | 12, checksum-guarded |
+| Commands | `./setup.sh`, `./run.sh` |
+
+### The eleven instances of one defect
+
+The build kept finding the same shape: **a field a consumer reads and no real
+producer writes**, invisible to every test that constructs the value, and
+downstream indistinguishable from a feature nobody has used yet.
+
+1. `Classification.FirstPartyPath` — read by policy rule 6, written by nothing
+   for five phases.
+2. `RawFinding.ImportPath` — the classification's only input, produced by no
+   adapter.
+3. `module_deps` — the reverse-dependency index the entire wave design rests
+   on, populated by nothing.
+4. `Versions.Introduced` — a writer gap in the OSV adapter.
+5. `Identity.RuleID` — dropped by the projection.
+6. `Annotations` — dropped by the projection, discarding the whole point of
+   OQ-P3-01.
+7. `Refs.AdvisoryURL` — a regression introduced in Phase 8, live on 267 of 271
+   real findings.
+8. `Location.Function` / `Package` — a genuine gap: no pinned tool reports the
+   enclosing symbol. Recorded with a test rather than filled in.
+9. `Classification.KEV` / `EPSS` — the two most decision-changing scoring
+   inputs, written by nothing, with a configured boost that could never fire.
+10. `store.Report` — not a field but an entire TYPE, written only by test
+    fixtures: the citable record VM-ADR-15 exists for.
+11. `firstparty.ClassifyAll` — not a field but a PRODUCER NOTHING CALLED.
+    Every test that wanted it called it directly.
+
+Each one was found by inverting the question — not "is this field read?" but
+"who writes it, and does that code run?" — and each layer of the audit
+(finding schema, store schema, API response, interface column) caught a
+different instance that the layer above could not see.
+
+### The other recurring classes
+
+* **States with no exit**, found by asking "if nothing else happens, what
+  moves this?" — four of them (§6.1.2, §6.1.3, §6.1.4, and the lease-bound
+  state in §6.1.5). The question is recorded permanently in the specification.
+* **Checks masking each other** — a stage comparison that absorbed every
+  redelivery, a local record that hid a backend lookup, an EPSS check that
+  covered for a KEV check, and a compile-time proof that could not fail at all.
+  The rule that each independent check needs its own failing mutation came out
+  of these, and it caught the last one.
+* **Fakes kinder than production** — a fixture more informative than its
+  producer, a verification gate answering for the whole repository rather than
+  its own group, a partial scan with no gap attached, and two `gh.Fake`
+  instances standing in for one GitHub.
+
+### What is not done
+
+`FINAL-STATUS.md` §2 and §3, in full. The short version: the real toolchain is
+unwritten, the sandbox is unproven off Linux, no live feed and no GitHub App
+is wired, no agent has ever run, and no line of this has been near a real
+repository. Every one of those is behind an interface with a hostile fake, and
+every one is listed with the human step that closes it.
