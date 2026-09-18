@@ -133,6 +133,79 @@ func (p *Postgres) FinishRun(ctx context.Context, runID string, planned, scanned
 	return nil
 }
 
+// Runs lists runs newest first, by kind-scoped sequence (VM-ADR-11).
+func (p *Postgres) Runs(ctx context.Context, q RunQuery) ([]Run, error) {
+	rows, err := p.db.QueryContext(ctx, qRunsList, string(q.Kind), q.BeforeSeq, q.pageSize())
+	if err != nil {
+		return nil, fmt.Errorf("store: listing runs: %w", err)
+	}
+	defer rows.Close()
+
+	var out []Run
+	for rows.Next() {
+		var (
+			run      Run
+			kind     string
+			trigger  sql.NullString
+			finished sql.NullTime
+			versions []byte
+			planned  sql.NullInt64
+			scanned  sql.NullInt64
+			failed   sql.NullInt64
+		)
+		if err := rows.Scan(&run.ID, &kind, &run.Seq, &trigger, &run.StartedAt, &finished,
+			&run.ScannerImage, &versions, &planned, &scanned, &failed); err != nil {
+			return nil, err
+		}
+		run.Kind = RunKind(kind)
+		run.TriggerDetail = trigger.String
+		if finished.Valid {
+			t := finished.Time.UTC()
+			run.FinishedAt = &t
+		}
+		run.StartedAt = run.StartedAt.UTC()
+		_ = json.Unmarshal(versions, &run.ToolVersions)
+		run.ReposPlanned, run.ReposScanned, run.ReposFailed =
+			int(planned.Int64), int(scanned.Int64), int(failed.Int64)
+		out = append(out, run)
+	}
+	return out, rows.Err()
+}
+
+// RemediationPRsForFinding returns every pull request that carried a finding.
+func (p *Postgres) RemediationPRsForFinding(ctx context.Context, fp string) ([]RemediationPR, error) {
+	rows, err := p.db.QueryContext(ctx, qPRsForFinding, fp)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading remediation attempts for %s: %w", fp, err)
+	}
+	var branches []string
+	for rows.Next() {
+		var branch string
+		if err := rows.Scan(&branch); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		branches = append(branches, branch)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	out := make([]RemediationPR, 0, len(branches))
+	for _, branch := range branches {
+		pr, ok, err := p.GetRemediationPR(ctx, branch)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			out = append(out, pr)
+		}
+	}
+	return out, nil
+}
+
 func (p *Postgres) GetRun(ctx context.Context, id string) (Run, error) {
 	var (
 		run      Run

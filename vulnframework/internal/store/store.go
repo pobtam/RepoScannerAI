@@ -430,6 +430,33 @@ type Store interface {
 	// bounded batch, oldest first so nothing starves.
 	UnconfirmedRemediationPRs(ctx context.Context, repo string, since time.Time, limit int) ([]RemediationPR, error)
 
+	// Runs lists runs newest first, optionally of one kind, for the history
+	// views (VM-UI-F-301). Cursor is a sequence number, not an offset.
+	Runs(ctx context.Context, q RunQuery) ([]Run, error)
+	// RemediationPRsForFinding returns EVERY pull request that has carried a
+	// finding, open or closed.
+	//
+	// Every one, because the attempt history is what a reader needs: showing
+	// only the open one hides that two earlier attempts were declined
+	// (VM-UI-F-508).
+	RemediationPRsForFinding(ctx context.Context, fingerprint string) ([]RemediationPR, error)
+
+	// --- The interface query surface (VM-UI-F-402/403/408, UI-ADR-06) ---
+
+	// Search returns one filtered, sorted, cursor-paginated page.
+	//
+	// Separate from ListFindings, which is the pipeline's query: the pipeline
+	// asks for a repository's open findings and processes all of them, while
+	// the interface asks narrow questions of the whole history and shows a
+	// page. One method serving both would make every pipeline caller pass
+	// pagination it does not want, and would tempt a reader into fetching the
+	// whole corpus to filter it client-side — which is what VM-UI-F-402
+	// forbids.
+	Search(ctx context.Context, q SearchQuery) (Page, error)
+	// Facets counts each filter option under the OTHER active filters
+	// (VM-UI-F-408). An aggregate query, not a count of the returned page.
+	Facets(ctx context.Context, q SearchQuery) (FacetCounts, error)
+
 	// --- Exploitation intelligence (OQ-AUDIT-01(b)) ---
 
 	// SaveIntel records what the feeds said, keyed by identifier. Repeated

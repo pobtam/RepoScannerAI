@@ -8,6 +8,7 @@ import (
 
 	"github.com/wanaware/vulnframework/internal/feed"
 	"github.com/wanaware/vulnframework/internal/fingerprint"
+	"github.com/wanaware/vulnframework/internal/firstparty"
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/orchestrator"
 	"github.com/wanaware/vulnframework/internal/policy"
@@ -412,6 +413,111 @@ func TestAnEmptyAnswerIsNotStoredAsAnAnswer(t *testing.T) {
 		_, res := scoreOf(t, o, s, repo, fp)
 		if len(res.UnavailableInputs) != 2 {
 			t.Errorf("unavailable=%v, want both: nothing was learned", res.UnavailableInputs)
+		}
+	})
+}
+
+// OQ-AUDIT-09 — a producer nothing invoked.
+//
+// firstparty.Registry.ClassifyAll existed, the adapters wrote the import path
+// it reads, and policy rule 6 read its result — and no code path called it.
+// Classification.FirstPartyPath was therefore never written by the running
+// pipeline: the first-party defer could not fire, and the wave view had
+// nothing to show. The same defect class as a field with no producer, in a
+// shape the field census cannot see, because the field IS written whenever
+// anything calls the function and every test that wanted it called it.
+func TestThePipelineClassifiesFirstPartyFindingsAsItRecordsThem(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		ctx := context.Background()
+		repos := fleet(t, s, "org/api")
+
+		registry, err := firstparty.ParseRegistry([]byte(
+			"version: 1\nmodules:\n  github.com/wanaware/common: org/common\n"))
+		if err != nil {
+			t.Fatalf("ParseRegistry: %v", err)
+		}
+
+		// A finding in a registered first-party module, and one in a
+		// third-party module, from the same scan.
+		ours := depFinding("org/api", "GO-2026-0001", "v1.4.0", "v1.5.0")
+		ours.Module, ours.ModuleMajor = "github.com/wanaware/common", "v1"
+		ours.ImportPath = []string{"org/api", "github.com/wanaware/common/hash"}
+		theirs := depFinding("org/api", "GO-2026-0002", "v0.1.0", "v0.2.0")
+		theirs.Module, theirs.ModuleMajor = "golang.org/x/text", "v0"
+		theirs.ImportPath = []string{"org/api", "golang.org/x/text/encoding"}
+
+		d := orchestrator.NewFakeDispatcher()
+		d.WithFindings("org/api", []string{"govulncheck"}, ours, theirs)
+
+		o := newOrchestrator(s, d, orchestrator.NewRateBudget(50), orchestrator.Config{
+			FirstParty: registry,
+		})
+		o.Clock = func() time.Time { return at }
+		if _, err := o.Sweep(ctx, store.KindSweep, "cron", repos, nil); err != nil {
+			t.Fatalf("Sweep: %v", err)
+		}
+
+		mine, err := s.GetFinding(ctx, fingerprint.Compute(ours))
+		if err != nil {
+			t.Fatalf("GetFinding: %v", err)
+		}
+		if mine.Classification.FirstPartyPath == nil {
+			t.Fatal("a finding in a REGISTERED first-party module was recorded unclassified. " +
+				"Nothing in the pipeline called the classifier, so policy rule 6 could never " +
+				"defer to an upstream fix and the wave view had nothing to show (OQ-AUDIT-09)")
+		}
+		// The classifier records the first-party hop NEAREST THE CONSUMER,
+		// which is the subpackage the vulnerable path traverses. That is the
+		// hop the consumer can be advanced past; the registry resolves it back
+		// to the module a wave is keyed by.
+		if got := *mine.Classification.FirstPartyPath; got != "github.com/wanaware/common/hash" {
+			t.Errorf("first_party_path = %q, want the nearest first-party hop", got)
+		}
+		if module, ok := registry.Module(*mine.Classification.FirstPartyPath); !ok ||
+			module != "github.com/wanaware/common" {
+			t.Errorf("the classified path does not resolve to the registered module: %q, %v",
+				module, ok)
+		}
+
+		// The negative: a third-party module must NOT be claimed as ours.
+		// Classifying everything would defer third-party findings to an
+		// upstream fix nobody owns, and they would leave the queue and arrive
+		// nowhere.
+		other, err := s.GetFinding(ctx, fingerprint.Compute(theirs))
+		if err != nil {
+			t.Fatalf("GetFinding: %v", err)
+		}
+		if other.Classification.FirstPartyPath != nil {
+			t.Errorf("a third-party module was classified as first-party: %q",
+				*other.Classification.FirstPartyPath)
+		}
+	})
+}
+
+// TestWithNoRegistryNothingIsClassified is the other half: a deployment that
+// has not declared its modules must not have findings silently claimed.
+func TestWithNoRegistryNothingIsClassified(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		ctx := context.Background()
+		repos := fleet(t, s, "org/api")
+
+		raw := depFinding("org/api", "GO-2026-0001", "v1.4.0", "v1.5.0")
+		raw.Module = "github.com/wanaware/common"
+		d := orchestrator.NewFakeDispatcher()
+		d.WithFindings("org/api", []string{"govulncheck"}, raw)
+
+		o := newOrchestrator(s, d, orchestrator.NewRateBudget(50), orchestrator.Config{})
+		o.Clock = func() time.Time { return at }
+		if _, err := o.Sweep(ctx, store.KindSweep, "cron", repos, nil); err != nil {
+			t.Fatalf("Sweep: %v", err)
+		}
+		f, err := s.GetFinding(ctx, fingerprint.Compute(raw))
+		if err != nil {
+			t.Fatalf("GetFinding: %v", err)
+		}
+		if f.Classification.FirstPartyPath != nil {
+			t.Errorf("with no registry configured, %q was classified as first-party",
+				*f.Classification.FirstPartyPath)
 		}
 	})
 }

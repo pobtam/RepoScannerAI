@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/wanaware/vulnframework/internal/firstparty"
 	"github.com/wanaware/vulnframework/internal/gh"
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/scan"
@@ -56,6 +57,11 @@ type Config struct {
 	// pull requests nothing has vouched for and recovers stranded findings —
 	// neither of which any human has to trigger.
 	PR gh.PROps
+
+	// FirstParty is the module registry. When set, every finding is classified
+	// as it is recorded, which is what makes the first-party defer and the
+	// wave view reachable (VM-F-601, OQ-AUDIT-09).
+	FirstParty *firstparty.Registry
 
 	// ReconcileHorizon, WebhookSilence and ReconcileChecks tune the fallback
 	// reconciliation (OQ-P12-01). Zero uses the defaults, which are chosen so
@@ -411,7 +417,25 @@ func (o *Orchestrator) record(ctx context.Context, res scan.Result) error {
 		}
 	}
 
-	if _, err := o.Store.UpsertObservations(ctx, res.RunID, res.Repo, res.Findings); err != nil {
+	// First-party classification, before the findings are stored (VM-F-601).
+	//
+	// This is the step that was missing. The registry could classify, the
+	// adapters wrote the import path it reads, policy rule 6 read the result —
+	// and NOTHING CALLED IT, so Classification.FirstPartyPath was never
+	// written by the running pipeline, the first-party defer could never fire,
+	// and the wave view had nothing to show. The same defect as the eight the
+	// Producer-Coverage Audit found, in a different shape: not a field with no
+	// producer, but a producer nothing invokes (OQ-AUDIT-09).
+	//
+	// Here rather than in the scan worker because the registry is
+	// orchestration configuration: a scan worker holds no credential and no
+	// fleet-wide policy, and giving it the registry would put a
+	// fleet-ownership decision inside a per-repository job.
+	findings := res.Findings
+	if o.Config.FirstParty != nil {
+		findings = o.Config.FirstParty.ClassifyAll(findings)
+	}
+	if _, err := o.Store.UpsertObservations(ctx, res.RunID, res.Repo, findings); err != nil {
 		return fmt.Errorf("recording findings for %s: %w", res.Repo, err)
 	}
 

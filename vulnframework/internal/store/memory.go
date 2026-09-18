@@ -455,6 +455,221 @@ func (m *Memory) ListFindings(_ context.Context, q Query) ([]model.Finding, erro
 	return out, nil
 }
 
+// Runs lists runs newest first.
+func (m *Memory) Runs(_ context.Context, q RunQuery) ([]Run, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var out []Run
+	for _, r := range m.runs {
+		if q.Kind != "" && r.Kind != q.Kind {
+			continue
+		}
+		if q.BeforeSeq > 0 && r.Seq >= q.BeforeSeq {
+			continue
+		}
+		out = append(out, r)
+	}
+	// Newest first, by kind-scoped sequence then identifier: a timestamp
+	// would tie for two runs started in the same second, and the identifier
+	// alone would interleave kinds (VM-ADR-11).
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Seq != out[j].Seq {
+			return out[i].Seq > out[j].Seq
+		}
+		return out[i].ID > out[j].ID
+	})
+	if len(out) > q.pageSize() {
+		out = out[:q.pageSize()]
+	}
+	return out, nil
+}
+
+// RemediationPRsForFinding returns every pull request that carried a finding.
+func (m *Memory) RemediationPRsForFinding(_ context.Context, fp string) ([]RemediationPR, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []RemediationPR
+	for _, pr := range m.remediationPRs {
+		for _, member := range pr.Findings {
+			if member == fp {
+				out = append(out, pr)
+				break
+			}
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if !out[i].OpenedAt.Equal(out[j].OpenedAt) {
+			return out[i].OpenedAt.After(out[j].OpenedAt)
+		}
+		return out[i].Branch < out[j].Branch
+	})
+	return out, nil
+}
+
+// Search is the interface query: filter, sort, paginate (UI-ADR-06).
+func (m *Memory) Search(_ context.Context, q SearchQuery) (Page, error) {
+	if err := q.Validate(); err != nil {
+		return Page{}, err
+	}
+	sortBy := q.Sort.Normalise()
+	cursor, err := DecodeCursor(q.Cursor, sortBy)
+	if err != nil {
+		return Page{}, err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	corpus, matched := m.corpusLocked(q)
+
+	SortFindings(matched, sortBy)
+
+	// The cursor is applied AFTER ordering, over the ordered set, so a page
+	// boundary means the same thing to both backends.
+	var page []model.Finding
+	for _, f := range matched {
+		if !cursor.After(f, sortBy) {
+			continue
+		}
+		page = append(page, f)
+		if len(page) > q.pageSize() {
+			break
+		}
+	}
+
+	out := Page{Matched: len(matched), InCorpus: corpus}
+	if len(page) > q.pageSize() {
+		// One row past the page proves there IS a next page. Issuing a cursor
+		// without that proof would mean the last page always offered another,
+		// and a client would loop.
+		page = page[:q.pageSize()]
+		out.Next = CursorFor(page[len(page)-1], sortBy).Encode()
+	}
+	out.Findings = page
+	return out, nil
+}
+
+// Facets counts each option under the other active filters (VM-UI-F-408).
+func (m *Memory) Facets(_ context.Context, q SearchQuery) (FacetCounts, error) {
+	if err := q.Validate(); err != nil {
+		return FacetCounts{}, err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	out := newFacetCounts()
+
+	// Every option of every dimension is present, including at zero: an
+	// option that disappears when it has no results looks like a dimension
+	// that does not exist, and the reader concludes the wrong thing about the
+	// fleet. Repositories and languages come from the registry rather than
+	// from the results, for the same reason.
+	for name, repo := range m.repos {
+		out.Repos[name] = 0
+		out.Tiers[repo.Tier] = 0
+		for _, l := range repo.Languages {
+			out.Languages[l] = 0
+		}
+	}
+	for _, c := range model.AllCategories {
+		out.Categories[string(c)] = 0
+	}
+	for _, st := range model.AllStates {
+		out.States[string(st)] = 0
+	}
+	for _, rc := range model.AllReasonCodes {
+		out.Reasons[string(rc)] = 0
+	}
+	for _, p := range model.AllPriorities {
+		out.Priorities[string(p)] = 0
+	}
+	for _, sv := range model.AllSeverities {
+		out.Severities[string(sv)] = 0
+	}
+	for _, r := range model.AllReachable {
+		out.Reachable[string(r)] = 0
+	}
+	for _, d := range []model.DepClass{model.DepProduction, model.DepDevelopment, model.DepNotApplicable} {
+		out.DepClasses[string(d)] = 0
+	}
+
+	// Each dimension is counted with ITS OWN filter cleared, so the number
+	// answers "what would I get if I selected this" rather than "what did I
+	// already select".
+	count := func(clear func(*Filter), tally func(model.Finding, Repo)) {
+		narrowed := q
+		f := q.Filter
+		clear(&f)
+		narrowed.Filter = f
+		_, matched := m.corpusLocked(narrowed)
+		for _, fd := range matched {
+			tally(fd, m.repos[fd.Repo])
+		}
+	}
+
+	count(func(f *Filter) { f.Repos = nil }, func(fd model.Finding, _ Repo) { out.Repos[fd.Repo]++ })
+	count(func(f *Filter) { f.Tiers = nil }, func(_ model.Finding, r Repo) { out.Tiers[r.Tier]++ })
+	count(func(f *Filter) { f.Languages = nil }, func(_ model.Finding, r Repo) {
+		for _, l := range r.Languages {
+			out.Languages[l]++
+		}
+	})
+	count(func(f *Filter) { f.Categories = nil }, func(fd model.Finding, _ Repo) {
+		out.Categories[string(fd.Category)]++
+	})
+	count(func(f *Filter) { f.States = nil }, func(fd model.Finding, _ Repo) {
+		out.States[string(fd.State)]++
+	})
+	count(func(f *Filter) { f.Reasons = nil }, func(fd model.Finding, _ Repo) {
+		if fd.ReasonCode != nil {
+			out.Reasons[string(*fd.ReasonCode)]++
+		}
+	})
+	count(func(f *Filter) { f.Priorities = nil }, func(fd model.Finding, _ Repo) {
+		if fd.Priority != "" {
+			out.Priorities[string(fd.Priority)]++
+		}
+	})
+	count(func(f *Filter) { f.Severities = nil }, func(fd model.Finding, _ Repo) {
+		out.Severities[string(fd.Classification.Severity)]++
+	})
+	count(func(f *Filter) { f.Reachable = nil }, func(fd model.Finding, _ Repo) {
+		out.Reachable[string(reachableOf(fd))]++
+	})
+	count(func(f *Filter) { f.DepClasses = nil }, func(fd model.Finding, _ Repo) {
+		if fd.Classification.DepClass != "" {
+			out.DepClasses[string(fd.Classification.DepClass)]++
+		}
+	})
+	return out, nil
+}
+
+// corpusLocked returns the corpus size and the findings matching the filter.
+func (m *Memory) corpusLocked(q SearchQuery) (int, []model.Finding) {
+	var corpus int
+	var matched []model.Finding
+	for fp, rec := range m.findings {
+		switch q.Scope {
+		case ScopeOpen:
+			if model.PartitionOf(rec.State) == model.PartitionResolved {
+				continue
+			}
+		case ScopeRun:
+			if !m.observedIn(fp, q.RunID) {
+				continue
+			}
+		}
+		corpus++
+		f := m.materialise(rec)
+		repo := m.repos[f.Repo]
+		if q.Filter.Match(f, RepoFacts{Tier: repo.Tier, Languages: repo.Languages}) {
+			matched = append(matched, f)
+		}
+	}
+	return corpus, matched
+}
+
 func (m *Memory) observedIn(fp, runID string) bool {
 	for _, o := range m.observations[fp] {
 		if o.RunID == runID {

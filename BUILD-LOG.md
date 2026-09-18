@@ -3942,3 +3942,199 @@ budgets when a third-party publication is down for a day. Both belong in
 framework scores, reports and tickets **correctly and honestly** while they are
 absent — and that the day someone wires a real client, the producer-coverage
 test proves the values still arrive.
+
+---
+
+## The HTTP API server (VM-AD §7.4, VM-UI §6.2)
+
+**Task:** *the HTTP API server — the first server in the repo. Producer-anchored
+response tests (an endpoint returning a field no producer writes FAILS). A
+secret value NEVER crosses the API, any field, any endpoint (VM-UI-F-105).
+Server-side filtering + cursor pagination (UI-ADR-06). Every honesty
+distinction survives to the API. Reports run-anchored, immutable,
+content-hashed (VM-ADR-15).*
+
+**Status: green.** 514 top-level tests, 1330 including subtests. `go vet` and
+`gofmt` clean, both store backends green.
+
+### The query layer, first (UI-ADR-06)
+
+`internal/store/query.go` holds the filter, the ordering and the cursor as
+**shared pure functions**, and `internal/store/search_postgres.go` renders the
+same rules into SQL. That mirror is the risk in the whole layer: each backend
+looks correct in its own tests while returning different rows for the same
+question, and the difference surfaces as a deployment-dependent answer.
+
+So the load-bearing test asks **both backends the same 33 queries under 6
+orderings, paginating in pages of three, and compares the pages row for row** —
+plus the counts, plus which page is last. It found a real defect immediately:
+`SortKey` rendered timestamps with `time.RFC3339Nano`, which TRIMS trailing
+zeros, while Postgres rendered fixed-width microseconds. The two agreed on the
+ORDER and disagreed on the CURSOR, so page one matched and page two did not.
+Fixed by making the key fixed-width at the precision a `timestamptz` actually
+stores — a cursor a database cannot reproduce is a cursor that resumes in the
+wrong place.
+
+Other decisions worth recording:
+
+* **Cursor, not offset.** Offset pagination duplicates and skips rows while
+  findings change state underneath a paging session, and this set changes state
+  constantly. The cursor carries the ordering it was issued for and a cursor
+  replayed against a different sort is **refused**, because reinterpreting it
+  would silently skip rows and the page would look ordinary.
+* **Unscored findings sort AFTER scored ones.** An unscored finding has no
+  priority, and rendering it first puts it above every P0.
+* **Facets count the matching set, each dimension with its OWN filter
+  cleared** (VM-UI-F-408). Counted with it applied, every unselected option
+  reads zero — which is exactly the sequence of empty screens the counts exist
+  to prevent. Options with no results are present and **disabled**, never
+  hidden: a hidden option looks like a dimension that does not exist.
+* **The text search matches the same fields on both backends.** `data::text
+  ILIKE` would have been shorter and would also match triage prose, so the two
+  backends would return different rows — and the wider one would look like
+  better search until someone searched for "test".
+
+### The server
+
+`internal/api` — 20 endpoints, `net/http` pattern routing, no framework.
+
+**No secret value crosses the boundary**, in three layers, each with its own
+failing mutation: the DTOs have no field capable of holding credential
+material; **every response is scanned before it is sent** and a response
+containing it is **refused, not scrubbed** (a silent scrub leaves the
+producer's defect in place for the next boundary to leak); and a test walks
+**every endpoint** looking for a credential seeded into a triage narrative —
+which is how a real leak would happen, since the schema has nowhere to put one.
+
+**Every honesty distinction survives, and each has its own test:**
+
+| Distinction | How it survives |
+|---|---|
+| unknown ≠ zero | `epss` and `kev` are POINTERS: an input nothing answered is ABSENT from the JSON, with `exploit_intel_unavailable` saying so in words |
+| reachability | a tri-state STRING, and the facet renders `unknown` BETWEEN the determinations |
+| absence ≠ resolution | `not_reobserved` carries `not_reobserved_note`, which says the absence is AMBIGUOUS and points at the coverage view |
+| "we didn't look" ≠ "clean" | `sla.computed` is explicit; an uncomputed SLA says so instead of reporting zero breach days |
+| provisional numbers | the SLA caveat and the score caveat travel INLINE with the number, not in a header |
+| a run's history | an issued report is served as an immutable snapshot; where none exists the overview says its figures are LIVE and what that means (VM-UI-F-424) |
+| a partial run | marked in the run list, the overview and every trend point, with the reason in words |
+| a coverage gap | total vs partial, which signals survived, which were lost, the owner, consecutive runs, and a never-scanned repository reports **no age at all** rather than zero |
+| restricted records | counted and present with detail withheld, never omitted — an aggregate that quietly excluded them shows four in the rollup and three in the list |
+| the corpus | stated in words with what it excludes and how many records that is |
+
+**Authorisation is server-side and fails closed.** The principal reuses the
+report package's privilege model rather than inventing a second one, so the
+rule governing who may see a secret finding is the same rule in a delivered
+report and in the interface. A caller whose privilege level could not be
+established is **refused**, not treated as public: "we could not find out" and
+"no privileges" are different facts and only one is safe to guess.
+
+**The schema is generated from the Go types by reflection** (VM-UI-F-107,
+UI-ADR-05), so the contract cannot drift from the implementation, and the
+client's TypeScript is generated from it rather than hand-written.
+
+**`POST /v1/webhooks/github` closes OQ-P12-02.** A deployment with no App
+registers **no endpoint**, rather than one that accepts deliveries and discards
+them — the sender would record success. A forged delivery is refused without
+being interpreted, and a redelivery returns 200 and applies nothing.
+
+### The Producer-Coverage Audit at the last layer
+
+`TestEveryResponseFieldHasAProducer` censuses **eleven response types** against
+the real pipeline: `api.Finding` (83 fields, 69 written, 16 exempt),
+`RunSummary`, `CoverageGap`, `RepoSummary`, `Attempt`, `Timeline`,
+`Transition`, `RunObservation`, `TrendSeries`, `TrendPoint`, `ReportSummary`.
+
+It decodes through the Go TYPE rather than over raw JSON keys, so a field the
+server never writes is caught even though `omitempty` removed it from the
+document — which is exactly how an always-empty column hides. It censuses the
+ELEMENTS of nested slices separately, because a census over the envelope treats
+a slice as one leaf and every field inside it hides behind the slice being
+non-empty.
+
+It found the next instance immediately.
+
+### OQ-AUDIT-09 — a producer nothing invoked
+
+`firstparty.Registry.ClassifyAll` existed. The adapters wrote the import path
+it reads (that was OQ-P11-01's fix). Policy rule 6 read its result. **And no
+code path called it.** `Classification.FirstPartyPath` was therefore never
+written by the running pipeline: the first-party defer could not fire, the wave
+view had nothing to show, and the blast-radius machinery from Phase 11 was
+inert in production.
+
+This is the same defect class as a field with no producer, in a shape the FIELD
+census cannot see: the field IS written whenever anything calls the function,
+and every test that wanted it called it directly. What exposed it was asking
+the API for waves and getting none from a corpus that had a blocked consumer in
+it.
+
+`orchestrator.record` now classifies every finding as it records it, when a
+registry is configured. In the orchestrator rather than the scan worker,
+because the registry is fleet-wide configuration and a scan worker holds no
+fleet policy. Both halves are tested: a registered module IS classified, a
+third-party module is NOT (claiming everything would defer third-party findings
+to an upstream fix nobody owns), and with no registry configured nothing is
+claimed.
+
+A second defect fell out of the same test: the classifier records the
+first-party hop **nearest the consumer**, which is usually a SUBPACKAGE, and a
+wave keyed by a subpackage finds no consumers at all — every manifest row names
+the module. It would have rendered as a wave affecting nobody, which reads as
+good news. `Registry.Module` resolves a classified path back to the registered
+module, and the wave view groups by that.
+
+### Mutation verification
+
+| Mutation | Result |
+|---|---|
+| the response credential guard is removed | the endpoint walk and the refusal test both fail |
+| restricted records are not marked | the privilege test fails |
+| restricted records are dropped from the page | the privilege test fails (counts no longer match) |
+| an unavailable EPSS renders as a measurement | the absent-not-zero test fails |
+| an unavailable KEV renders as a measurement | the absent-not-zero test fails (**separately** — the two checks do not mask each other) |
+| the not-re-observed marker loses its explanation | the ambiguity test fails |
+| a run with a snapshot renders live figures | the snapshot/live test fails |
+| a partial run is not marked | the partial-run test fails |
+| the cursor is not strict | the cross-backend page comparison fails |
+| the rank ordering is flipped | the unscored-last test fails |
+| a facet is counted with its own filter applied | the cross-backend facet comparison fails |
+| the SQL severity ranks drift from the Go ranks | the cross-backend comparison fails |
+| the text search widens to the whole document | the cross-backend comparison fails |
+| reconciliation stops paying the rate budget | the bounded-fallback test fails |
+
+### Assumptions
+
+* **A64.** The run SNAPSHOT is the issued report record (VM-ADR-15) rather than
+  a separate `run_snapshots` table as VM-UI §6.1 proposes. One immutable,
+  content-hashed, run-anchored document already exists and is the thing a
+  report cites; a second store of the same figures is a second source of truth
+  that can disagree. Where no report was issued for a run, the overview is
+  generated live **and says so** — rather than inventing a snapshot.
+* **A65.** The score decomposition is RECOMPUTED for the detail view, because
+  the scoring pass persists only its conclusion and VM-UI-F-510 asks for the
+  argument. When the recomputed band differs from the stored one the response
+  says so (`disagrees_with_stored`): the calibration has moved since the
+  finding was scored, and presenting either number silently would hide it.
+* **A66.** `EscalationThreshold` is a constant 2 in the API rather than
+  configuration, matching VM-OQ-10's working default. It belongs in
+  configuration with the other thresholds; recorded here so it is found.
+
+### Open questions
+
+* **OQ-API-01.** `GET /v1/findings` text search scans JSONB expressions.
+  VM-UI §6.3 asks for an alias index or a `finding_aliases` table to meet
+  VM-UI-NF-101 (2s at the 95th percentile against full history). Not built,
+  because there is no corpus to measure against and an index chosen without
+  measurement is a guess with a maintenance cost. The query is correct and the
+  requirement is unproven — a HUMAN item with a benchmark, not a code gap.
+* **OQ-API-02.** `/v1/runs/compare` reports findings appearing and
+  disappearing but leaves `changed` empty: a state DIFFERENCE between two runs
+  needs the state as of each run, and the store keeps current state plus an
+  audit trail. Deriving it from the trail is possible and is not a
+  five-minute change; the field is present and empty rather than absent, and
+  this entry is why.
+* **OQ-API-03.** No `POST` endpoint exists except the webhook: no run trigger,
+  no human reset, no report generation. The interface is read-only in this
+  build. Every write path the UI spec implies (VM-UI-F-1101 report generation,
+  the human reset in §7.4) is unbuilt, and the interface must not offer a
+  button that does nothing.

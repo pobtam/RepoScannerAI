@@ -116,6 +116,33 @@ func (r *Registry) Owner(module string) (string, bool) {
 	return "", false
 }
 
+// Module returns the REGISTERED module path an import path belongs to.
+//
+// Distinct from Owner, which answers "who fixes this", and from ClassifyPath,
+// which answers "which first-party hop is nearest the consumer". This answers
+// "which module is that hop part of", and it exists because a classified path
+// is often a SUBPACKAGE: `github.com/wanaware/common/hash` is first-party and
+// is not a module anyone depends on by that name.
+//
+// A wave keyed by the subpackage finds no consumers at all — every manifest
+// row names the module — so it would render as a wave with nothing in it,
+// which reads as "nobody is affected" rather than "we looked up the wrong
+// key".
+func (r *Registry) Module(path string) (string, bool) {
+	if r == nil || path == "" {
+		return "", false
+	}
+	if _, ok := r.Modules[path]; ok {
+		return path, true
+	}
+	for _, registered := range r.sorted {
+		if strings.HasPrefix(path, registered+"/") {
+			return registered, true
+		}
+	}
+	return "", false
+}
+
 // IsFirstParty reports whether a module is in the registry.
 //
 // The registry is the only authority. Nothing here infers membership from an

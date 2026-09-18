@@ -220,6 +220,21 @@ ON CONFLICT (id) DO NOTHING`
 SELECT id, anchor_run_id, kind, repo, template, query, content_hash, content, issued_at, issued_by, supersedes, redacted, withheld_count
 FROM reports WHERE id = $1`
 
+	qRunsList = `
+SELECT id, kind, seq, trigger_detail, started_at, finished_at, scanner_image, tool_versions,
+       repos_planned, repos_scanned, repos_failed
+FROM runs
+WHERE ($1 = '' OR kind = $1) AND ($2 <= 0 OR seq < $2)
+ORDER BY seq DESC, id DESC
+LIMIT $3`
+
+	qPRsForFinding = `
+SELECT p.branch
+FROM remediation_prs p
+JOIN remediation_pr_findings pf ON pf.branch = p.branch
+WHERE pf.fingerprint = $1
+ORDER BY p.opened_at DESC, p.branch`
+
 	qReportsForRun = `
 SELECT id, anchor_run_id, kind, repo, template, query, content_hash, content, issued_at, issued_by, supersedes, redacted, withheld_count
 FROM reports WHERE anchor_run_id = $1 ORDER BY id`
