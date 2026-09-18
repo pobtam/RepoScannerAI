@@ -1,0 +1,62 @@
+[
+  {
+    "id": "R-S-000006-969aaceb",
+    "kind": "fleet",
+    "template": "fleet.v1",
+    "anchor_run_id": "S-000006",
+    "issued_at": "2026-09-18T09:00:00Z",
+    "issued_by": "orchestrator",
+    "content_hash": "b160fa785f83f2a1e7f4c27d511c1381d57b58aa51968764051fe3620618bebf",
+    "withheld_count": 0
+  },
+  {
+    "id": "R-S-000005-4dfbe5de",
+    "kind": "fleet",
+    "template": "fleet.v1",
+    "anchor_run_id": "S-000005",
+    "issued_at": "2026-09-11T09:00:00Z",
+    "issued_by": "orchestrator",
+    "content_hash": "ae794d4ee859d0645662e4cd0fdde496371aafc40ca021fcecdab46c4c2e2519",
+    "withheld_count": 0
+  },
+  {
+    "id": "R-S-000004-7041973d",
+    "kind": "fleet",
+    "template": "fleet.v1",
+    "anchor_run_id": "S-000004",
+    "issued_at": "2026-09-04T09:00:00Z",
+    "issued_by": "orchestrator",
+    "content_hash": "9bd38d40225280cada5a512ea8e7b9827a27e6611fb9546ee807556f3ca6055a",
+    "withheld_count": 0
+  },
+  {
+    "id": "R-S-000003-627aa7de",
+    "kind": "fleet",
+    "template": "fleet.v1",
+    "anchor_run_id": "S-000003",
+    "issued_at": "2026-08-28T09:00:00Z",
+    "issued_by": "orchestrator",
+    "content_hash": "3b098a4a5975c220fca7e4a501c49f40bda1cdf04d9a6606b635665ac46a6ce3",
+    "withheld_count": 0
+  },
+  {
+    "id": "R-S-000002-98e2ce74",
+    "kind": "fleet",
+    "template": "fleet.v1",
+    "anchor_run_id": "S-000002",
+    "issued_at": "2026-08-21T09:00:00Z",
+    "issued_by": "orchestrator",
+    "content_hash": "30f86400766dbd1fd11a309096115387cc1eb73b6773d423c3de5cd1e87225f4",
+    "withheld_count": 0
+  },
+  {
+    "id": "R-S-000001-23c51c14",
+    "kind": "fleet",
+    "template": "fleet.v1",
+    "anchor_run_id": "S-000001",
+    "issued_at": "2026-08-14T09:00:00Z",
+    "issued_by": "orchestrator",
+    "content_hash": "a3fa052a175decb8bf2a92fd385fd1ad7dfd374f5f37fc3ba109ca8ebc04f4b6",
+    "withheld_count": 0
+  }
+]

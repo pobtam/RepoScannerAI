@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -563,4 +564,63 @@ type undeterminedAuth struct{}
 
 func (undeterminedAuth) Authenticate(_ *http.Request) (api.Principal, error) {
 	return api.Principal{Recipient: report.Undetermined("someone")}, nil
+}
+
+// TestNoResponseSendsNullWhereTheInterfaceIterates is the contract behind the
+// generated client types.
+//
+// A nil Go slice marshals to `null`. The generated TypeScript for a required
+// array says `string[]`, so a null type-checks on the client and crashes when
+// iterated — in the one place the generated types were supposed to make safe.
+// The rule at this boundary: a collection the interface iterates is always
+// present and possibly empty, and a value that may be genuinely absent is an
+// ABSENT KEY rather than a null.
+func TestNoResponseSendsNullWhereTheInterfaceIterates(t *testing.T) {
+	h := newHarness(t)
+
+	// The endpoints whose own DTOs the interface iterates. The report DOCUMENT
+	// is excluded: it is passed through verbatim by design (VM-ADR-15 makes it
+	// immutable), and its own schema does use nulls.
+	for _, path := range []string{
+		"/v1/health",
+		"/v1/findings?scope=all&limit=10",
+		"/v1/findings/facets?scope=all",
+		"/v1/findings/" + h.DepFP,
+		"/v1/findings/" + h.DepFP + "/timeline",
+		"/v1/findings/" + h.DepFP + "/attempts",
+		"/v1/runs",
+		"/v1/runs/latest",
+		"/v1/repos",
+		"/v1/repos/org/api",
+		"/v1/coverage",
+		"/v1/waves",
+		"/v1/metrics/trends?metric=open",
+		"/v1/reports",
+	} {
+		var body any
+		h.getJSON(t, path, &body)
+		if nulls := findNulls(body, ""); len(nulls) > 0 {
+			t.Errorf("GET %s sends null at %v. A nil slice marshals to null, the generated "+
+				"client type says it is an array, and the interface crashes iterating it",
+				path, nulls)
+		}
+	}
+}
+
+// findNulls walks a decoded response and reports the paths holding null.
+func findNulls(v any, path string) []string {
+	var out []string
+	switch typed := v.(type) {
+	case nil:
+		return []string{path}
+	case map[string]any:
+		for k, inner := range typed {
+			out = append(out, findNulls(inner, path+"."+k)...)
+		}
+	case []any:
+		for i, inner := range typed {
+			out = append(out, findNulls(inner, fmt.Sprintf("%s[%d]", path, i))...)
+		}
+	}
+	return out
 }

@@ -340,7 +340,7 @@ func (s *Server) findingDTO(ctx context.Context, f model.Finding, withScore bool
 		Category:    string(f.Category),
 		Identity: Identity{
 			PrimaryID: f.Identity.PrimaryID,
-			Aliases:   f.Identity.Aliases,
+			Aliases:   emptyIfNil(f.Identity.Aliases),
 			RuleID:    deref(f.Identity.RuleID),
 		},
 		Location: Location{
@@ -363,7 +363,7 @@ func (s *Server) findingDTO(ctx context.Context, f model.Finding, withScore bool
 			AdvisoryURL: deref(f.Refs.AdvisoryURL), UpstreamFinding: deref(f.Refs.UpstreamFinding),
 		},
 		Provenance: Provenance{
-			Tools: f.Provenance.Tools, ToolVersions: f.Provenance.ToolVersions,
+			Tools: emptyIfNil(f.Provenance.Tools), ToolVersions: f.Provenance.ToolVersions,
 		},
 		Annotations: f.Annotations,
 	}
@@ -553,7 +553,7 @@ func (s *Server) handleTimeline(w http.ResponseWriter, r *http.Request) {
 		s.failStore(w, r, err)
 		return
 	}
-	out.Observations = obs
+	out.Observations = emptyIfNil(obs)
 	s.write(w, r, http.StatusOK, out)
 }
 

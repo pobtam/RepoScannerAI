@@ -1,0 +1,44 @@
+[
+  {
+    "module": "example.com/demo-org/platform-common",
+    "owner_repo": "demo-org/platform-common",
+    "trigger": "tag",
+    "depend_count": 3,
+    "reach_count": 1,
+    "unknown_count": 2,
+    "consumers": [
+      {
+        "repo": "demo-org/batch-jobs",
+        "version": "v1.8.0",
+        "tier": 2,
+        "reachable": "unknown",
+        "replaced": true,
+        "excluded": true,
+        "reason": "excluded: a replace directive points this consumer at a local path, so bumping the version would not change what it builds (VM-F-608)"
+      },
+      {
+        "repo": "demo-org/checkout-web",
+        "version": "v1.6.2",
+        "tier": 2,
+        "reachable": "true"
+      },
+      {
+        "repo": "demo-org/payments-api",
+        "version": "v1.8.0",
+        "tier": 1,
+        "reachable": "unknown"
+      }
+    ],
+    "version_spread": {
+      "v1.6.2": 1,
+      "v1.8.0": 2
+    },
+    "steps": [
+      "1. the upstream fix lands in demo-org/platform-common (wave 1)",
+      "2. the owning repository publishes a TAG. With trigger=tag a merge is not enough: nothing propagates until the version exists for consumers to resolve",
+      "3. 3 consumers are bumped to the fixed version (wave 2)",
+      "NOTE: consumers are on 2 different versions ([v1.8.0 v1.6.2]), which may prevent a single-target wave — laggards need a larger jump and may not build",
+      "4. 1 excluded consumers need a person: a wave cannot advance them and they are waiting for a fix that has already shipped (VM-AD §6.1.4)"
+    ]
+  }
+]

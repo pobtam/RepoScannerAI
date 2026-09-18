@@ -1,0 +1,183 @@
+{
+  "gaps": [
+    {
+      "repo": "demo-org/checkout-web",
+      "run_id": "S-000006",
+      "run_at": "2026-09-18T09:00:00Z",
+      "outcome": "partial",
+      "classification": "partial",
+      "cause": "execution_failed",
+      "detail": "exec: govulncheck: signal: killed (container exceeded its memory limit)",
+      "owner": "platform",
+      "tools_ok": [
+        "gitleaks"
+      ],
+      "tools_failed": [
+        "govulncheck",
+        "gosec"
+      ],
+      "consecutive_runs": 1,
+      "consecutive_deferrals": 0,
+      "last_qualifying_run": "S-000005",
+      "last_qualifying_at": "2026-09-11T09:00:00Z",
+      "hours_without_data": 168.83288868222223,
+      "never_scanned": false,
+      "not_reobserved": 3,
+      "findings_query": "scope=open&repo=demo-org/checkout-web&notReobserved=true"
+    },
+    {
+      "repo": "demo-org/legacy-reporting",
+      "run_id": "S-000006",
+      "run_at": "2026-09-18T09:00:00Z",
+      "outcome": "no_result",
+      "classification": "total",
+      "cause": "worker_produced_no_result",
+      "owner": "platform",
+      "consecutive_runs": 2,
+      "consecutive_deferrals": 0,
+      "last_qualifying_run": "S-000004",
+      "last_qualifying_at": "2026-09-04T09:00:00Z",
+      "hours_without_data": 336.8328886947222,
+      "never_scanned": false,
+      "not_reobserved": 1,
+      "findings_query": "scope=open&repo=demo-org/legacy-reporting&notReobserved=true"
+    }
+  ],
+  "in_scope": 6,
+  "complete": 4,
+  "percent": 66.66666666666666,
+  "staleness": {
+    "in_scope": 6,
+    "never_scanned": 0,
+    "max_age": 1212598399255000,
+    "p95_age": 1212598399255000,
+    "median_age": 2998399255000,
+    "stalest_repo": "demo-org/legacy-reporting"
+  },
+  "escalations": [
+    {
+      "repo": "demo-org/legacy-reporting",
+      "sweeps_since_qualifying": 2,
+      "cause": "worker_produced_no_result",
+      "last_qualifying_run": "S-000004",
+      "last_qualifying_at": "2026-09-04T09:00:00Z"
+    }
+  ],
+  "warning": "a failed scan and a clean scan are indistinguishable in every aggregate on the run overview. Findings in a repository with a gap are not absent because they were fixed; nobody looked. Read the gaps here before believing a drop in counts (VM-UI-F-757, VM-ADR-12)",
+  "history": [
+    {
+      "repo": "demo-org/batch-jobs",
+      "outcomes": [
+        "complete",
+        "complete",
+        "complete",
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "runs": [
+        "S-000006",
+        "S-000005",
+        "S-000004",
+        "S-000003",
+        "S-000002",
+        "S-000001"
+      ]
+    },
+    {
+      "repo": "demo-org/checkout-web",
+      "outcomes": [
+        "partial",
+        "complete",
+        "complete",
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "runs": [
+        "S-000006",
+        "S-000005",
+        "S-000004",
+        "S-000003",
+        "S-000002",
+        "S-000001"
+      ]
+    },
+    {
+      "repo": "demo-org/edge-proxy",
+      "outcomes": [
+        "complete",
+        "complete",
+        "complete",
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "runs": [
+        "S-000006",
+        "S-000005",
+        "S-000004",
+        "S-000003",
+        "S-000002",
+        "S-000001"
+      ]
+    },
+    {
+      "repo": "demo-org/legacy-reporting",
+      "outcomes": [
+        "no_result",
+        "no_result",
+        "complete",
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "runs": [
+        "S-000006",
+        "S-000005",
+        "S-000004",
+        "S-000003",
+        "S-000002",
+        "S-000001"
+      ]
+    },
+    {
+      "repo": "demo-org/payments-api",
+      "outcomes": [
+        "complete",
+        "complete",
+        "not_dispatched",
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "runs": [
+        "S-000006",
+        "S-000005",
+        "S-000004",
+        "S-000003",
+        "S-000002",
+        "S-000001"
+      ]
+    },
+    {
+      "repo": "demo-org/platform-common",
+      "outcomes": [
+        "complete",
+        "complete",
+        "not_dispatched",
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "runs": [
+        "S-000006",
+        "S-000005",
+        "S-000004",
+        "S-000003",
+        "S-000002",
+        "S-000001"
+      ]
+    }
+  ]
+}

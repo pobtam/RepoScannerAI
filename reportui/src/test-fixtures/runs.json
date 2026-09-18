@@ -1,0 +1,80 @@
+{
+  "runs": [
+    {
+      "id": "S-000006",
+      "kind": "sweep",
+      "started_at": "2026-09-18T09:00:00Z",
+      "finished_at": "2026-09-18T09:00:00Z",
+      "trigger": "cron",
+      "scanner_image": "demo-scanner@sha256:2f8c1b9e4a7d6c5b3e2a1f0d9c8b7a6e5d4c3b2a1908f7e6d5c4b3a291807f6e",
+      "repos_planned": 6,
+      "repos_scanned": 5,
+      "repos_failed": 1,
+      "partial": true,
+      "partial_note": "1 of 6 repositories produced no qualifying scan in this run, so its counts are lower than the fleet's actual position rather than better"
+    },
+    {
+      "id": "S-000005",
+      "kind": "sweep",
+      "started_at": "2026-09-11T09:00:00Z",
+      "finished_at": "2026-09-11T09:00:00Z",
+      "trigger": "cron",
+      "scanner_image": "demo-scanner@sha256:2f8c1b9e4a7d6c5b3e2a1f0d9c8b7a6e5d4c3b2a1908f7e6d5c4b3a291807f6e",
+      "repos_planned": 6,
+      "repos_scanned": 5,
+      "repos_failed": 1,
+      "partial": true,
+      "partial_note": "1 of 6 repositories produced no qualifying scan in this run, so its counts are lower than the fleet's actual position rather than better"
+    },
+    {
+      "id": "S-000004",
+      "kind": "sweep",
+      "started_at": "2026-09-04T09:00:00Z",
+      "finished_at": "2026-09-04T09:00:00Z",
+      "trigger": "cron",
+      "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
+      "repos_planned": 6,
+      "repos_scanned": 4,
+      "repos_failed": 2,
+      "partial": true,
+      "partial_note": "2 of 6 repositories produced no qualifying scan in this run, so its counts are lower than the fleet's actual position rather than better"
+    },
+    {
+      "id": "S-000003",
+      "kind": "sweep",
+      "started_at": "2026-08-28T09:00:00Z",
+      "finished_at": "2026-08-28T09:00:00Z",
+      "trigger": "cron",
+      "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
+      "repos_planned": 6,
+      "repos_scanned": 6,
+      "repos_failed": 0,
+      "partial": false
+    },
+    {
+      "id": "S-000002",
+      "kind": "sweep",
+      "started_at": "2026-08-21T09:00:00Z",
+      "finished_at": "2026-08-21T09:00:00Z",
+      "trigger": "cron",
+      "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
+      "repos_planned": 6,
+      "repos_scanned": 6,
+      "repos_failed": 0,
+      "partial": false
+    },
+    {
+      "id": "S-000001",
+      "kind": "sweep",
+      "started_at": "2026-08-14T09:00:00Z",
+      "finished_at": "2026-08-14T09:00:00Z",
+      "trigger": "cron",
+      "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
+      "repos_planned": 6,
+      "repos_scanned": 6,
+      "repos_failed": 0,
+      "partial": false
+    }
+  ],
+  "total": 6
+}

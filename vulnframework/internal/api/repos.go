@@ -45,7 +45,7 @@ func (s *Server) repoSummary(ctx context.Context, name string) (RepoSummary, err
 		return RepoSummary{}, err
 	}
 	out := RepoSummary{
-		Name: repo.Name, Tier: repo.Tier, Languages: repo.Languages,
+		Name: repo.Name, Tier: repo.Tier, Languages: emptyIfNil(repo.Languages),
 		HasTestSuite: repo.HasTestSuite, ModuleTopology: repo.ModuleTopology,
 		Codeowners: repo.Codeowners, Archived: repo.Archived,
 		BySeverity: map[string]int{}, ByCategory: map[string]int{},
@@ -109,8 +109,13 @@ func (s *Server) handleRepo(w http.ResponseWriter, r *http.Request) {
 		s.failStore(w, r, err)
 		return
 	}
-	out := RepoDetail{Repo: sum, SLAWindows: s.cfg.Calibration.SLA.Windows,
-		SLAWindowsProvisional: !s.cfg.Calibration.SLA.Calibrated}
+	out := RepoDetail{
+		Repo:       sum,
+		SLAWindows: emptyMapIfNil(s.cfg.Calibration.SLA.Windows),
+		// Stated rather than implied: the windows in force belong on the view
+		// that shows an age (VM-UI-F-612).
+		SLAWindowsProvisional: !s.cfg.Calibration.SLA.Calibrated,
+	}
 
 	deps, err := s.cfg.Store.AllDeps(ctx)
 	if err != nil {
@@ -151,7 +156,7 @@ func (s *Server) handleRepo(w http.ResponseWriter, r *http.Request) {
 		s.failStore(w, r, err)
 		return
 	}
-	out.Coverage = hist
+	out.Coverage = emptyIfNil(hist)
 	s.write(w, r, http.StatusOK, out)
 }
 
@@ -269,7 +274,7 @@ func (s *Server) handleCoverage(w http.ResponseWriter, r *http.Request) {
 			"(VM-UI-F-757, VM-ADR-12)",
 		Staleness: store.Staleness(states, s.now()),
 	}
-	out.Escalations = store.Escalations(states, s.cfg.EscalationThreshold())
+	out.Escalations = emptyIfNil(store.Escalations(states, s.cfg.EscalationThreshold()))
 
 	runID := r.URL.Query().Get("run")
 	for _, st := range states {
@@ -297,7 +302,7 @@ func (s *Server) handleCoverage(w http.ResponseWriter, r *http.Request) {
 		s.failStore(w, r, err)
 		return
 	}
-	out.History = hist
+	out.History = emptyIfNil(hist)
 	s.write(w, r, http.StatusOK, out)
 }
 
@@ -339,7 +344,8 @@ func (s *Server) gapFor(ctx context.Context, st store.CoverageState, runID strin
 		gap.Cause = res.FailureCause
 		gap.Detail = res.FailureDetail
 		gap.Owner = res.FailureOwner
-		gap.ToolsOK, gap.ToolsFailed = res.ToolsOK, res.ToolsFailed
+		gap.ToolsOK = emptyIfNil(res.ToolsOK)
+		gap.ToolsFailed = emptyIfNil(res.ToolsFailed)
 		gap.Classification = "total"
 		if len(res.ToolsOK) > 0 {
 			// Partial: some signals remain current, and saying which is what
@@ -381,6 +387,7 @@ func (s *Server) coverageHistory(ctx context.Context, repos []string, depth int)
 			h.Outcomes = append(h.Outcomes, string(res.Outcome))
 			h.Runs = append(h.Runs, res.RunID)
 		}
+		h.Outcomes, h.Runs = emptyIfNil(h.Outcomes), emptyIfNil(h.Runs)
 		out = append(out, h)
 	}
 	return out, nil

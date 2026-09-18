@@ -1,0 +1,17 @@
+[
+  {
+    "branch": "security/fix-71859d",
+    "fix_group_id": "71859d",
+    "repo": "demo-org/edge-proxy",
+    "number": 3,
+    "url": "https://github.com/demo-org/edge-proxy/pull/3",
+    "state": "open",
+    "merged": false,
+    "opened_at": "2026-08-14T09:00:00Z",
+    "findings": [
+      "f2224855ab1d7224"
+    ],
+    "ticket_url": "https://github.example/demo-org/edge-proxy/6",
+    "confirmed_at": "2026-09-18T09:00:00Z"
+  }
+]

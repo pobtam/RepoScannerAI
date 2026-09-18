@@ -87,6 +87,23 @@ func (f *FakeDispatcher) WithOutcome(repo string, outcome model.ScanOutcome, too
 	return f
 }
 
+// WithGaps attaches the coverage gaps a scan recorded.
+//
+// Separate from WithOutcome because they are separate producer outputs: the
+// outcome says a scan was partial, and the GAP says which tool died, why, and
+// whose problem it is (VM-F-214). A fake that let a caller set the outcome
+// without the gap would produce a partial scan nobody can act on — and the
+// interface would show a gap with no cause and no owner.
+func (f *FakeDispatcher) WithGaps(repo string, gaps ...scan.CoverageGap) *FakeDispatcher {
+	res, ok := f.Results[repo]
+	if !ok {
+		res = scan.Result{Repo: repo}
+	}
+	res.Gaps = append(res.Gaps, gaps...)
+	f.Results[repo] = res
+	return f
+}
+
 // WithSilentWorker registers a repository whose worker never reports.
 func (f *FakeDispatcher) WithSilentWorker(repo string) *FakeDispatcher {
 	f.Silent[repo] = true

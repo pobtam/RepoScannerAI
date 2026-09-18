@@ -1,0 +1,1595 @@
+{
+  "findings": [
+    {
+      "fingerprint": "1be7a0a5488737ec",
+      "repo": "demo-org/payments-api",
+      "category": "secret",
+      "identity": {
+        "primary_id": "AWS-ACCESS-TOKEN",
+        "aliases": [
+          "aws-access-token"
+        ],
+        "rule_id": "aws-access-token"
+      },
+      "location": {
+        "file": "deploy/staging.env",
+        "line": 4
+      },
+      "versions": {},
+      "classification": {
+        "severity": "CRITICAL",
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "unknown",
+        "transitive": false
+      },
+      "state": "NEEDS_HUMAN",
+      "partition": "unresolved",
+      "priority": "P0",
+      "credential_type": "aws_access_key",
+      "sla": {
+        "computed": true,
+        "status": "breached",
+        "window_days": 1,
+        "breach_days": 34,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "ticket": "https://github.example/demo-org/payments-api/2"
+      },
+      "provenance": {
+        "tools": [
+          "gitleaks"
+        ]
+      },
+      "triage": {
+        "description": "A secret finding in demo-org/payments-api.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Review the affected code path; no fixed version is published.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 10,
+        "priority": "P0",
+        "base": 10,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 1,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1,
+        "fanout_multiplier": 1,
+        "explain": [
+          "category=secret: fixed maximum, bypasses the composite formula (VM-AD §9.4)",
+          "score=10.00 priority=P0"
+        ],
+        "inputs": {
+          "available": 5,
+          "declared": 5
+        },
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "31d522ad3bd5e466",
+      "repo": "demo-org/edge-proxy",
+      "category": "secret",
+      "identity": {
+        "primary_id": "GENERIC-API-KEY",
+        "aliases": [
+          "generic-api-key"
+        ],
+        "rule_id": "generic-api-key"
+      },
+      "location": {
+        "file": "config/upstream.toml",
+        "line": 12
+      },
+      "versions": {},
+      "classification": {
+        "severity": "CRITICAL",
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "unknown",
+        "transitive": false
+      },
+      "state": "NEEDS_HUMAN",
+      "partition": "unresolved",
+      "priority": "P0",
+      "credential_type": "api_key",
+      "sla": {
+        "computed": true,
+        "status": "breached",
+        "window_days": 1,
+        "breach_days": 20,
+        "age_days": 21,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000003",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-28T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "ticket": "https://github.example/demo-org/edge-proxy/8"
+      },
+      "provenance": {
+        "tools": [
+          "gitleaks"
+        ]
+      },
+      "triage": {
+        "description": "A secret finding in demo-org/edge-proxy.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Review the affected code path; no fixed version is published.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-28T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 10,
+        "priority": "P0",
+        "base": 10,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 1,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1,
+        "fanout_multiplier": 1,
+        "explain": [
+          "category=secret: fixed maximum, bypasses the composite formula (VM-AD §9.4)",
+          "score=10.00 priority=P0"
+        ],
+        "inputs": {
+          "available": 5,
+          "declared": 5
+        },
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "913d32a7a4977946",
+      "repo": "demo-org/payments-api",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70001",
+        "aliases": [
+          "CVE-DEMO-70001",
+          "DEMO-2026-0001"
+        ]
+      },
+      "location": {
+        "module": "example.com/http-router",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v1.12.4",
+        "fixed": "v1.12.9"
+      },
+      "classification": {
+        "severity": "CRITICAL",
+        "cvss": 9.1,
+        "epss": 0.94,
+        "epss_as_of": "2026-09-17T13:00:00Z",
+        "kev": true,
+        "kev_as_of": "2026-09-17T03:00:00Z",
+        "reachable": "true",
+        "dep_class": "production",
+        "transitive": false
+      },
+      "state": "MERGED",
+      "partition": "pending_verification",
+      "priority": "P0",
+      "sla": {
+        "computed": true,
+        "status": "breached",
+        "window_days": 1,
+        "breach_days": 34,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0001"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/payments-api.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/http-router to v1.12.9.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 16.776,
+        "priority": "P0",
+        "base": 9.1,
+        "kev_boost": 3,
+        "epss_boost": 1.88,
+        "reach_multiplier": 1,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1.2,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=9.10 from CVSS",
+          "kev_boost=+3.00 (in CISA KEV)",
+          "epss_boost=+1.880 (epss=0.9400)",
+          "reach=×1.00 (true)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.20 (tier 1)",
+          "score=16.7760 priority=P0"
+        ],
+        "inputs": {
+          "available": 5,
+          "declared": 5
+        },
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "999cc1a3ce1dd914",
+      "repo": "demo-org/checkout-web",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70003",
+        "aliases": [
+          "CVE-DEMO-70003",
+          "DEMO-2026-0003"
+        ]
+      },
+      "location": {
+        "module": "example.com/crypto-lib",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v0.31.0",
+        "fixed": "v0.32.0"
+      },
+      "classification": {
+        "severity": "CRITICAL",
+        "cvss": 9.1,
+        "epss": 0.71,
+        "epss_as_of": "2026-09-17T13:00:00Z",
+        "kev": true,
+        "kev_as_of": "2026-09-17T03:00:00Z",
+        "reachable": "true",
+        "dep_class": "production",
+        "transitive": false,
+        "first_party_path": "example.com/demo-org/platform-common/crypto"
+      },
+      "state": "BLOCKED_UPSTREAM",
+      "partition": "unresolved",
+      "priority": "P0",
+      "reason_code": "BLOCKED_UPSTREAM_FIRST_PARTY",
+      "sla": {
+        "computed": true,
+        "status": "breached",
+        "window_days": 2,
+        "breach_days": 33,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000005",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-11T09:00:00Z",
+        "not_reobserved": true,
+        "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
+        "gap_repo_scan": "S-000006"
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0003"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/checkout-web.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 13.52,
+        "priority": "P0",
+        "base": 9.1,
+        "kev_boost": 3,
+        "epss_boost": 1.42,
+        "reach_multiplier": 1,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=9.10 from CVSS",
+          "kev_boost=+3.00 (in CISA KEV)",
+          "epss_boost=+1.420 (epss=0.7100)",
+          "reach=×1.00 (true)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.00 (tier 2)",
+          "score=13.5200 priority=P0"
+        ],
+        "inputs": {
+          "available": 5,
+          "declared": 5
+        },
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "bd52d5bde4e84859",
+      "repo": "demo-org/platform-common",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70003",
+        "aliases": [
+          "CVE-DEMO-70003",
+          "DEMO-2026-0003"
+        ]
+      },
+      "location": {
+        "module": "example.com/crypto-lib",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v0.31.0",
+        "fixed": "v0.32.0"
+      },
+      "classification": {
+        "severity": "CRITICAL",
+        "cvss": 9.1,
+        "epss": 0.71,
+        "epss_as_of": "2026-09-17T13:00:00Z",
+        "kev": true,
+        "kev_as_of": "2026-09-17T03:00:00Z",
+        "reachable": "true",
+        "dep_class": "production",
+        "transitive": false
+      },
+      "state": "MERGED",
+      "partition": "pending_verification",
+      "priority": "P0",
+      "sla": {
+        "computed": true,
+        "status": "breached",
+        "window_days": 1,
+        "breach_days": 34,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0003"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/platform-common.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 16.224,
+        "priority": "P0",
+        "base": 9.1,
+        "kev_boost": 3,
+        "epss_boost": 1.42,
+        "reach_multiplier": 1,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1.2,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=9.10 from CVSS",
+          "kev_boost=+3.00 (in CISA KEV)",
+          "epss_boost=+1.420 (epss=0.7100)",
+          "reach=×1.00 (true)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.20 (tier 1)",
+          "score=16.2240 priority=P0"
+        ],
+        "inputs": {
+          "available": 5,
+          "declared": 5
+        },
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "f2224855ab1d7224",
+      "repo": "demo-org/edge-proxy",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70006",
+        "aliases": [
+          "CVE-DEMO-70006",
+          "DEMO-2026-0006"
+        ]
+      },
+      "location": {
+        "module": "example.com/http-router",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v1.12.4",
+        "fixed": "v1.12.9"
+      },
+      "classification": {
+        "severity": "CRITICAL",
+        "cvss": 9.1,
+        "epss": 0.55,
+        "epss_as_of": "2026-09-17T13:00:00Z",
+        "kev": false,
+        "kev_as_of": "2026-09-17T03:00:00Z",
+        "reachable": "true",
+        "dep_class": "production",
+        "transitive": false
+      },
+      "state": "PR_OPEN",
+      "partition": "unresolved",
+      "priority": "P0",
+      "sla": {
+        "computed": true,
+        "status": "breached",
+        "window_days": 1,
+        "breach_days": 34,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "pull_request": "https://github.com/demo-org/edge-proxy/pull/3",
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0006"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/edge-proxy.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/http-router to v1.12.9.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 12.239999999999998,
+        "priority": "P0",
+        "base": 9.1,
+        "kev_boost": 0,
+        "epss_boost": 1.1,
+        "reach_multiplier": 1,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1.2,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=9.10 from CVSS",
+          "kev=false (checked against CISA KEV)",
+          "epss_boost=+1.100 (epss=0.5500)",
+          "reach=×1.00 (true)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.20 (tier 1)",
+          "score=12.2400 priority=P0"
+        ],
+        "inputs": {
+          "available": 5,
+          "declared": 5
+        },
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "77d01b87b868df35",
+      "repo": "demo-org/batch-jobs",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70005",
+        "aliases": [
+          "CVE-DEMO-70005",
+          "DEMO-2026-0005"
+        ]
+      },
+      "location": {
+        "module": "example.com/csv-reader",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v0.9.0",
+        "fixed": "v0.9.4"
+      },
+      "classification": {
+        "severity": "HIGH",
+        "cvss": 7.5,
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "true",
+        "dep_class": "production",
+        "transitive": false
+      },
+      "state": "TRIAGED",
+      "partition": "unresolved",
+      "priority": "P1",
+      "sla": {
+        "computed": true,
+        "status": "breached",
+        "window_days": 14,
+        "breach_days": 21,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0005"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/batch-jobs.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/csv-reader to v0.9.4.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 7.5,
+        "priority": "P1",
+        "base": 7.5,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 1,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=7.50 from CVSS",
+          "kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+3.00 can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+          "epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss coefficient of 2.00 can never apply. This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+          "reach=×1.00 (true)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.00 (tier 2)",
+          "score=7.5000 priority=P1"
+        ],
+        "inputs": {
+          "available": 3,
+          "declared": 5,
+          "unavailable": [
+            "KEV (CISA known-exploited)",
+            "EPSS (exploit prediction)"
+          ]
+        },
+        "caveat": "This priority rests on 3 of 5 declared inputs: KEV (CISA known-exploited) and EPSS (exploit prediction) are unavailable because no feed is wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now and how likely it is to be — the questions that most often change what a human does — so this score is not merely less precise, it is missing the input that would have argued loudest. Treat it as a floor, not an assessment.",
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "1668a63e78aacba1",
+      "repo": "demo-org/payments-api",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70002",
+        "aliases": [
+          "CVE-DEMO-70002",
+          "DEMO-2026-0002"
+        ]
+      },
+      "location": {
+        "module": "example.com/yaml-parse",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v3.0.1",
+        "fixed": "v3.0.4"
+      },
+      "classification": {
+        "severity": "HIGH",
+        "cvss": 7.5,
+        "epss": 0.08,
+        "epss_as_of": "2026-09-17T13:00:00Z",
+        "kev": false,
+        "kev_as_of": "2026-09-17T03:00:00Z",
+        "reachable": "unknown",
+        "dep_class": "production",
+        "transitive": false
+      },
+      "state": "MERGED",
+      "partition": "pending_verification",
+      "priority": "P2",
+      "sla": {
+        "computed": true,
+        "status": "breached",
+        "window_days": 30,
+        "breach_days": 5,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0002"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/payments-api.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/yaml-parse to v3.0.4.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 4.596,
+        "priority": "P2",
+        "base": 7.5,
+        "kev_boost": 0,
+        "epss_boost": 0.16,
+        "reach_multiplier": 0.5,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1.2,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=7.50 from CVSS",
+          "kev=false (checked against CISA KEV)",
+          "epss_boost=+0.160 (epss=0.0800)",
+          "reach=×0.50 (unknown)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.20 (tier 1)",
+          "score=4.5960 priority=P2"
+        ],
+        "inputs": {
+          "available": 5,
+          "declared": 5
+        },
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "302d9fc629b37cef",
+      "repo": "demo-org/legacy-reporting",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70009",
+        "aliases": [
+          "CVE-DEMO-70009",
+          "DEMO-2026-0009"
+        ]
+      },
+      "location": {
+        "module": "example.com/csv-reader",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v0.9.0"
+      },
+      "classification": {
+        "severity": "HIGH",
+        "cvss": 7.5,
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "true",
+        "dep_class": "production",
+        "transitive": false
+      },
+      "state": "NEEDS_HUMAN",
+      "partition": "unresolved",
+      "priority": "P2",
+      "reason_code": "MAJOR_BUMP_POLICY",
+      "sla": {
+        "computed": true,
+        "status": "within",
+        "window_days": 90,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000004",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-04T09:00:00Z",
+        "not_reobserved": true,
+        "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
+        "gap_repo_scan": "S-000006"
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0009"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/legacy-reporting.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Review the affected code path; no fixed version is published.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 6,
+        "priority": "P2",
+        "base": 7.5,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 1,
+        "dep_multiplier": 1,
+        "tier_multiplier": 0.8,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=7.50 from CVSS",
+          "kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+3.00 can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+          "epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss coefficient of 2.00 can never apply. This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+          "reach=×1.00 (true)",
+          "dep_class=×1.00 (production)",
+          "tier=×0.80 (tier 3)",
+          "score=6.0000 priority=P2"
+        ],
+        "inputs": {
+          "available": 3,
+          "declared": 5,
+          "unavailable": [
+            "KEV (CISA known-exploited)",
+            "EPSS (exploit prediction)"
+          ]
+        },
+        "caveat": "This priority rests on 3 of 5 declared inputs: KEV (CISA known-exploited) and EPSS (exploit prediction) are unavailable because no feed is wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now and how likely it is to be — the questions that most often change what a human does — so this score is not merely less precise, it is missing the input that would have argued loudest. Treat it as a floor, not an assessment.",
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "bf1c815b879cc77f",
+      "repo": "demo-org/batch-jobs",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70003",
+        "aliases": [
+          "CVE-DEMO-70003",
+          "DEMO-2026-0003"
+        ]
+      },
+      "location": {
+        "module": "example.com/crypto-lib",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v0.31.0",
+        "fixed": "v0.32.0"
+      },
+      "classification": {
+        "severity": "CRITICAL",
+        "cvss": 9.1,
+        "epss": 0.71,
+        "epss_as_of": "2026-09-17T13:00:00Z",
+        "kev": true,
+        "kev_as_of": "2026-09-17T03:00:00Z",
+        "reachable": "unknown",
+        "dep_class": "production",
+        "transitive": false,
+        "first_party_path": "example.com/demo-org/platform-common/crypto"
+      },
+      "state": "BLOCKED_UPSTREAM",
+      "partition": "unresolved",
+      "priority": "P2",
+      "reason_code": "BLOCKED_UPSTREAM_FIRST_PARTY",
+      "sla": {
+        "computed": true,
+        "status": "within",
+        "window_days": 60,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0003"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/batch-jobs.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 6.76,
+        "priority": "P2",
+        "base": 9.1,
+        "kev_boost": 3,
+        "epss_boost": 1.42,
+        "reach_multiplier": 0.5,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=9.10 from CVSS",
+          "kev_boost=+3.00 (in CISA KEV)",
+          "epss_boost=+1.420 (epss=0.7100)",
+          "reach=×0.50 (unknown)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.00 (tier 2)",
+          "score=6.7600 priority=P2"
+        ],
+        "inputs": {
+          "available": 5,
+          "declared": 5
+        },
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "de380b7aa8643131",
+      "repo": "demo-org/edge-proxy",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70003",
+        "aliases": [
+          "CVE-DEMO-70003",
+          "DEMO-2026-0003"
+        ]
+      },
+      "location": {
+        "module": "example.com/crypto-lib",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v0.31.0",
+        "fixed": "v0.32.0"
+      },
+      "classification": {
+        "severity": "CRITICAL",
+        "cvss": 9.1,
+        "epss": 0.71,
+        "epss_as_of": "2026-09-17T13:00:00Z",
+        "kev": true,
+        "kev_as_of": "2026-09-17T03:00:00Z",
+        "reachable": "false",
+        "dep_class": "production",
+        "transitive": false,
+        "first_party_path": "example.com/demo-org/platform-common/crypto"
+      },
+      "state": "BLOCKED_UPSTREAM",
+      "partition": "unresolved",
+      "priority": "P2",
+      "reason_code": "BLOCKED_UPSTREAM_FIRST_PARTY",
+      "sla": {
+        "computed": true,
+        "status": "breached",
+        "window_days": 30,
+        "breach_days": 5,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0003"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/edge-proxy.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 4.056,
+        "priority": "P2",
+        "base": 9.1,
+        "kev_boost": 3,
+        "epss_boost": 1.42,
+        "reach_multiplier": 0.25,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1.2,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=9.10 from CVSS",
+          "kev_boost=+3.00 (in CISA KEV)",
+          "epss_boost=+1.420 (epss=0.7100)",
+          "reach=×0.25 (false)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.20 (tier 1)",
+          "score=4.0560 priority=P2"
+        ],
+        "inputs": {
+          "available": 5,
+          "declared": 5
+        },
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "1a03f76b5c637590",
+      "repo": "demo-org/payments-api",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70007",
+        "aliases": [
+          "CVE-DEMO-70007",
+          "DEMO-2026-0007"
+        ]
+      },
+      "location": {
+        "module": "example.com/log-shim",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v0.4.2",
+        "fixed": "v0.4.3"
+      },
+      "classification": {
+        "severity": "MEDIUM",
+        "cvss": 5.4,
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "unknown",
+        "dep_class": "production",
+        "transitive": true
+      },
+      "state": "MERGED",
+      "partition": "pending_verification",
+      "priority": "P3",
+      "sla": {
+        "computed": true,
+        "status": "within",
+        "window_days": 90,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0007"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/payments-api.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/log-shim to v0.4.3.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 3.24,
+        "priority": "P3",
+        "base": 5.4,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 0.5,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1.2,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=5.40 from CVSS",
+          "kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+3.00 can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+          "epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss coefficient of 2.00 can never apply. This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+          "reach=×0.50 (unknown)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.20 (tier 1)",
+          "score=3.2400 priority=P3"
+        ],
+        "inputs": {
+          "available": 3,
+          "declared": 5,
+          "unavailable": [
+            "KEV (CISA known-exploited)",
+            "EPSS (exploit prediction)"
+          ]
+        },
+        "caveat": "This priority rests on 3 of 5 declared inputs: KEV (CISA known-exploited) and EPSS (exploit prediction) are unavailable because no feed is wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now and how likely it is to be — the questions that most often change what a human does — so this score is not merely less precise, it is missing the input that would have argued loudest. Treat it as a floor, not an assessment.",
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "67d0679b7d6dcf15",
+      "repo": "demo-org/payments-api",
+      "category": "code",
+      "identity": {
+        "primary_id": "G404",
+        "aliases": [
+          "G404"
+        ],
+        "rule_id": "G404"
+      },
+      "location": {
+        "file": "internal/idgen/random.go",
+        "line": 23
+      },
+      "versions": {},
+      "classification": {
+        "severity": "MEDIUM",
+        "cvss": 5.4,
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "unknown",
+        "transitive": false
+      },
+      "state": "TRIAGED",
+      "partition": "unresolved",
+      "priority": "P3",
+      "sla": {
+        "computed": true,
+        "status": "within",
+        "window_days": 90,
+        "age_days": 21,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000003",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-28T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {},
+      "provenance": {
+        "tools": [
+          "gosec"
+        ]
+      },
+      "triage": {
+        "description": "A code finding in demo-org/payments-api.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Review the affected code path; no fixed version is published.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-28T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 3.24,
+        "priority": "P3",
+        "base": 5.4,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 0.5,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1.2,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=5.40 from CVSS",
+          "kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+3.00 can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+          "epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss coefficient of 2.00 can never apply. This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+          "reach=×0.50 (unknown)",
+          "dep_class=×1.00 (n/a)",
+          "tier=×1.20 (tier 1)",
+          "score=3.2400 priority=P3"
+        ],
+        "inputs": {
+          "available": 3,
+          "declared": 5,
+          "unavailable": [
+            "KEV (CISA known-exploited)",
+            "EPSS (exploit prediction)"
+          ]
+        },
+        "caveat": "This priority rests on 3 of 5 declared inputs: KEV (CISA known-exploited) and EPSS (exploit prediction) are unavailable because no feed is wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now and how likely it is to be — the questions that most often change what a human does — so this score is not merely less precise, it is missing the input that would have argued loudest. Treat it as a floor, not an assessment.",
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "778f7185639b53ce",
+      "repo": "demo-org/checkout-web",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70008",
+        "aliases": [
+          "CVE-DEMO-70008",
+          "DEMO-2026-0008"
+        ]
+      },
+      "location": {
+        "module": "example.com/json-stream",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v2.1.0",
+        "fixed": "v2.2.0"
+      },
+      "classification": {
+        "severity": "HIGH",
+        "cvss": 7.5,
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "false",
+        "dep_class": "development",
+        "transitive": false
+      },
+      "state": "PR_OPEN",
+      "partition": "unresolved",
+      "priority": "P3",
+      "sla": {
+        "computed": true,
+        "status": "within",
+        "window_days": 180,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000005",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-11T09:00:00Z",
+        "not_reobserved": true,
+        "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
+        "gap_repo_scan": "S-000006"
+      },
+      "refs": {
+        "pull_request": "https://github.com/demo-org/checkout-web/pull/2",
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0008"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/checkout-web.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/json-stream to v2.2.0.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 0.75,
+        "priority": "P3",
+        "base": 7.5,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 0.25,
+        "dep_multiplier": 0.4,
+        "tier_multiplier": 1,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=7.50 from CVSS",
+          "kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+3.00 can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+          "epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss coefficient of 2.00 can never apply. This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+          "reach=×0.25 (false)",
+          "dep_class=×0.40 (development)",
+          "tier=×1.00 (tier 2)",
+          "score=0.7500 priority=P3"
+        ],
+        "inputs": {
+          "available": 3,
+          "declared": 5,
+          "unavailable": [
+            "KEV (CISA known-exploited)",
+            "EPSS (exploit prediction)"
+          ]
+        },
+        "caveat": "This priority rests on 3 of 5 declared inputs: KEV (CISA known-exploited) and EPSS (exploit prediction) are unavailable because no feed is wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now and how likely it is to be — the questions that most often change what a human does — so this score is not merely less precise, it is missing the input that would have argued loudest. Treat it as a floor, not an assessment.",
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "9533b4c6fad8d531",
+      "repo": "demo-org/platform-common",
+      "category": "dependency",
+      "identity": {
+        "primary_id": "CVE-DEMO-70004",
+        "aliases": [
+          "CVE-DEMO-70004",
+          "DEMO-2026-0004"
+        ]
+      },
+      "location": {
+        "module": "example.com/proto-runtime",
+        "module_major": "v0"
+      },
+      "versions": {
+        "current": "v1.33.0",
+        "fixed": "v1.34.1"
+      },
+      "classification": {
+        "severity": "MEDIUM",
+        "cvss": 5.4,
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "false",
+        "dep_class": "production",
+        "transitive": false
+      },
+      "state": "MERGED",
+      "partition": "pending_verification",
+      "priority": "P3",
+      "sla": {
+        "computed": true,
+        "status": "within",
+        "window_days": 90,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "not_reobserved": false
+      },
+      "refs": {
+        "advisory_url": "https://demo.example/advisories/DEMO-2026-0004"
+      },
+      "provenance": {
+        "tools": [
+          "govulncheck"
+        ]
+      },
+      "triage": {
+        "description": "A dependency finding in demo-org/platform-common.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Upgrade example.com/proto-runtime to v1.34.1.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 1.62,
+        "priority": "P3",
+        "base": 5.4,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 0.25,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1.2,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=5.40 from CVSS",
+          "kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+3.00 can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+          "epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss coefficient of 2.00 can never apply. This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+          "reach=×0.25 (false)",
+          "dep_class=×1.00 (production)",
+          "tier=×1.20 (tier 1)",
+          "score=1.6200 priority=P3"
+        ],
+        "inputs": {
+          "available": 3,
+          "declared": 5,
+          "unavailable": [
+            "KEV (CISA known-exploited)",
+            "EPSS (exploit prediction)"
+          ]
+        },
+        "caveat": "This priority rests on 3 of 5 declared inputs: KEV (CISA known-exploited) and EPSS (exploit prediction) are unavailable because no feed is wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now and how likely it is to be — the questions that most often change what a human does — so this score is not merely less precise, it is missing the input that would have argued loudest. Treat it as a floor, not an assessment.",
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "e45d1b7efef82ba4",
+      "repo": "demo-org/payments-api",
+      "category": "config",
+      "identity": {
+        "primary_id": "DEMO-K8S-001",
+        "aliases": [
+          "DEMO-K8S-001"
+        ],
+        "rule_id": "DEMO-K8S-001"
+      },
+      "location": {
+        "file": "deploy/payments.yaml",
+        "line": 31
+      },
+      "versions": {},
+      "classification": {
+        "severity": "MEDIUM",
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "unknown",
+        "transitive": false
+      },
+      "state": "REGRESSED",
+      "partition": "unresolved",
+      "priority": "P3",
+      "verified_reason": "external",
+      "sla": {
+        "computed": true,
+        "status": "within",
+        "window_days": 90,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000006",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-18T09:00:00Z",
+        "resolved_at": "2026-09-11T09:00:00Z",
+        "not_reobserved": false,
+        "residual_possible": true,
+        "residual_detail": "This finding is located to a file and a resource key. A second misconfiguration under the same key may not have been reported separately (OQ-AUDIT-02)."
+      },
+      "refs": {},
+      "provenance": {
+        "tools": [
+          "trivy"
+        ]
+      },
+      "triage": {
+        "description": "A config finding in demo-org/payments-api.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Review the affected code path; no fixed version is published.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-09-18T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 3,
+        "priority": "P3",
+        "base": 5,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 0.5,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1.2,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=5.00 from severity MEDIUM (no CVSS)",
+          "kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+3.00 can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+          "epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss coefficient of 2.00 can never apply. This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+          "reach=×0.50 (unknown)",
+          "dep_class=×1.00 (n/a)",
+          "tier=×1.20 (tier 1)",
+          "score=3.0000 priority=P3"
+        ],
+        "inputs": {
+          "available": 3,
+          "declared": 5,
+          "unavailable": [
+            "KEV (CISA known-exploited)",
+            "EPSS (exploit prediction)"
+          ]
+        },
+        "caveat": "This priority rests on 3 of 5 declared inputs: KEV (CISA known-exploited) and EPSS (exploit prediction) are unavailable because no feed is wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now and how likely it is to be — the questions that most often change what a human does — so this score is not merely less precise, it is missing the input that would have argued loudest. Treat it as a floor, not an assessment.",
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    },
+    {
+      "fingerprint": "fe84cc055eec8886",
+      "repo": "demo-org/checkout-web",
+      "category": "code",
+      "identity": {
+        "primary_id": "G402",
+        "aliases": [
+          "G402"
+        ],
+        "rule_id": "G402"
+      },
+      "location": {
+        "file": "server/proxy.go",
+        "line": 145
+      },
+      "versions": {},
+      "classification": {
+        "severity": "HIGH",
+        "cvss": 7.5,
+        "exploit_intel_unavailable": [
+          "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+          "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+        ],
+        "reachable": "unknown",
+        "transitive": false
+      },
+      "state": "TRIAGED",
+      "partition": "unresolved",
+      "priority": "P3",
+      "sla": {
+        "computed": true,
+        "status": "within",
+        "window_days": 180,
+        "age_days": 35,
+        "windows_provisional": true,
+        "caveat": "provisional: the remediation windows behind this figure have not been reviewed by anyone (VM-OQ-02)"
+      },
+      "observation": {
+        "first_seen_run": "S-000001",
+        "last_seen_run": "S-000005",
+        "first_seen_at": "2026-08-14T09:00:00Z",
+        "last_seen_at": "2026-09-11T09:00:00Z",
+        "not_reobserved": true,
+        "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
+        "gap_repo_scan": "S-000006"
+      },
+      "refs": {},
+      "provenance": {
+        "tools": [
+          "gosec"
+        ]
+      },
+      "triage": {
+        "description": "A code finding in demo-org/checkout-web.",
+        "impact": "Impact depends on whether the affected path is exercised in production.",
+        "remediation": "Review the affected code path; no fixed version is published.",
+        "false_positive_candidate": false,
+        "triaged_at": "2026-08-14T09:00:00Z",
+        "model": "claude-sonnet-5"
+      },
+      "score": {
+        "score": 3.75,
+        "priority": "P3",
+        "base": 7.5,
+        "kev_boost": 0,
+        "epss_boost": 0,
+        "reach_multiplier": 0.5,
+        "dep_multiplier": 1,
+        "tier_multiplier": 1,
+        "fanout_multiplier": 1,
+        "explain": [
+          "base=7.50 from CVSS",
+          "kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+3.00 can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+          "epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss coefficient of 2.00 can never apply. This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+          "reach=×0.50 (unknown)",
+          "dep_class=×1.00 (n/a)",
+          "tier=×1.00 (tier 2)",
+          "score=3.7500 priority=P3"
+        ],
+        "inputs": {
+          "available": 3,
+          "declared": 5,
+          "unavailable": [
+            "KEV (CISA known-exploited)",
+            "EPSS (exploit prediction)"
+          ]
+        },
+        "caveat": "This priority rests on 3 of 5 declared inputs: KEV (CISA known-exploited) and EPSS (exploit prediction) are unavailable because no feed is wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now and how likely it is to be — the questions that most often change what a human does — so this score is not merely less precise, it is missing the input that would have argued loudest. Treat it as a floor, not an assessment.",
+        "thresholds_calibrated": false,
+        "recomputed": true
+      }
+    }
+  ],
+  "matched": 17,
+  "in_corpus": 17,
+  "total": 18,
+  "corpus": {
+    "scope": "open",
+    "description": "unresolved findings across all runs",
+    "excludes": "verified, suppressed, declined and won't-fix findings, and findings pending verification after a merge",
+    "excluded_count": 1
+  },
+  "sort": "priority",
+  "dir": "desc",
+  "restricted_count": 0
+}

@@ -51,19 +51,21 @@ func (s *Server) handleTrends(w http.ResponseWriter, r *http.Request) {
 	series := TrendSeries{Metric: metric, Kind: string(kind), Points: []TrendPoint{},
 		Note: note + ". Drawn from runs of kind " + string(kind) + " only (VM-UI-F-310); runs " +
 			"that did not cover the fleet are marked partial, and a scanner-image change is " +
-			"marked, because a step change is otherwise attributed to the wrong cause"}
+			"marked, because a step change is otherwise attributed to the wrong cause. Points " +
+			"marked live were computed from the store NOW rather than read from the run's " +
+			"immutable snapshot, and show those findings' CURRENT state (VM-UI-F-102)"}
 
 	// Oldest first for a chart.
 	var lastImage string
 	for i := len(runs) - 1; i >= 0; i-- {
 		run := runs[i]
-		value, err := s.metricFor(ctx, metric, run)
+		value, live, err := s.metricFor(ctx, metric, run)
 		if err != nil {
 			s.failStore(w, r, err)
 			return
 		}
 		pt := TrendPoint{RunID: run.ID, At: run.StartedAt, Value: value,
-			ScannerImage: run.ScannerImage}
+			Live: live, ScannerImage: run.ScannerImage}
 		if run.ReposFailed > 0 || (run.ReposPlanned > 0 && run.ReposScanned < run.ReposPlanned) {
 			pt.Partial = true
 		}
@@ -78,30 +80,52 @@ func (s *Server) handleTrends(w http.ResponseWriter, r *http.Request) {
 
 // metricFor reads one run's value for a series.
 //
-// Every figure comes from the report generator or the store, never from a
-// second calculation here: a trend that disagreed with the run overview about
-// the same run would be worse than no trend (VM-F-908).
-func (s *Server) metricFor(ctx context.Context, metric string, run store.Run) (float64, error) {
-	rep, err := s.gen.Generate(ctx, report.Query{
-		Kind: report.KindFleet, AnchorRun: run.ID, Scope: store.ScopeAll, Template: "fleet.v1",
-	})
-	if err != nil {
-		return 0, err
+// From the run's IMMUTABLE SNAPSHOT where one was issued, and only otherwise
+// from a live generation — which is then marked as live on the point.
+//
+// This is VM-UI-F-102 arriving in the trend. Regenerating every point from
+// today's store would draw a series in which every past run reflects the
+// CURRENT state of its findings: a finding detected in June and fixed in
+// August would be absent from June's point, so the line would slope downwards
+// no matter what happened, and the chart would attribute today's position to
+// every week in the past.
+//
+// Every figure still comes from the report generator or the store, never from
+// a second calculation here: a trend that disagreed with the run overview
+// about the same run would be worse than no trend (VM-F-908).
+func (s *Server) metricFor(ctx context.Context, metric string, run store.Run) (float64, bool, error) {
+	live := true
+	var rep report.Report
+	if rec, ok, err := s.snapshotFor(ctx, run.ID); err != nil {
+		return 0, false, err
+	} else if ok {
+		if err := decodeReport(rec.Content, &rep); err == nil {
+			live = false
+		}
+	}
+	if live {
+		var err error
+		rep, err = s.gen.Generate(ctx, report.Query{
+			Kind: report.KindFleet, AnchorRun: run.ID, Scope: store.ScopeAll, Template: "fleet.v1",
+		})
+		if err != nil {
+			return 0, false, err
+		}
 	}
 	switch metric {
 	case "new":
-		return float64(rep.Delta.New), nil
+		return float64(rep.Delta.New), live, nil
 	case "verified":
-		return float64(rep.Delta.Verified), nil
+		return float64(rep.Delta.Verified), live, nil
 	case "regressed":
-		return float64(rep.Delta.Regressed), nil
+		return float64(rep.Delta.Regressed), live, nil
 	case "not_observed":
-		return float64(rep.Counts.NotReobserved), nil
+		return float64(rep.Counts.NotReobserved), live, nil
 	case "coverage":
-		return rep.Coverage.Percent, nil
+		return rep.Coverage.Percent, live, nil
 	case "sla_breached":
-		return float64(rep.Counts.SLABreached), nil
+		return float64(rep.Counts.SLABreached), live, nil
 	default:
-		return float64(rep.Counts.Unresolved), nil
+		return float64(rep.Counts.Unresolved), live, nil
 	}
 }

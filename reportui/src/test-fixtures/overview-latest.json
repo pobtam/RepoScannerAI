@@ -1,0 +1,121 @@
+{
+  "run": {
+    "id": "S-000006",
+    "kind": "sweep",
+    "started_at": "2026-09-18T09:00:00Z",
+    "finished_at": "2026-09-18T09:00:00Z",
+    "trigger": "cron",
+    "scanner_image": "demo-scanner@sha256:2f8c1b9e4a7d6c5b3e2a1f0d9c8b7a6e5d4c3b2a1908f7e6d5c4b3a291807f6e",
+    "repos_planned": 6,
+    "repos_scanned": 5,
+    "repos_failed": 1,
+    "partial": true,
+    "partial_note": "1 of 6 repositories produced no qualifying scan in this run, so its counts are lower than the fleet's actual position rather than better"
+  },
+  "live": false,
+  "snapshot_id": "R-S-000006-969aaceb",
+  "content_hash": "b160fa785f83f2a1e7f4c27d511c1381d57b58aa51968764051fe3620618bebf",
+  "counts": {
+    "total": 18,
+    "unresolved": 12,
+    "pending_verification": 5,
+    "resolved": 1,
+    "by_priority": {
+      "P0": 6,
+      "P1": 1,
+      "P2": 5,
+      "P3": 6
+    },
+    "by_state": {
+      "BLOCKED_UPSTREAM": 3,
+      "MERGED": 5,
+      "NEEDS_HUMAN": 3,
+      "PR_OPEN": 2,
+      "REGRESSED": 1,
+      "TRIAGED": 3,
+      "VERIFIED": 1
+    },
+    "by_category": {
+      "code": 3,
+      "config": 1,
+      "dependency": 12,
+      "secret": 2
+    },
+    "not_reobserved": 4,
+    "sla_breached": 9,
+    "sla_paused": 0,
+    "not_fixed_by_reason": {
+      "BLOCKED_UPSTREAM_FIRST_PARTY": 3,
+      "MAJOR_BUMP_POLICY": 1
+    },
+    "not_fixed_unexplained": 13,
+    "sla_not_computed": 0
+  },
+  "delta": {
+    "previous_run": "S-000005",
+    "comparable": true,
+    "total_change": -3,
+    "unresolved_change": -2,
+    "new": 1,
+    "no_longer_observed": 4,
+    "verified": 1,
+    "regressed": 1
+  },
+  "coverage": {
+    "in_scope": 6,
+    "complete": 4,
+    "partial": 1,
+    "failed": 0,
+    "not_dispatched": 0,
+    "no_result": 1,
+    "by_cause": {
+      "execution_failed": 1,
+      "worker_produced_no_result": 1
+    },
+    "percent": 66.66666666666666,
+    "staleness": {
+      "in_scope": 6,
+      "never_scanned": 0,
+      "max_age": 1209600000000000,
+      "p95_age": 1209600000000000,
+      "median_age": 0,
+      "stalest_repo": "demo-org/legacy-reporting"
+    },
+    "escalations": [
+      {
+        "repo": "demo-org/legacy-reporting",
+        "sweeps_since_qualifying": 2,
+        "cause": "worker_produced_no_result",
+        "last_qualifying_run": "S-000004",
+        "last_qualifying_at": "2026-09-04T09:00:00Z"
+      }
+    ],
+    "unscanned_repos": [
+      "demo-org/checkout-web",
+      "demo-org/legacy-reporting"
+    ]
+  },
+  "provenance": {
+    "scanner_image": "demo-scanner@sha256:2f8c1b9e4a7d6c5b3e2a1f0d9c8b7a6e5d4c3b2a1908f7e6d5c4b3a291807f6e",
+    "tool_versions": {
+      "gitleaks": "v8.28.0",
+      "gosec": "v2.22.9",
+      "govulncheck": "v1.8.0",
+      "trivy": "v0.58.1"
+    },
+    "thresholds_calibrated": false,
+    "sla_windows_calibrated": false,
+    "scoring_inputs_available": 5,
+    "scoring_inputs_declared": 5,
+    "caveats": [
+      "Priorities in this report derive from static analysis thresholds that have NOT been calibrated (VM-OQ-06). Treat P0/P1 routing as provisional: the thresholds are the specification's defaults and are expected to be noisy until shadow-run data has been reviewed.",
+      "SLA figures in this report are measured against PROVISIONAL remediation windows (VM-OQ-02 is unanswered): the windows are the specification's working defaults and have not been agreed with the teams they bind. A breach here means \"older than an unreviewed window\", not \"late against a commitment\".",
+      "Blast radius is recorded but does not influence priority (VM-OQ-12 is unanswered), so a vulnerability in a widely consumed shared module may rank below one confined to a single repository."
+    ]
+  },
+  "caveats": [
+    "Priorities in this report derive from static analysis thresholds that have NOT been calibrated (VM-OQ-06). Treat P0/P1 routing as provisional: the thresholds are the specification's defaults and are expected to be noisy until shadow-run data has been reviewed.",
+    "SLA figures in this report are measured against PROVISIONAL remediation windows (VM-OQ-02 is unanswered): the windows are the specification's working defaults and have not been agreed with the teams they bind. A breach here means \"older than an unreviewed window\", not \"late against a commitment\".",
+    "Blast radius is recorded but does not influence priority (VM-OQ-12 is unanswered), so a vulnerability in a widely consumed shared module may rank below one confined to a single repository."
+  ]
+}

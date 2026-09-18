@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "backend": "memory",
+  "degraded": [
+    "static-analysis thresholds are uncalibrated (VM-OQ-06)",
+    "SLA windows are provisional (VM-OQ-02)"
+  ],
+  "demo": true
+}

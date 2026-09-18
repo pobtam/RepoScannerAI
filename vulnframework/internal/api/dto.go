@@ -580,8 +580,16 @@ type TrendPoint struct {
 	Partial bool `json:"partial"`
 	// ScannerChanged marks a run whose scanner image differs from the previous
 	// one, so a step change is attributable (VM-UI-F-306).
-	ScannerChanged bool   `json:"scanner_changed"`
-	ScannerImage   string `json:"scanner_image,omitempty"`
+	ScannerChanged bool `json:"scanner_changed"`
+	// Live marks a point computed from the store NOW rather than read from the
+	// run's immutable snapshot.
+	//
+	// The distinction is the whole of VM-UI-F-102 in one boolean. A series
+	// regenerated from today's state shows every past run as it looks now, so
+	// a finding detected in June and fixed in August is absent from June's
+	// point — and the line slopes downwards whatever actually happened.
+	Live         bool   `json:"live"`
+	ScannerImage string `json:"scanner_image,omitempty"`
 }
 
 // TrendSeries is one metric over runs of ONE kind (VM-UI-F-310).
@@ -648,3 +656,30 @@ type (
 
 // stateOf renders a finding's resolution partition in words.
 func partitionOf(s model.State) string { return string(model.PartitionOf(s)) }
+
+// --- no nulls where the interface iterates ----------------------------------
+//
+// A nil Go slice marshals to JSON `null`, and a client that iterates it
+// crashes. The generated TypeScript for a required array field says
+// `string[]`, not `string[] | null`, so a null would type-check on the client
+// and fail at runtime — in the one place the generated types were supposed to
+// make safe.
+//
+// The rule at this boundary: a field the interface ITERATES is always an array
+// or an object, even when empty. A field that may be genuinely absent is
+// `omitempty` and is then an ABSENT KEY, never a null. Absence is a missing
+// key; emptiness is an empty collection; and neither is a zero.
+
+func emptyIfNil[T any](in []T) []T {
+	if in == nil {
+		return []T{}
+	}
+	return in
+}
+
+func emptyMapIfNil[K comparable, V any](in map[K]V) map[K]V {
+	if in == nil {
+		return map[K]V{}
+	}
+	return in
+}

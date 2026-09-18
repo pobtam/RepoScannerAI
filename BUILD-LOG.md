@@ -4138,3 +4138,173 @@ module, and the wave view groups by that.
   build. Every write path the UI spec implies (VM-UI-F-1101 report generation,
   the human reset in §7.4) is unbuilt, and the interface must not offer a
   button that does nothing.
+
+---
+
+## The demonstration, the frontend (U0–U10), and the run interface
+
+**Status: green.** 519 Go tests (816 with subtests), 67 interface tests.
+`go vet`, `gofmt`, `-race` and `tsc --noEmit` clean; both store backends green.
+
+### The demonstration (`internal/demo`)
+
+Two files, and the split is the point. `DEMO_DATA.go` carries a banner saying
+what it is — fabricated scanner output, `demo-org/` repositories,
+`example.com/` modules, `CVE-DEMO-` identifiers that cannot collide with a
+real advisory — and `demo.go` runs the **real pipeline** over it: the real
+orchestrator, store, enrichment, triage, scoring, policy, ticket, remediation
+and report code.
+
+Nothing in the demonstration constructs a finding, a priority or a state. That
+was a deliberate choice against the easier one: a demo that wrote its own
+findings could show a field the pipeline cannot produce, which is the defect
+class this build spent twelve phases learning to detect. It also means running
+the demo IS a test that the whole pipeline completes with no credentials, no
+network, no Docker and no scanners.
+
+Six weekly sweeps, laid out backwards from today, so the awkward cases are
+real rather than asserted: a finding that appears, one that verifies by
+disappearing from a complete scan, one that **regresses** afterwards, one not
+re-observed because a scan went **partial**, a repository whose worker starts
+and never reports, a repository that fails to clone, a run that **ran out of
+API budget** and deferred two repositories, a scanner-image change partway
+through, a first-party wave with three consumers on two versions and one
+excluded by a replace directive, SLA breaches accumulating 0 → 9, and an
+issued, hashed report per run.
+
+`TestTheDemonstrationShowsTheAwkwardCases` asserts each of those exists.
+A cheerful demo would misrepresent this framework more than no demo at all.
+
+### Two defects the demo found
+
+**Trends were being regenerated from today's store.** Every point in a series
+showed each past run as it looks NOW, so a finding detected in June and fixed
+in August was absent from June's point and the line sloped downwards whatever
+had happened. That is VM-UI-F-102 arriving in the trend. `metricFor` now reads
+each run's **immutable snapshot** where one was issued, and marks the point
+`live` where it had to generate one — so the chart says which points are
+historical and which are not.
+
+**A partial scan produced a gap with no cause and no owner**, because the fake
+dispatcher could set an outcome without the gap that explains it. A gap nobody
+can route is unactionable (VM-F-214), so `FakeDispatcher.WithGaps` exists and
+is separate from `WithOutcome`: they are separate producer outputs, and a fake
+that bundled them would let a test assert a partial scan without the
+attribution that makes it useful.
+
+### The interface (`reportui`)
+
+Rebuilt against the real API. The prototype moved to `prototype/` with a README
+saying what it is: the interaction reference the specification was written
+against, holding no real data and talking to no API.
+
+**The type chain has no hand-written link.** Go response structs → reflection
+→ OpenAPI document → `openapi-typescript` → 2,000 lines of generated types.
+The runtime validators are Zod schemas, and they are held to the generated
+types by a **compile-time proof**: each schema's inferred type must match its
+generated counterpart, both ways that matter — assignable, and claiming no key
+the server does not have.
+
+That proof was decorative when first written. It resolved to `never` on
+failure, and `never extends true` is true, so nothing could fail it. Two
+mutations — a validator claiming a `credential_value` field, and a validator
+expecting a number where the server sends a boolean — both **survived**.
+Rewritten, both fail. The lesson is the one the whole build keeps relearning:
+a check nobody has broken on purpose is a check nobody should trust.
+
+**Every honesty distinction is rendered, and each has a test whose failure was
+verified:**
+
+| Rendered | Test | Mutation that fails it |
+|---|---|---|
+| an unavailable EPSS/KEV as "not looked up" | `shows an unavailable exploitation input…` | returning `0.00` |
+| the not-re-observed marker WITH its explanation | `renders with its explanation attached` | dropping the title |
+| a restricted finding counted but not opened | `are shown as counted-but-not-openable` | omitting it from the page |
+| the corpus in words, with three separate figures | `states the corpus in words` | — |
+| a live overview vs an immutable snapshot | `says when its figures come from a snapshot` | rendering live figures as historical |
+| a partial run marked everywhere | `marks a partial run` | clearing the flag |
+| a never-scanned repository as "never scanned" | `renders a never-scanned repository…` | rendering 0h |
+| depend and reach as separate figures | `keeps depend and reach apart` | — |
+| every table column carrying data | `has a non-empty cell in every column` | the virtualiser rendering nothing |
+
+**`columns.test.tsx` is the frontend's producer-coverage audit.** The API
+proves every field it sends has a real producer; this proves every COLUMN has a
+value for at least one row of a realistic corpus. An always-empty column is a
+producer-coverage failure, not a styling gap — the user's rule, and the right
+one.
+
+Its first run found a real defect: the virtualiser renders **nothing** when the
+scroll container has not been measured, and a table that renders nothing looks
+exactly like a fleet with no findings. It now falls back to rendering every
+row when the measurement is zero. Virtualisation is an optimisation; an
+unmeasured container must not mean an empty fleet.
+
+**Fixtures come from the API, not from imagination.**
+`scripts/capture-fixtures.mjs` records the demonstration API's real responses,
+and every test run **re-validates them against the Zod schemas** — so a schema
+change invalidates the fixtures loudly rather than leaving the interface's
+tests passing against a shape the server no longer produces.
+
+### Two specification deviations, recorded rather than made silently
+
+* **A66 — no TanStack Router.** VM-UI §7.1 names it for typed search
+  parameters. The typing here comes from the Zod schema in `view-state.ts`,
+  which is also what validates a pasted link and what serialises to the API —
+  one definition of view state rather than a router's route tree plus a schema.
+  A hand-rolled router of 120 lines does the rest. The benefit the
+  specification wanted is kept; the second source of route truth is not.
+* **A67 — no Tailwind, and no TanStack Table.** Plain CSS with custom
+  properties, and hand-written table markup with `@tanstack/react-virtual` for
+  the virtualisation that VM-UI-F-413 actually requires. Sorting is
+  server-side, so a table library's column machinery would have been
+  unexercised weight. Initial JavaScript is 208 KB compressed, inside
+  VM-UI-NF-103's 300 KB.
+
+### The run interface
+
+`./setup.sh` and `./run.sh`, exactly those names.
+
+`setup.sh` checks for Go and Node, **prints where to get them and stops** if
+either is missing — it never installs system software, because a script that
+silently installs a language runtime is a script nobody can reason about. Then
+it builds the backend, installs the interface's dependencies, starts the API
+briefly to **generate the types from its own schema**, type-checks the result,
+and prints `Setup complete.`
+
+`run.sh` starts the API in demonstration mode on the in-memory backend, waits
+for it to answer rather than sleeping and hoping, prints one line — `App
+running — open http://localhost:5173 in your browser` — and foregrounds the
+interface. Ctrl-C stops both. `--postgres` starts a Docker PostgreSQL, applies
+the migrations, and says plainly that the interface will show an
+authentication error in that mode because the API refuses to serve real data
+without an authenticating proxy, and that the mode exists to exercise the
+database rather than to browse.
+
+### Assumptions
+
+* **A64** and **A65** are recorded under the API server entry above.
+* **A66**, **A67** as above.
+* **A68.** The demonstration seeds only the in-memory backend.
+  `--postgres` starts empty on purpose: seeding invented findings into a
+  durable store is how invented findings come to be quoted as real ones.
+* **A69.** `DemoAuth` grants one fixed identity to every request. It is not an
+  authentication mode and is labelled as such in `/v1/health`, in the banner
+  on every page, and in FINAL-STATUS. The alternative — serving the demo as an
+  undetermined principal — would exercise the refusal path rather than the
+  interface.
+
+### Open questions
+
+* **OQ-UI-01.** Contrast and a full keyboard traversal are asserted where a
+  test can hold them (accessible names on every control, `scope` on every
+  column header, text as well as colour on every badge, an `aria-label` on the
+  wave graph, `prefers-reduced-motion` honoured). The WCAG AA contrast audit
+  and an end-to-end keyboard pass are **manual** and have not been done. Not
+  claimed as green.
+* **OQ-UI-02.** Saved filters (VM-UI-F-414) are not built. The URL already
+  makes a view shareable, which is the load-bearing half; storing them per
+  user needs the identity provider (D6).
+* **OQ-UI-03.** The 10,000-row responsiveness requirement (VM-UI-F-413) is
+  structurally satisfied — the table is virtualised and pages at 500 — and has
+  not been measured against 10,000 rows, because the demonstration corpus has
+  eighteen findings. A benchmark needs a fleet-sized store (see OQ-API-01).

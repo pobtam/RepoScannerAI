@@ -1,0 +1,9 @@
+# The first-party module registry for the DEMONSTRATION data.
+#
+# It declares which modules the fabricated organisation owns, which is what
+# makes the wave view and the first-party defer reachable (VM-F-601). Nothing
+# here describes a real module.
+version: 1
+wave2_trigger: tag
+modules:
+  example.com/demo-org/platform-common: demo-org/platform-common

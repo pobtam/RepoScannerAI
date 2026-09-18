@@ -131,12 +131,12 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request, run store.Run,
 					"must be regenerated under a new identifier rather than edited")
 			return
 		}
-		s.write(w, r, http.StatusOK, Overview{
+		s.write(w, r, http.StatusOK, normaliseOverview(Overview{
 			Run: runSummary(run), Live: false,
 			SnapshotID: rec.ID, ContentHash: rec.ContentHash,
 			Counts: rep.Counts, Delta: rep.Delta, Coverage: rep.Coverage,
 			Provenance: rep.Provenance, Caveats: rep.Provenance.Caveats,
-		})
+		}))
 		return
 	}
 
@@ -161,11 +161,31 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request, run store.Run,
 		note = "these figures are current: the run is the most recent one and no immutable " +
 			"snapshot has been issued for it yet"
 	}
-	s.write(w, r, http.StatusOK, Overview{
+	s.write(w, r, http.StatusOK, normaliseOverview(Overview{
 		Run: runSummary(run), Live: true, LiveNote: note,
 		Counts: rep.Counts, Delta: rep.Delta, Coverage: rep.Coverage,
 		Provenance: rep.Provenance, Caveats: rep.Provenance.Caveats,
-	})
+	}))
+}
+
+// normaliseOverview fills the collections the interface iterates.
+//
+// The report's own structures are carried through rather than restated, and a
+// report whose map is nil marshals a JSON null into a field the generated
+// TypeScript says is an object. Normalising here keeps the passthrough and
+// keeps the contract.
+func normaliseOverview(o Overview) Overview {
+	o.Counts.ByPriority = emptyMapIfNil(o.Counts.ByPriority)
+	o.Counts.ByState = emptyMapIfNil(o.Counts.ByState)
+	o.Counts.ByCategory = emptyMapIfNil(o.Counts.ByCategory)
+	o.Counts.NotFixedByReason = emptyMapIfNil(o.Counts.NotFixedByReason)
+	o.Coverage.ByCause = emptyMapIfNil(o.Coverage.ByCause)
+	o.Coverage.Escalations = emptyIfNil(o.Coverage.Escalations)
+	o.Coverage.UnscannedRepos = emptyIfNil(o.Coverage.UnscannedRepos)
+	o.Provenance.ToolVersions = emptyMapIfNil(o.Provenance.ToolVersions)
+	o.Provenance.Caveats = emptyIfNil(o.Provenance.Caveats)
+	o.Caveats = emptyIfNil(o.Caveats)
+	return o
 }
 
 // snapshotFor returns the fleet report issued for a run, if one was.

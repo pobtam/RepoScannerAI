@@ -1,0 +1,302 @@
+{
+  "repos": [
+    {
+      "value": "demo-org/batch-jobs",
+      "count": 2,
+      "disabled": false
+    },
+    {
+      "value": "demo-org/checkout-web",
+      "count": 3,
+      "disabled": false
+    },
+    {
+      "value": "demo-org/edge-proxy",
+      "count": 3,
+      "disabled": false
+    },
+    {
+      "value": "demo-org/legacy-reporting",
+      "count": 1,
+      "disabled": false
+    },
+    {
+      "value": "demo-org/payments-api",
+      "count": 6,
+      "disabled": false
+    },
+    {
+      "value": "demo-org/platform-common",
+      "count": 2,
+      "disabled": false
+    }
+  ],
+  "tiers": [
+    {
+      "value": "1",
+      "count": 11,
+      "disabled": false
+    },
+    {
+      "value": "2",
+      "count": 5,
+      "disabled": false
+    },
+    {
+      "value": "3",
+      "count": 1,
+      "disabled": false
+    }
+  ],
+  "languages": [
+    {
+      "value": "go",
+      "count": 17,
+      "disabled": false
+    },
+    {
+      "value": "javascript",
+      "count": 3,
+      "disabled": false
+    }
+  ],
+  "categories": [
+    {
+      "value": "dependency",
+      "count": 12,
+      "disabled": false
+    },
+    {
+      "value": "code",
+      "count": 2,
+      "disabled": false
+    },
+    {
+      "value": "secret",
+      "count": 2,
+      "disabled": false
+    },
+    {
+      "value": "config",
+      "count": 1,
+      "disabled": false
+    }
+  ],
+  "states": [
+    {
+      "value": "DETECTED",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "TRIAGED",
+      "count": 3,
+      "disabled": false
+    },
+    {
+      "value": "AUTO_REMEDIATING",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "PR_OPEN",
+      "count": 2,
+      "disabled": false
+    },
+    {
+      "value": "MERGED",
+      "count": 5,
+      "disabled": false
+    },
+    {
+      "value": "VERIFIED",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "BLOCKED_UPSTREAM",
+      "count": 3,
+      "disabled": false
+    },
+    {
+      "value": "NEEDS_HUMAN",
+      "count": 3,
+      "disabled": false
+    },
+    {
+      "value": "FALSE_POSITIVE_CANDIDATE",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "SUPPRESSED",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "DECLINED",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "WONT_FIX",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "REGRESSED",
+      "count": 1,
+      "disabled": false
+    }
+  ],
+  "reasons": [
+    {
+      "value": "AGENT_GAVE_UP",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "BLOCKED_UPSTREAM_FIRST_PARTY",
+      "count": 3,
+      "disabled": false
+    },
+    {
+      "value": "BUDGET_EXHAUSTED",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "BUILD_FAILED",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "DECLINED",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "FIX_INEFFECTIVE",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "MAJOR_BUMP_POLICY",
+      "count": 1,
+      "disabled": false
+    },
+    {
+      "value": "NEEDS_HUMAN_SECRET",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "NO_TEST_COVERAGE",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "NO_UPSTREAM_FIX",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "POLICY_ISSUE_ONLY",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "SUPPRESSION_PROPOSED",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "TESTS_FAILED",
+      "count": 0,
+      "disabled": true
+    }
+  ],
+  "priorities": [
+    {
+      "value": "P0",
+      "count": 6,
+      "disabled": false
+    },
+    {
+      "value": "P1",
+      "count": 1,
+      "disabled": false
+    },
+    {
+      "value": "P2",
+      "count": 4,
+      "disabled": false
+    },
+    {
+      "value": "P3",
+      "count": 6,
+      "disabled": false
+    }
+  ],
+  "severities": [
+    {
+      "value": "CRITICAL",
+      "count": 8,
+      "disabled": false
+    },
+    {
+      "value": "HIGH",
+      "count": 5,
+      "disabled": false
+    },
+    {
+      "value": "MEDIUM",
+      "count": 4,
+      "disabled": false
+    },
+    {
+      "value": "LOW",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "UNKNOWN",
+      "count": 0,
+      "disabled": true
+    }
+  ],
+  "reachable": [
+    {
+      "value": "true",
+      "count": 6,
+      "disabled": false
+    },
+    {
+      "value": "unknown",
+      "count": 8,
+      "disabled": false
+    },
+    {
+      "value": "false",
+      "count": 3,
+      "disabled": false
+    }
+  ],
+  "dep_classes": [
+    {
+      "value": "development",
+      "count": 1,
+      "disabled": false
+    },
+    {
+      "value": "n/a",
+      "count": 0,
+      "disabled": true
+    },
+    {
+      "value": "production",
+      "count": 11,
+      "disabled": false
+    }
+  ]
+}

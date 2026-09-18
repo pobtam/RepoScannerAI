@@ -1,0 +1,112 @@
+{
+  "fingerprint": "f2224855ab1d7224",
+  "transitions": [
+    {
+      "to": "DETECTED",
+      "actor": "scanworker",
+      "cause": "first observation in S-000001",
+      "at": "2026-08-14T09:00:00Z"
+    },
+    {
+      "from": "DETECTED",
+      "to": "TRIAGED",
+      "actor": "triage",
+      "cause": "triage complete",
+      "at": "2026-08-14T09:00:00Z"
+    },
+    {
+      "from": "TRIAGED",
+      "to": "AUTO_REMEDIATING",
+      "actor": "orchestrator",
+      "cause": "remediation started for fix group 71859d",
+      "at": "2026-08-14T09:00:00Z"
+    },
+    {
+      "from": "AUTO_REMEDIATING",
+      "to": "PR_OPEN",
+      "actor": "worker",
+      "cause": "pull request https://github.com/demo-org/edge-proxy/pull/3",
+      "at": "2026-08-14T09:00:00Z"
+    }
+  ],
+  "observations": [
+    {
+      "run_id": "S-000006",
+      "kind": "sweep",
+      "at": "2026-09-18T09:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy"
+      ]
+    },
+    {
+      "run_id": "S-000005",
+      "kind": "sweep",
+      "at": "2026-09-11T09:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy"
+      ]
+    },
+    {
+      "run_id": "S-000004",
+      "kind": "sweep",
+      "at": "2026-09-04T09:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy"
+      ]
+    },
+    {
+      "run_id": "S-000003",
+      "kind": "sweep",
+      "at": "2026-08-28T09:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy"
+      ]
+    },
+    {
+      "run_id": "S-000002",
+      "kind": "sweep",
+      "at": "2026-08-21T09:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy"
+      ]
+    },
+    {
+      "run_id": "S-000001",
+      "kind": "sweep",
+      "at": "2026-08-14T09:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy"
+      ]
+    }
+  ]
+}

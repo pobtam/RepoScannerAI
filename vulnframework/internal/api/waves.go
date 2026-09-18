@@ -140,7 +140,7 @@ func (s *Server) handleWaves(w http.ResponseWriter, r *http.Request) {
 				wave.VersionSpread[c.Version]++
 			}
 		}
-		wave.Steps = waveSteps(wave, spread, s.trigger())
+		wave.Steps = emptyIfNil(waveSteps(wave, spread, s.trigger()))
 		out2 := wave
 		out = append(out, out2)
 	}

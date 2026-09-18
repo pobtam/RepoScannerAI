@@ -1,0 +1,99 @@
+{
+  "run": {
+    "id": "S-000001",
+    "kind": "sweep",
+    "started_at": "2026-08-14T09:00:00Z",
+    "finished_at": "2026-08-14T09:00:00Z",
+    "trigger": "cron",
+    "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
+    "repos_planned": 6,
+    "repos_scanned": 6,
+    "repos_failed": 0,
+    "partial": false
+  },
+  "live": false,
+  "snapshot_id": "R-S-000001-23c51c14",
+  "content_hash": "a3fa052a175decb8bf2a92fd385fd1ad7dfd374f5f37fc3ba109ca8ebc04f4b6",
+  "counts": {
+    "total": 16,
+    "unresolved": 16,
+    "pending_verification": 0,
+    "resolved": 0,
+    "by_priority": {
+      "P0": 5,
+      "P1": 1,
+      "P2": 4,
+      "P3": 6
+    },
+    "by_state": {
+      "BLOCKED_UPSTREAM": 3,
+      "NEEDS_HUMAN": 2,
+      "PR_OPEN": 4,
+      "TRIAGED": 7
+    },
+    "by_category": {
+      "code": 2,
+      "config": 1,
+      "dependency": 12,
+      "secret": 1
+    },
+    "not_reobserved": 0,
+    "sla_breached": 0,
+    "sla_paused": 0,
+    "not_fixed_by_reason": {
+      "BLOCKED_UPSTREAM_FIRST_PARTY": 3,
+      "MAJOR_BUMP_POLICY": 1
+    },
+    "not_fixed_unexplained": 12,
+    "sla_not_computed": 0
+  },
+  "delta": {
+    "comparable": false,
+    "total_change": 0,
+    "unresolved_change": 0,
+    "new": 0,
+    "no_longer_observed": 0,
+    "verified": 0,
+    "regressed": 0
+  },
+  "coverage": {
+    "in_scope": 6,
+    "complete": 6,
+    "partial": 0,
+    "failed": 0,
+    "not_dispatched": 0,
+    "no_result": 0,
+    "percent": 100,
+    "staleness": {
+      "in_scope": 6,
+      "never_scanned": 0,
+      "max_age": 0,
+      "p95_age": 0,
+      "median_age": 0,
+      "stalest_repo": "demo-org/platform-common"
+    }
+  },
+  "provenance": {
+    "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
+    "tool_versions": {
+      "gitleaks": "v8.28.0",
+      "gosec": "v2.22.9",
+      "govulncheck": "v1.8.0",
+      "trivy": "v0.58.1"
+    },
+    "thresholds_calibrated": false,
+    "sla_windows_calibrated": false,
+    "scoring_inputs_available": 5,
+    "scoring_inputs_declared": 5,
+    "caveats": [
+      "Priorities in this report derive from static analysis thresholds that have NOT been calibrated (VM-OQ-06). Treat P0/P1 routing as provisional: the thresholds are the specification's defaults and are expected to be noisy until shadow-run data has been reviewed.",
+      "SLA figures in this report are measured against PROVISIONAL remediation windows (VM-OQ-02 is unanswered): the windows are the specification's working defaults and have not been agreed with the teams they bind. A breach here means \"older than an unreviewed window\", not \"late against a commitment\".",
+      "Blast radius is recorded but does not influence priority (VM-OQ-12 is unanswered), so a vulnerability in a widely consumed shared module may rank below one confined to a single repository."
+    ]
+  },
+  "caveats": [
+    "Priorities in this report derive from static analysis thresholds that have NOT been calibrated (VM-OQ-06). Treat P0/P1 routing as provisional: the thresholds are the specification's defaults and are expected to be noisy until shadow-run data has been reviewed.",
+    "SLA figures in this report are measured against PROVISIONAL remediation windows (VM-OQ-02 is unanswered): the windows are the specification's working defaults and have not been agreed with the teams they bind. A breach here means \"older than an unreviewed window\", not \"late against a commitment\".",
+    "Blast radius is recorded but does not influence priority (VM-OQ-12 is unanswered), so a vulnerability in a widely consumed shared module may rank below one confined to a single repository."
+  ]
+}
