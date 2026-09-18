@@ -23,6 +23,18 @@ import (
 // outage switched the system from one to the other.
 func (o *Orchestrator) ApplyWebhook(ctx context.Context, ev gh.Event) (SyncStats, error) {
 	var stats SyncStats
+	now := o.clock()
+
+	// The delivery itself is the evidence that the path works, whatever it
+	// says. Recorded before anything is interpreted, and recorded for events
+	// this framework ignores, because an irrelevant delivery proves the
+	// endpoint, the secret and the installation just as well as a relevant one
+	// — and that is what reconciliation needs to know before it decides
+	// whether to stop asking the remote about everything (OQ-P12-01).
+	if err := o.Store.RecordWebhookDelivery(ctx, now); err != nil {
+		return stats, err
+	}
+	stats.WebhookLive = true
 
 	switch ev.Kind {
 	case gh.EventPullRequestClosed:
@@ -37,6 +49,8 @@ func (o *Orchestrator) ApplyWebhook(ctx context.Context, ev gh.Event) (SyncStats
 			return stats, nil
 		}
 		if rec.Number != ev.Number || rec.Repo != ev.Repo {
+			// Not confirmed: a delivery that disagrees with the record
+			// vouches for nothing.
 			// The branch is ours and the identifiers do not match. Refusing
 			// rather than trusting the event: a delivery that disagrees with
 			// the record is either a misconfiguration or forged.
@@ -44,6 +58,14 @@ func (o *Orchestrator) ApplyWebhook(ctx context.Context, ev gh.Event) (SyncStats
 				"gh: webhook for %s#%d does not match the recorded pull request %s#%d on branch %s",
 				ev.Repo, ev.Number, rec.Repo, rec.Number, ev.Branch)
 		}
+
+		// Authoritative word about this pull request, so it needs no query.
+		// This is what makes the webhook the PRIMARY path rather than a
+		// shortcut layered over a poll that runs regardless.
+		if err := o.Store.ConfirmRemediationPR(ctx, rec.Branch, now); err != nil {
+			return stats, err
+		}
+		stats.Confirmed = 1
 
 		moved, err := o.applyPRClosure(ctx, rec, ev.Merged)
 		if err != nil {
@@ -59,8 +81,25 @@ func (o *Orchestrator) ApplyWebhook(ctx context.Context, ev gh.Event) (SyncStats
 			Kind: RecoveryPRStateSync, Repo: rec.Repo,
 			Reason: fmt.Sprintf("webhook: pull request %s was %s; %d findings moved promptly rather "+
 				"than at the next sweep", rec.URL, closedHow(gh.PullRequest{Merged: ev.Merged}), moved),
-			At: o.clock(),
+			At: now,
 		})
+		return stats, nil
+
+	case gh.EventPullRequestOpened:
+		// Our own pull request, reported back by the App. Nothing to drive —
+		// the worker already recorded it — but the event vouches for its
+		// state, which spares the fallback a query.
+		rec, ok, err := o.Store.GetRemediationPR(ctx, ev.Branch)
+		if err != nil {
+			return stats, err
+		}
+		if !ok || !rec.Open() || rec.Number != ev.Number || rec.Repo != ev.Repo {
+			return stats, nil
+		}
+		if err := o.Store.ConfirmRemediationPR(ctx, rec.Branch, now); err != nil {
+			return stats, err
+		}
+		stats.Confirmed = 1
 		return stats, nil
 
 	default:

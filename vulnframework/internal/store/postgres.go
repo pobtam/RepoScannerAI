@@ -1543,10 +1543,11 @@ func (p *Postgres) scanRemediationPR(ctx context.Context, query string, arg any)
 		closed    sql.NullTime
 		ticketRef sql.NullString
 		ticketURL sql.NullString
+		confirmed sql.NullTime
 	)
 	err := p.db.QueryRowContext(ctx, query, arg).Scan(
 		&pr.Branch, &pr.Repo, &pr.FixGroupID, &number, &url, &pr.State, &pr.OpenedAt, &closed,
-		&pr.Merged, &ticketRef, &ticketURL)
+		&pr.Merged, &ticketRef, &ticketURL, &confirmed)
 	if err != nil {
 		return RemediationPR{}, err
 	}
@@ -1556,6 +1557,10 @@ func (p *Postgres) scanRemediationPR(ctx context.Context, query string, arg any)
 	if closed.Valid {
 		at := closed.Time.UTC()
 		pr.ClosedAt = &at
+	}
+	if confirmed.Valid {
+		at := confirmed.Time.UTC()
+		pr.ConfirmedAt = &at
 	}
 
 	rows, err := p.db.QueryContext(ctx, qPRFindings, pr.Branch)
@@ -1582,6 +1587,79 @@ func (p *Postgres) CloseRemediationPR(ctx context.Context, branch string, at tim
 		return fmt.Errorf("%w: remediation pull request for branch %q", ErrNotFound, branch)
 	}
 	return nil
+}
+
+func (p *Postgres) ConfirmRemediationPR(ctx context.Context, branch string, at time.Time) error {
+	res, err := p.db.ExecContext(ctx, qConfirmRemediationPR, branch, at.UTC())
+	if err != nil {
+		return fmt.Errorf("store: confirming remediation pull request %s: %w", branch, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return fmt.Errorf("%w: remediation pull request for branch %q", ErrNotFound, branch)
+	}
+	return nil
+}
+
+func (p *Postgres) UnconfirmedRemediationPRs(ctx context.Context, repo string, since time.Time, limit int) ([]RemediationPR, error) {
+	if limit <= 0 {
+		limit = 1000
+	}
+	rows, err := p.db.QueryContext(ctx, qUnconfirmedRemediationPRs, repo, since.UTC(), limit)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading unconfirmed pull requests for %s: %w", repo, err)
+	}
+	var branches []string
+	for rows.Next() {
+		var branch string
+		if err := rows.Scan(&branch); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		branches = append(branches, branch)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	// Through the single-row path, so membership is loaded the one way.
+	out := make([]RemediationPR, 0, len(branches))
+	for _, branch := range branches {
+		pr, ok, err := p.GetRemediationPR(ctx, branch)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			out = append(out, pr)
+		}
+	}
+	return out, nil
+}
+
+// --- Webhook health (OQ-P12-01) ---------------------------------------------
+
+func (p *Postgres) RecordWebhookDelivery(ctx context.Context, at time.Time) error {
+	if _, err := p.db.ExecContext(ctx, qRecordWebhookDelivery, at.UTC()); err != nil {
+		return fmt.Errorf("store: recording a webhook delivery: %w", err)
+	}
+	return nil
+}
+
+func (p *Postgres) WebhookHealth(ctx context.Context) (WebhookHealth, error) {
+	var h WebhookHealth
+	err := p.db.QueryRowContext(ctx, qWebhookHealth).Scan(&h.LastDeliveryAt, &h.Deliveries)
+	if errors.Is(err, sql.ErrNoRows) {
+		// No delivery has ever arrived. The zero value says exactly that, and
+		// WebhookHealth.Live reads it as "not live" rather than as "live since
+		// the epoch".
+		return WebhookHealth{}, nil
+	}
+	if err != nil {
+		return WebhookHealth{}, err
+	}
+	h.LastDeliveryAt = h.LastDeliveryAt.UTC()
+	return h, nil
 }
 
 // openPRURLs returns the open pull request URL per finding, for the projection.
@@ -1616,9 +1694,10 @@ func (p *Postgres) OpenRemediationPRs(ctx context.Context, repo string) ([]Remed
 			number          sql.NullInt64
 			url, tRef, tURL sql.NullString
 			closed          sql.NullTime
+			confirmed       sql.NullTime
 		)
 		if err := rows.Scan(&pr.Branch, &pr.Repo, &pr.FixGroupID, &number, &url, &pr.State,
-			&pr.OpenedAt, &closed, &pr.Merged, &tRef, &tURL); err != nil {
+			&pr.OpenedAt, &closed, &pr.Merged, &tRef, &tURL, &confirmed); err != nil {
 			rows.Close()
 			return nil, err
 		}

@@ -314,11 +314,11 @@ ON CONFLICT (branch) DO UPDATE SET
   ticket_url = COALESCE(NULLIF(EXCLUDED.ticket_url, ''), remediation_prs.ticket_url)`
 
 	qGetRemediationPR = `
-SELECT branch, repo, fix_group_id, number, url, state, opened_at, closed_at, merged, ticket_ref, ticket_url
+SELECT branch, repo, fix_group_id, number, url, state, opened_at, closed_at, merged, ticket_ref, ticket_url, confirmed_at
 FROM remediation_prs WHERE branch = $1`
 
 	qRemediationPRForFinding = `
-SELECT p.branch, p.repo, p.fix_group_id, p.number, p.url, p.state, p.opened_at, p.closed_at, p.merged, p.ticket_ref, p.ticket_url
+SELECT p.branch, p.repo, p.fix_group_id, p.number, p.url, p.state, p.opened_at, p.closed_at, p.merged, p.ticket_ref, p.ticket_url, p.confirmed_at
 FROM remediation_prs p
 JOIN remediation_pr_findings f ON f.branch = p.branch
 WHERE f.fingerprint = $1 AND p.state = 'open'
@@ -328,8 +328,28 @@ LIMIT 1`
 	qCloseRemediationPR = `UPDATE remediation_prs SET state = 'closed', closed_at = $2, merged = $3 WHERE branch = $1`
 
 	qOpenRemediationPRs = `
-SELECT branch, repo, fix_group_id, number, url, state, opened_at, closed_at, merged, ticket_ref, ticket_url
+SELECT branch, repo, fix_group_id, number, url, state, opened_at, closed_at, merged, ticket_ref, ticket_url, confirmed_at
 FROM remediation_prs WHERE repo = $1 AND state = 'open' ORDER BY branch`
+
+	qConfirmRemediationPR = `UPDATE remediation_prs SET confirmed_at = $2 WHERE branch = $1`
+
+	// qUnconfirmedRemediationPRs is what replaces the poll fan-out: the open
+	// pull requests nothing has vouched for since $2, oldest confirmation
+	// first (never-confirmed first), bounded by $3.
+	qUnconfirmedRemediationPRs = `
+SELECT branch
+FROM remediation_prs
+WHERE repo = $1 AND state = 'open' AND (confirmed_at IS NULL OR confirmed_at < $2)
+ORDER BY confirmed_at ASC NULLS FIRST, branch
+LIMIT $3`
+
+	qRecordWebhookDelivery = `
+INSERT INTO webhook_health (id, last_delivery_at, deliveries) VALUES (1, $1, 1)
+ON CONFLICT (id) DO UPDATE SET
+  last_delivery_at = GREATEST(webhook_health.last_delivery_at, EXCLUDED.last_delivery_at),
+  deliveries       = webhook_health.deliveries + 1`
+
+	qWebhookHealth = `SELECT last_delivery_at, deliveries FROM webhook_health WHERE id = 1`
 
 	qDeletePRFindings = `DELETE FROM remediation_pr_findings WHERE branch = $1`
 

@@ -105,6 +105,43 @@ type RemediationPR struct {
 	// rather than recomputed: the membership is history, and recomputing it
 	// from current findings would disagree the moment one changed state.
 	Findings []string `json:"findings"`
+	// ConfirmedAt is when this pull request's state was last established by
+	// authoritative word — a verified webhook delivery about it, or a
+	// successful query against the remote (OQ-P12-01).
+	//
+	// It exists so reconciliation can ASK ABOUT THE UNCONFIRMED rather than
+	// about everything. Polling every open pull request on every sweep spends
+	// one API call per pull request per sweep to re-learn what the webhook
+	// already said, and the cost grows with the fleet exactly where the rate
+	// budget is tightest.
+	ConfirmedAt *time.Time `json:"confirmed_at,omitempty"`
+}
+
+// Confirmed reports whether the state was established at or after t.
+func (p RemediationPR) Confirmed(since time.Time) bool {
+	return p.ConfirmedAt != nil && !p.ConfirmedAt.Before(since)
+}
+
+// WebhookHealth is what the framework knows about its own delivery path
+// (OQ-P12-01).
+//
+// "No events" and "no deliveries" look identical from inside and mean opposite
+// things: the first is a quiet fleet, the second is a broken endpoint, a
+// rotated secret, or an uninstalled App. Recording when a verified delivery
+// last arrived is what lets reconciliation tell them apart — and fail closed,
+// by reverting to asking about everything, rather than trusting a path that
+// has gone silent.
+type WebhookHealth struct {
+	LastDeliveryAt time.Time `json:"last_delivery_at"`
+	Deliveries     int64     `json:"deliveries"`
+}
+
+// Live reports whether a verified delivery arrived within the silence window.
+func (h WebhookHealth) Live(now time.Time, silence time.Duration) bool {
+	if h.LastDeliveryAt.IsZero() {
+		return false
+	}
+	return now.Sub(h.LastDeliveryAt) <= silence
 }
 
 // Open reports whether the pull request is still open.

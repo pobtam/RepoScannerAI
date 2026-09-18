@@ -3699,3 +3699,110 @@ the sweep must still recover it.
   pre-production item, not a code gap that a fake can close, and it now has a
   name because OQ-AUDIT-06 showed that the interface's contract can be wrong in
   the fake without anything noticing.
+
+---
+
+## OQ-P12-01 — the webhook replaces the poll
+
+**Task:** *webhook REPLACES polling. Tear down the PR-state poll fan-out,
+consume the backoff. The webhook path becomes primary; reconciliation stays as
+fallback; both share one implementation and must produce IDENTICAL transitions.
+Assert polling is gone, not merely supplemented.*
+
+**Status: green.** Both backends; five mutations confirmed on each.
+
+### What was actually wrong
+
+Phase 12 added the webhook and left Phase 9b's poll running underneath it.
+`SyncPullRequests` iterated **every** open remediation pull request in a
+repository on **every** sweep and called `GetPR` on each — one API call per
+pull request per sweep, forever, to re-learn what a delivery had already said.
+The calls were also **unmetered**: they never touched the rate budget §7.2
+exists to protect, so a fleet with four hundred open remediation pull requests
+spent four hundred invisible calls per sweep and discovered the rate limit
+mid-run. "Webhook-accelerated" was true of the *transition* and false of the
+*cost*.
+
+Every existing test passed, and would have passed for ever: they assert that
+transitions happen and that the two paths agree. Neither claim distinguishes
+"the webhook is primary" from "the webhook is a nice-to-have on top of a poll".
+**The only thing that does is the call count**, which is what the new tests
+assert.
+
+### What landed
+
+* **`remediation_prs.confirmed_at`** — when a pull request's state was last
+  established by authoritative word: a verified delivery about it, or a
+  successful query. Reconciliation asks about **the unconfirmed**, not about
+  everything.
+* **`webhook_health`** — when the endpoint last received any verified
+  delivery, and how many. This is the tri-state discipline applied to the
+  delivery path: *quiet because nothing happened* and *quiet because nothing is
+  arriving* look identical from inside the framework and mean opposite things.
+  The zero value reads as **not live**, never as live-since-the-epoch, so an
+  endpoint that has never worked cannot pass for healthy.
+* **`ApplyWebhook`** records the delivery **before interpreting it** and
+  confirms the pull request it names. It records deliveries the framework then
+  **ignores**, because an irrelevant event proves the endpoint, the secret and
+  the installation just as well as a relevant one. A delivery that disagrees
+  with the record confirms nothing.
+* **`ReconcilePullRequests`** replaces `SyncPullRequests`, which is **deleted**
+  — not deprecated, not kept "just for the sweep". It selects unconfirmed pull
+  requests **oldest confirmation first** (never-confirmed first), bounded per
+  pass, and **acquires and consumes rate-budget credits per call**, reporting
+  `Deferred` for what the bound or the budget stopped it reaching.
+* **Fails closed.** No verified delivery inside the silence window ⇒ the
+  horizon collapses to zero, the pass asks about everything, and it records
+  `RecoveryWebhookSilent` naming the last delivery time.
+* **A closure the webhook missed is a LOST DELIVERY**, counted (`Lost`) and
+  said so in the recovery reason — not filed as a reconciliation success.
+* VM-AD **§7.3.1** records all of it as normative.
+
+### The tests that say the poll is gone
+
+| Test | Claim |
+|---|---|
+| `TestALiveWebhookMeansTheRemoteIsNotAskedAtAll` | twelve pull requests, twelve deliveries, **zero** `GetPR` calls |
+| `TestNoPollingFunctionRemains` | a **full sweep** makes zero `GetPR` calls when everything is freshly confirmed |
+| `TestTheFallbackIsBoundedAndPaysForItself` | `MaxChecks=5` ⇒ five calls, five credits spent, and the next pass does not re-ask about those five |
+| `TestReconciliationStopsWhenTheBudgetIsGoneAndSaysWhat` | two credits, ten pull requests ⇒ examined 2, **deferred 8** |
+| `TestASilentWebhookFallsBackToAskingAboutEverythingAndSaysSo` | a day of silence ⇒ asks about all five, catches the missed merge, records `webhook_silent` **and** `LOST DELIVERY` |
+| `TestTheTwoPathsWriteTheSameHistory` | state, reason code, verified reason, audit trail and pull request record identical via either path |
+| `TestOnlyUnconfirmedPullRequestsAreSelected` / `TestTheOldestConfirmationIsAskedAboutFirst` / `TestAClosedPullRequestIsNeverDue` | the store's selection rule, both backends |
+| `TestWebhookHealthDistinguishesQuietFromBroken` | never-delivered ≠ live; a late redelivery cannot make a live path look silent |
+
+### Mutation verification
+
+| Mutation | Result |
+|---|---|
+| the selection ignores `confirmed_at` (the poll is back) | store selection test + both call-count tests fail |
+| the batch is ordered by branch instead of oldest-first | `TestTheOldestConfirmationIsAskedAboutFirst` fails (the tail would starve) |
+| `ApplyWebhook` stops recording the heartbeat | both call-count tests fail (a live webhook reads as silent) |
+| the pass treats a silent webhook as live | `TestASilentWebhookFallsBackToAskingAboutEverythingAndSaysSo` fails |
+| reconciliation stops drawing on the rate budget | the bounded-and-pays test and the budget-exhaustion test fail |
+
+Each on **both** backends where the code is backend-specific.
+
+### Assumptions
+
+* **A58.** Defaults: horizon 6h, silence 30m, 25 checks per sweep. Chosen so a
+  live webhook costs nothing and a dead one is noticed within one sweep. All
+  three are configuration; none is load-bearing for correctness, because the
+  fail-closed path does not depend on their values.
+* **A59.** A pull request the remote does not have (`!found`) is left to the
+  stranding sweep rather than handled here. That sweep holds the `PR_OPEN`
+  findings and the reason vocabulary for a lost record (VM-AD §6.1.2); two
+  places deciding it would be two places to disagree.
+* **A60.** `RecordWebhookDelivery` takes the greater of the stored and incoming
+  timestamps, so a retried delivery carrying an older timestamp cannot make a
+  live path look silent. Tested.
+
+### Open question
+
+* **OQ-P12-02.** Nothing yet *serves* `POST /v1/webhooks/github`.
+  `gh.WebhookVerifier` parses and authenticates deliveries and `ApplyWebhook`
+  drives them, but the HTTP endpoint arrives with the API server. Until then
+  the primary path is code-complete and unreachable from outside the process,
+  which is exactly the shape of gap this log exists to name: the fallback
+  carries everything in a real deployment, and it is the fallback's *bounded*
+  form that would carry it.

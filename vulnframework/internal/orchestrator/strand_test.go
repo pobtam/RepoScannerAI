@@ -224,9 +224,9 @@ func TestClosedUnmergedPullRequestDeclinesItsFindingsWithNoWebhook(t *testing.T)
 		o := newOrchestrator(s, orchestrator.NewFakeDispatcher(), orchestrator.NewRateBudget(50), orchestrator.Config{})
 		o.Clock = func() time.Time { return at.Add(2 * time.Hour) }
 
-		stats, err := o.SyncPullRequests(ctx, remote, "org/api")
+		stats, err := o.ReconcilePullRequests(ctx, orchestrator.ReconcileConfig{PR: remote, Repo: "org/api"})
 		if err != nil {
-			t.Fatalf("SyncPullRequests: %v", err)
+			t.Fatalf("ReconcilePullRequests: %v", err)
 		}
 		if stats.Declined != 1 {
 			t.Errorf("declined %d findings, want 1 (VM-F-545)", stats.Declined)
@@ -306,9 +306,9 @@ func TestMergedPullRequestMovesFindingsToMerged(t *testing.T) {
 
 		o := newOrchestrator(s, orchestrator.NewFakeDispatcher(), orchestrator.NewRateBudget(50), orchestrator.Config{})
 		o.Clock = func() time.Time { return at.Add(2 * time.Hour) }
-		stats, err := o.SyncPullRequests(ctx, remote, "org/api")
+		stats, err := o.ReconcilePullRequests(ctx, orchestrator.ReconcileConfig{PR: remote, Repo: "org/api"})
 		if err != nil {
-			t.Fatalf("SyncPullRequests: %v", err)
+			t.Fatalf("ReconcilePullRequests: %v", err)
 		}
 		if stats.Merged != 1 {
 			t.Errorf("merged %d findings, want 1", stats.Merged)

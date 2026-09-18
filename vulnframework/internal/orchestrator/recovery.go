@@ -30,6 +30,15 @@ const (
 	// RecoveryMergedWithoutPublish — a Wave 1 fix merged and never shipped
 	// (VM-F-614).
 	RecoveryMergedWithoutPublish RecoveryKind = "merged_without_publish"
+	// RecoveryWebhookSilent — the webhook path has delivered nothing inside
+	// the silence window, so reconciliation reverted to asking the remote
+	// about every open pull request (OQ-P12-01).
+	//
+	// The fallback working is not the news. The news is that the primary path
+	// is not: a framework that quietly polls its way through a dead webhook
+	// looks healthy on every dashboard it has, and the first symptom is a rate
+	// limit or an invoice.
+	RecoveryWebhookSilent RecoveryKind = "webhook_silent"
 	// RecoveryAgentAbandoned — an agentic attempt was abandoned and its work
 	// discarded.
 	RecoveryAgentAbandoned RecoveryKind = "agent_abandoned"

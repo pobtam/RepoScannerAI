@@ -37,6 +37,7 @@ type Memory struct {
 	tickets        map[string]Ticket // keyed by fingerprint
 	repoLocks      map[string]RepoLock
 	remediationPRs map[string]RemediationPR
+	webhook        WebhookHealth
 	runTickets     map[string]RunTicket
 	deps           map[string]map[string]ModuleDep
 	ticketOps      []TicketOp
@@ -1315,6 +1316,71 @@ func (m *Memory) OpenRemediationPRs(_ context.Context, repo string) ([]Remediati
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Branch < out[j].Branch })
 	return out, nil
+}
+
+func (m *Memory) ConfirmRemediationPR(_ context.Context, branch string, at time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	pr, ok := m.remediationPRs[branch]
+	if !ok {
+		return fmt.Errorf("%w: pull request for branch %q", ErrNotFound, branch)
+	}
+	stamp := at.UTC()
+	pr.ConfirmedAt = &stamp
+	m.remediationPRs[branch] = pr
+	return nil
+}
+
+func (m *Memory) UnconfirmedRemediationPRs(_ context.Context, repo string, since time.Time, limit int) ([]RemediationPR, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []RemediationPR
+	for _, pr := range m.remediationPRs {
+		if pr.Repo != repo || !pr.Open() || pr.Confirmed(since) {
+			continue
+		}
+		out = append(out, pr)
+	}
+	// Oldest confirmation first, so a pull request nothing has vouched for
+	// since it was opened is asked about before one confirmed an hour ago, and
+	// nothing starves behind a bounded batch. Never-confirmed sorts first.
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i].ConfirmedAt, out[j].ConfirmedAt
+		switch {
+		case a == nil && b == nil:
+			return out[i].Branch < out[j].Branch
+		case a == nil:
+			return true
+		case b == nil:
+			return false
+		case !a.Equal(*b):
+			return a.Before(*b)
+		}
+		return out[i].Branch < out[j].Branch
+	})
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+// --- Webhook health (OQ-P12-01) ---------------------------------------------
+
+func (m *Memory) RecordWebhookDelivery(_ context.Context, at time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	stamp := at.UTC()
+	if stamp.After(m.webhook.LastDeliveryAt) {
+		m.webhook.LastDeliveryAt = stamp
+	}
+	m.webhook.Deliveries++
+	return nil
+}
+
+func (m *Memory) WebhookHealth(_ context.Context) (WebhookHealth, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.webhook, nil
 }
 
 // --- Run parent tickets (VM-AD §13.3 row 1) ---------------------------------

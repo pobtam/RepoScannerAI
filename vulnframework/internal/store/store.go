@@ -416,9 +416,30 @@ type Store interface {
 	// pull request that landed from one a human closed, which is the
 	// difference between MERGED and DECLINED (VM-F-545).
 	CloseRemediationPR(ctx context.Context, branch string, at time.Time, merged bool) error
-	// OpenRemediationPRs returns a repository's open pull request records, so
-	// reconciliation can ask the remote what became of each.
+	// OpenRemediationPRs returns a repository's open pull request records.
 	OpenRemediationPRs(ctx context.Context, repo string) ([]RemediationPR, error)
+	// ConfirmRemediationPR records that a pull request's state was established
+	// by authoritative word at this time — a verified delivery about it, or a
+	// successful query (OQ-P12-01).
+	ConfirmRemediationPR(ctx context.Context, branch string, at time.Time) error
+	// UnconfirmedRemediationPRs returns open pull requests whose state has not
+	// been confirmed since `since`, oldest first, at most limit.
+	//
+	// This is what replaces polling every open pull request on every sweep:
+	// reconciliation asks about what nothing has vouched for recently, in a
+	// bounded batch, oldest first so nothing starves.
+	UnconfirmedRemediationPRs(ctx context.Context, repo string, since time.Time, limit int) ([]RemediationPR, error)
+
+	// --- Webhook health (OQ-P12-01) ---
+
+	// RecordWebhookDelivery notes that a VERIFIED delivery arrived.
+	//
+	// Recorded for every verified delivery, including those the framework then
+	// ignores: the fact being recorded is that the path works, which an
+	// irrelevant event proves just as well as a relevant one.
+	RecordWebhookDelivery(ctx context.Context, at time.Time) error
+	// WebhookHealth reports what is known about the delivery path.
+	WebhookHealth(ctx context.Context) (WebhookHealth, error)
 
 	// --- Run parent tickets (VM-AD §13.3 row 1) ---
 

@@ -112,8 +112,10 @@ func TestWebhookAndReconciliationProduceTheSameTransition(t *testing.T) {
 				o := newOrchestrator(s, orchestrator.NewFakeDispatcher(), orchestrator.NewRateBudget(50),
 					orchestrator.Config{})
 				o.Clock = func() time.Time { return at.Add(time.Hour) }
-				if _, err := o.SyncPullRequests(context.Background(), remote, "org/api"); err != nil {
-					t.Fatalf("SyncPullRequests: %v", err)
+				if _, err := o.ReconcilePullRequests(context.Background(), orchestrator.ReconcileConfig{
+					PR: remote, Repo: "org/api",
+				}); err != nil {
+					t.Fatalf("ReconcilePullRequests: %v", err)
 				}
 				f, err := s.GetFinding(context.Background(), fp)
 				if err != nil {
@@ -182,12 +184,18 @@ func TestAWebhookThenReconciliationDoesNotActTwice(t *testing.T) {
 		t.Fatalf("state = %s after the webhook, want MERGED", after.State)
 	}
 
-	stats, err := o.SyncPullRequests(ctx, remote, "org/api")
+	stats, err := o.ReconcilePullRequests(ctx, orchestrator.ReconcileConfig{PR: remote, Repo: "org/api"})
 	if err != nil {
-		t.Fatalf("SyncPullRequests: %v", err)
+		t.Fatalf("ReconcilePullRequests: %v", err)
 	}
 	if stats.Merged != 0 || stats.Declined != 0 {
 		t.Errorf("reconciliation acted again after the webhook had: %+v", stats)
+	}
+	// And it did not even ASK: the pull request is closed, so it is not in the
+	// unconfirmed set at all (OQ-P12-01).
+	if stats.Examined != 0 {
+		t.Errorf("reconciliation queried the remote %d times about a pull request the webhook "+
+			"had already settled", stats.Examined)
 	}
 	final, _ := s.GetFinding(ctx, fp)
 	if final.State != model.Merged {

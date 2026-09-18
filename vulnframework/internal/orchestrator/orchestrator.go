@@ -52,10 +52,18 @@ type Config struct {
 	// scan trigger escalation (VM-F-215, VM-OQ-10's working default of 2).
 	EscalationThreshold int
 
-	// PR is the pull-request surface. When set, every sweep reconciles open
-	// remediation pull requests against the remote and recovers stranded
-	// findings — neither of which any human has to trigger.
+	// PR is the pull-request surface. When set, every sweep RECONCILES the
+	// pull requests nothing has vouched for and recovers stranded findings —
+	// neither of which any human has to trigger.
 	PR gh.PROps
+
+	// ReconcileHorizon, WebhookSilence and ReconcileChecks tune the fallback
+	// reconciliation (OQ-P12-01). Zero uses the defaults, which are chosen so
+	// that a live webhook costs nothing and a dead one is noticed within one
+	// sweep.
+	ReconcileHorizon time.Duration
+	WebhookSilence   time.Duration
+	ReconcileChecks  int
 
 	// SLAWindows are the remediation windows per tier and priority
 	// (VM-NF-301). Nil uses the working defaults; VM-OQ-02 is still open.
@@ -224,13 +232,21 @@ func (o *Orchestrator) Sweep(ctx context.Context, kind store.RunKind, trigger st
 	//    nothing to do (VM-F-545, VM-AD §6.1.2).
 	if o.Config.PR != nil {
 		for _, e := range plan {
-			sync, err := o.SyncPullRequests(ctx, o.Config.PR, e.Repo)
+			sync, err := o.ReconcilePullRequests(ctx, ReconcileConfig{
+				PR: o.Config.PR, Repo: e.Repo,
+				Horizon: o.Config.ReconcileHorizon, Silence: o.Config.WebhookSilence,
+				MaxChecks: o.Config.ReconcileChecks,
+			})
 			if err != nil {
-				return stats, fmt.Errorf("syncing pull requests for %s: %w", e.Repo, err)
+				return stats, fmt.Errorf("reconciling pull requests for %s: %w", e.Repo, err)
 			}
 			stats.PRSync.Examined += sync.Examined
 			stats.PRSync.Merged += sync.Merged
 			stats.PRSync.Declined += sync.Declined
+			stats.PRSync.Confirmed += sync.Confirmed
+			stats.PRSync.Deferred += sync.Deferred
+			stats.PRSync.Lost += sync.Lost
+			stats.PRSync.WebhookLive = sync.WebhookLive
 
 			strands, err := o.SweepStranded(ctx, StrandSweep{Repo: e.Repo, PR: o.Config.PR})
 			if err != nil {

@@ -61,6 +61,7 @@ func TestMigrationChecksumsAreStable(t *testing.T) {
 		8:  "remediation_prs",
 		9:  "run_tickets",
 		10: "upstream_finding",
+		11: "webhook_primary",
 	}
 	migrations, err := store.LoadMigrations()
 	if err != nil {

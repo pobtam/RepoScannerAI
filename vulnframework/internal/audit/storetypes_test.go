@@ -241,6 +241,16 @@ func exerciseEveryStoreProducer(t *testing.T) storeRun {
 	var branch string
 	if prs, err := s.OpenRemediationPRs(ctx, repo.Name); err == nil && len(prs) > 0 {
 		branch = prs[0].Branch
+		// The App reports the pull request the worker just opened. This is the
+		// producer of ConfirmedAt and of the webhook health record: with the
+		// webhook live, reconciliation stops asking the remote about pull
+		// requests it has vouched for (OQ-P12-01).
+		if _, err := o.ApplyWebhook(ctx, gh.Event{
+			Kind: gh.EventPullRequestOpened, Repo: repo.Name,
+			Number: prs[0].Number, Branch: branch,
+		}); err != nil {
+			t.Fatalf("ApplyWebhook: %v", err)
+		}
 	}
 
 	// --- sweep 2: a deferral, a new finding, and a tracker outage ----------
@@ -708,6 +718,17 @@ func storeCensuses(ctx context.Context) []storeCensus {
 						"ticket pass: the pull request does not exist when this run's pass runs",
 				},
 				"TicketURL": {Producer: "internal/orchestrator.ensurePRTickets", Why: "as above"},
+			},
+		},
+		{
+			name: "store.WebhookHealth",
+			typ:  reflect.TypeOf(store.WebhookHealth{}),
+			sample: func(t *testing.T, r storeRun) []any {
+				h, err := r.Store.WebhookHealth(ctx)
+				if err != nil {
+					t.Fatalf("WebhookHealth: %v", err)
+				}
+				return []any{h}
 			},
 		},
 		{

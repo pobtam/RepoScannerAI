@@ -616,6 +616,47 @@ Implement a central token-bucket lease: a worker requests `n` API call credits b
 
 **Acquisition order is repo lock outer, finding leases inner.** A worker takes the repository lock first, then leases the findings it intends to fix, and a repository's findings are batched under **one** repo-lock acquisition. Fixed ordering makes deadlock impossible, and batching aligns with how remediation already works — one pull request per fix group, one wave per module — so the lock is held once per repository per attempt rather than once per finding.
 
+### 7.3.1 Pull request state: the webhook is primary (normative)
+
+Phase 9b made pull request state **eventual**, by asking the remote about every
+open remediation pull request on every sweep. Phase 12 added the webhook and
+left that poll running underneath it, so the framework spent one API call per
+open pull request per sweep to re-learn what a delivery had already told it —
+growing with the fleet, out of the same budget §7.2 exists to protect, and
+invisible to it because those calls were never metered.
+
+The webhook is the **primary** path and the poll is gone (OQ-P12-01):
+
+1. A verified delivery **confirms** the pull request it names
+   (`remediation_prs.confirmed_at`) and drives the transition promptly. Every
+   verified delivery — including events this framework ignores — records that
+   the delivery path works (`webhook_health`), because an irrelevant event
+   proves the endpoint, the secret and the installation just as well as a
+   relevant one.
+2. Reconciliation is a **bounded fallback**. It asks the remote only about open
+   pull requests nothing has vouched for since a horizon (default 6h),
+   **oldest confirmation first** so a bounded batch cannot starve the tail, at
+   most `reconcile_checks` per sweep (default 25), and **each call draws on the
+   rate budget** like any other remote call.
+3. It **fails closed**. If no verified delivery has arrived inside the silence
+   window (default 30m), the webhook path is not delivering: the horizon
+   collapses to zero, the pass reverts to asking about every open pull request,
+   and it records `webhook_silent` with the last delivery time. A framework
+   that quietly polls its way through a dead webhook looks healthy on every
+   dashboard it has, and the first symptom is a rate limit or an invoice.
+4. A closure the webhook never reported is recorded as a **lost delivery**, not
+   as a reconciliation success. The fallback catching it is the system working;
+   the delivery that did not arrive is still a defect, and a steady stream of
+   them is a delivery problem.
+5. Both paths share one implementation (`applyPRClosure`) and must write
+   **identical history** — state, reason code, pull request record and audit
+   trail. Two paths that can each move a finding drift unless something holds
+   them together, and the drift is invisible until an endpoint outage switches
+   the system from one to the other.
+
+A merge still produces `MERGED`, never `VERIFIED`: the webhook makes the
+framework learn sooner, not learn more (VM-F-533, VM-ADR-12).
+
 ### 7.4 API surface
 
 ```
