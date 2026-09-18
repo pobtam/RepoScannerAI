@@ -468,14 +468,25 @@ func (o *Orchestrator) RunLeaseSweeper(ctx context.Context, every time.Duration,
 }
 
 // Lease claims a finding for remediation and moves it to AUTO_REMEDIATING.
+//
+// The lease is acquired FIRST. AUTO_REMEDIATING is lease-bound and the store
+// refuses to enter it unleased (VM-AD §6.1.5), so the other order would fail —
+// and would be wrong even if it did not, because it would publish a state that
+// claims a worker holds the finding a moment before one does.
 func (o *Orchestrator) Lease(ctx context.Context, fingerprint, owner string) error {
 	now := o.clock()
+	if err := o.Store.AcquireLease(ctx, fingerprint, owner, now.Add(o.Config.LeaseDuration)); err != nil {
+		return err
+	}
 	if err := o.Store.ApplyTransition(ctx, fingerprint, model.AutoRemediating, model.TransitionContext{
 		Actor: model.ActorOrchestrator, Cause: "dispatched to " + owner, At: now,
 	}); err != nil {
+		// Do not leave a lease behind for a claim that did not happen: the
+		// finding would then be unclaimable until the sweeper expired it.
+		_ = o.Store.ReleaseLease(ctx, fingerprint)
 		return err
 	}
-	return o.Store.AcquireLease(ctx, fingerprint, owner, now.Add(o.Config.LeaseDuration))
+	return nil
 }
 
 func (o *Orchestrator) clock() time.Time {

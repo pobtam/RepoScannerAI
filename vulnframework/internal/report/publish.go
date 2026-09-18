@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/store"
 )
 
 // The credential-shape definition lives in the model (model.CredentialPatterns)
@@ -197,4 +198,58 @@ func PublishRun(ctx context.Context, p Publisher, fleet Issued, repos []Issued) 
 		return err
 	}
 	return p.Publish(ctx, "latest.json", pointer)
+}
+
+// ReportStore is the persistence an issued report needs.
+//
+// Narrow on purpose: recording a report must not be able to change a finding.
+type ReportStore interface {
+	SaveReport(ctx context.Context, r store.Report) error
+}
+
+// Record persists an issued report so it can be cited later (VM-ADR-15).
+//
+// This is the step that was missing (OQ-AUDIT-04). Generate produced a report,
+// Issue hashed it, PublishRun delivered the artifacts — and nothing wrote the
+// RECORD, so store.Report had no producer anywhere outside tests. A report
+// nobody can look up is not citable, and a report whose query was not stored
+// cannot be regenerated to check that a quoted number is still the number the
+// run produced.
+//
+// Immutability is the store's rule, not this function's: re-recording the same
+// report is idempotent, and the same identifier with different content is
+// refused there (it is the same rule for every caller, including the API).
+func Record(ctx context.Context, s ReportStore, issued Issued, issuedBy string) (store.Report, error) {
+	rep := issued.Report
+	if rep.ID == "" {
+		return store.Report{}, fmt.Errorf("report: refusing to record a report with no identifier; " +
+			"a record nothing can cite is not a record")
+	}
+	if issued.Hash == "" || len(issued.JSON) == 0 {
+		return store.Report{}, fmt.Errorf("report: refusing to record %s with no content hash or "+
+			"body; the hash is what makes a copy found later checkable", rep.ID)
+	}
+	query, err := json.Marshal(rep.Query)
+	if err != nil {
+		return store.Report{}, fmt.Errorf("report: encoding the query of %s: %w", rep.ID, err)
+	}
+
+	rec := store.Report{
+		ID:            rep.ID,
+		AnchorRunID:   rep.AnchorRun,
+		Kind:          string(rep.Kind),
+		Repo:          rep.Repo,
+		Template:      rep.Query.Template,
+		Query:         query,
+		ContentHash:   issued.Hash,
+		Content:       issued.JSON,
+		IssuedAt:      rep.IssuedAt,
+		IssuedBy:      issuedBy,
+		Redacted:      rep.Redacted,
+		WithheldCount: rep.WithheldCount,
+	}
+	if err := s.SaveReport(ctx, rec); err != nil {
+		return store.Report{}, err
+	}
+	return rec, nil
 }

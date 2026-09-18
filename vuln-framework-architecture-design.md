@@ -445,7 +445,7 @@ const (
 |---|---|---|---|
 | — | `DETECTED` | First observation | scanworker |
 | `DETECTED` | `TRIAGED` | Triage complete | triage |
-| `TRIAGED` | `AUTO_REMEDIATING` | Policy `auto_remediate` | orchestrator |
+| `TRIAGED` | `AUTO_REMEDIATING` | Remediation **dispatched** on the strength of policy `auto_remediate` (§6.1.5) | orchestrator |
 | `TRIAGED` | `NEEDS_HUMAN` | Policy `open_ticket` / `escalate_p0` | orchestrator |
 | `TRIAGED` | `BLOCKED_UPSTREAM` | Policy `defer_upstream` | orchestrator |
 | `TRIAGED` | `FALSE_POSITIVE_CANDIDATE` | Triage nomination | triage |
@@ -464,15 +464,37 @@ const (
 | `REGRESSED` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
 | `DECLINED` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
 | `WONT_FIX` | `VERIFIED` | Qualifying scan no longer observes | scanworker |
-| `BLOCKED_UPSTREAM` | `AUTO_REMEDIATING` | Upstream published | orchestrator |
+| `BLOCKED_UPSTREAM` | `TRIAGED` | Upstream published (§6.1.5) | orchestrator |
 | `FALSE_POSITIVE_CANDIDATE` | `SUPPRESSED` | Human approval | human |
 | `FALSE_POSITIVE_CANDIDATE` | `TRIAGED` | Human rejection | human |
 | `VERIFIED` | `REGRESSED` | Observed again | scanworker |
 | `REGRESSED` | `TRIAGED` | Re-entry | orchestrator |
-| `NEEDS_HUMAN` | `AUTO_REMEDIATING` | Human reset | human |
+| `NEEDS_HUMAN` | `TRIAGED` | Human reset (§6.1.5) | human |
 | `DECLINED` | `TRIAGED` | **Human reset only** | human |
 
 Every other transition is illegal and must be rejected with an error and a logged event (VM-F-152).
+
+### 6.1.5 The lease-bound state is entered only by a dispatch (normative)
+
+`AUTO_REMEDIATING` is the only lease-bound state (§6.2). A finding may enter it
+only together with a live lease, and the store REFUSES any transition into it
+from a caller holding no lease (`store.ErrLeaseRequired`). The rule is enforced
+at the store, not asked of callers, because a decision cannot be trusted to
+remember an invariant it does not depend on.
+
+Three transitions previously entered the state on a DECISION rather than on a
+dispatch — policy `auto_remediate`, wave two's `upstream_published`, and a human
+reset — and each produced a finding that:
+
+* policy rule 2 (§10) skips as `skip_in_progress`,
+* the lease sweeper cannot see, because there is no lease to expire,
+* the stranding sweep (§6.4) then recovers on the next pass, loudly, against
+  work that was never actually wrong.
+
+All three now target `TRIAGED`, which is the queue. The decision marks work
+claimable; a dispatch claims it. What moves a routed finding is therefore the
+remediation dispatch pass — and if no dispatch ever runs, the finding stays
+visibly in the queue rather than appearing to be in progress (OQ-AUDIT-05).
 
 ### 6.1.4 A consumer the wave cannot advance goes to a human (normative)
 

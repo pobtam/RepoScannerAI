@@ -215,3 +215,32 @@ func fingerprintsOf(findings []model.Finding) []string {
 func isCodeClass(c policy.Class) bool {
 	return c == policy.ClassCodeFix
 }
+
+// Expect names every identifier the re-scan must no longer report for a group.
+//
+// Advisory identifier, rule identifier and fingerprint, because the scanners
+// report findings under different names and the gate must recognise its own
+// group's findings whichever name comes back (OQ-AUDIT-06).
+func Expect(g FixGroup) []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(id string) {
+		if id == "" || seen[id] {
+			return
+		}
+		seen[id] = true
+		out = append(out, id)
+	}
+	for _, f := range g.Findings {
+		add(f.Identity.PrimaryID)
+		if f.Identity.RuleID != nil {
+			add(*f.Identity.RuleID)
+		}
+		add(f.Fingerprint)
+		for _, alias := range f.Identity.Aliases {
+			add(alias)
+		}
+	}
+	sort.Strings(out)
+	return out
+}

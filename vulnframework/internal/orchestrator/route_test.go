@@ -201,11 +201,16 @@ func TestRoutingDrivesTheStateMachine(t *testing.T) {
 			t.Fatalf("unmatched findings: %v", stats.Unmatched)
 		}
 
+		// auto_remediate records a decision and leaves the finding in the
+		// QUEUE. Entering AUTO_REMEDIATING is a DISPATCH, which holds the
+		// lease that state is bound to (VM-AD §6.1.5, OQ-AUDIT-05) — routing
+		// into it here produced a finding no worker held, no sweeper could
+		// see, and policy rule 2 skipped as in progress.
 		want := map[string]struct {
 			outcome policy.Outcome
 			state   model.State
 		}{
-			fingerprint.Compute(patch):  {policy.AutoRemediate, model.AutoRemediating},
+			fingerprint.Compute(patch):  {policy.AutoRemediate, model.Triaged},
 			fingerprint.Compute(major):  {policy.OpenTicket, model.NeedsHuman},
 			fingerprint.Compute(secret): {policy.EscalateP0, model.NeedsHuman},
 		}
@@ -221,6 +226,16 @@ func TestRoutingDrivesTheStateMachine(t *testing.T) {
 		}
 		if stats.Routed[policy.AutoRemediate] != 1 {
 			t.Errorf("auto_remediate=%d, want 1", stats.Routed[policy.AutoRemediate])
+		}
+		// The negative. Routing is a decision, and a decision holds no lease.
+		open, err := s.ListFindings(ctx, store.Query{Scope: store.ScopeOpen, Repo: "org/api"})
+		if err != nil {
+			t.Fatalf("ListFindings: %v", err)
+		}
+		for _, f := range open {
+			if f.State == model.AutoRemediating {
+				t.Errorf("%s is in the lease-bound state after routing alone; nothing has claimed it", f.Fingerprint)
+			}
 		}
 		if stats.Routed[policy.EscalateP0] != 1 {
 			t.Errorf("escalate_p0=%d, want 1", stats.Routed[policy.EscalateP0])
@@ -315,6 +330,17 @@ func TestDeclinedIsNotReRemediatedAcrossRuns(t *testing.T) {
 		}
 
 		// Walk it to DECLINED: a reviewer closed the pull request unmerged.
+		//
+		// The dispatch is explicit, because routing no longer performs it: a
+		// worker claims the finding and then opens the pull request.
+		if err := s.AcquireLease(ctx, fp, "fixworker-1", time.Now().Add(time.Hour)); err != nil {
+			t.Fatalf("AcquireLease: %v", err)
+		}
+		if err := s.ApplyTransition(ctx, fp, model.AutoRemediating, model.TransitionContext{
+			Actor: model.ActorOrchestrator, Cause: "remediation dispatched",
+		}); err != nil {
+			t.Fatalf("dispatch: %v", err)
+		}
 		for _, to := range []model.State{model.PROpen, model.Declined} {
 			actor := model.ActorWorker
 			if to == model.Declined {

@@ -3,6 +3,7 @@ package store_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/store"
@@ -247,10 +248,21 @@ func TestPresentThenAbsentAcrossRuns(t *testing.T) {
 }
 
 // walkStates drives a finding along a sequence of legal transitions.
+// walkStates drives a finding along a legal path.
+//
+// Entering AUTO_REMEDIATING acquires a lease first, because that is the only
+// way a finding enters it in production: the store refuses the transition
+// otherwise (VM-AD §6.1.5). A fixture that could park a finding there without
+// a lease would be testing a state the running system cannot reach.
 func walkStates(t *testing.T, s store.Store, fp string, states []model.State) {
 	t.Helper()
 	ctx := context.Background()
 	for _, to := range states {
+		if store.LeaseBound(to) {
+			if err := s.AcquireLease(ctx, fp, "test-worker", leaseFarFuture); err != nil {
+				t.Fatalf("acquiring the lease before entering %s: %v", to, err)
+			}
+		}
 		actor := model.ActorOrchestrator
 		switch to {
 		case model.Triaged, model.FPCandidate:
@@ -267,3 +279,7 @@ func walkStates(t *testing.T, s store.Store, fp string, states []model.State) {
 		}
 	}
 }
+
+// leaseFarFuture is an expiry no test clock reaches, so a walk's lease is live
+// whatever clock the backend under test is stamping with.
+var leaseFarFuture = time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)

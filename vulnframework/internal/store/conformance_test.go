@@ -794,6 +794,12 @@ func walkToMerged(t *testing.T, s store.Store, fp string) {
 		{model.Merged, model.ActorOrchestrator},
 	}
 	for _, step := range steps {
+		// The lease-bound state is entered only with a lease (VM-AD §6.1.5).
+		if store.LeaseBound(step.to) {
+			if err := s.AcquireLease(ctx, fp, "test-worker", leaseFarFuture); err != nil {
+				t.Fatalf("acquiring the lease before entering %s: %v", step.to, err)
+			}
+		}
 		if err := s.ApplyTransition(ctx, fp, step.to, model.TransitionContext{
 			Actor: step.actor, Cause: "test walk",
 		}); err != nil {

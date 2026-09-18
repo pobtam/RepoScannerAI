@@ -184,7 +184,17 @@ func (o *Orchestrator) applyDecision(ctx context.Context, f model.Finding, d pol
 	var to model.State
 	switch d.Outcome {
 	case policy.AutoRemediate:
-		to = model.AutoRemediating
+		// No state change (VM-AD §6.1.5, OQ-AUDIT-05).
+		//
+		// The decision marks the finding claimable and is recorded; a DISPATCH
+		// enters AUTO_REMEDIATING, together with the lease, because that state
+		// is lease-bound. Routing into it here left a finding holding a lease
+		// nobody owned: policy rule 2 then skipped it as in progress, the
+		// lease sweeper had no lease to expire, and the stranding sweep
+		// recovered it every pass — loudly, against work that was never wrong.
+		// It also meant the remediation worker, which claims findings from
+		// TRIAGED, never saw the work routed to it at all.
+		return o.recordReason(ctx, f, d)
 	case policy.OpenTicket, policy.EscalateP0:
 		to = model.NeedsHuman
 	case policy.DeferUpstream:

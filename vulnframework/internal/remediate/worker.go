@@ -322,7 +322,7 @@ func (w *Worker) Remediate(ctx context.Context, group FixGroup) (Result, error) 
 	}
 
 	// --- Step 7: verify, including a re-run of the scanners ---------------
-	verification, err := w.Toolchain.Verify(ctx, dir, targets, w.toolsFor(group))
+	verification, err := w.Toolchain.Verify(ctx, dir, targets, w.toolsFor(group), Expect(group))
 	if err != nil {
 		return res, err
 	}

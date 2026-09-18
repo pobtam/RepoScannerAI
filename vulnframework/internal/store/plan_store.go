@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
@@ -104,4 +105,47 @@ func planCloseAction(e PlanEntry) (model.ScanOutcome, string) {
 	default:
 		return model.ScanNotDispatched, SkipNeverDispatched
 	}
+}
+
+// ErrLeaseRequired is returned for a transition into the lease-bound state by a
+// caller that holds no lease on the finding (OQ-AUDIT-05).
+type ErrLeaseRequired struct {
+	Fingerprint string
+	To          model.State
+	Owner       string
+	Expired     bool
+}
+
+func (e *ErrLeaseRequired) Error() string {
+	switch {
+	case e.Owner == "":
+		return fmt.Sprintf("store: %s cannot enter %s: no lease is held. %s is the only "+
+			"lease-bound state (VM-AD §6.2) — a finding parked there without a lease is skipped "+
+			"by policy rule 2 as in progress, invisible to the lease sweeper, and moved by nothing "+
+			"(OQ-AUDIT-05). Acquire the lease first, then transition",
+			e.Fingerprint, e.To, e.To)
+	default:
+		return fmt.Sprintf("store: %s cannot enter %s: the lease held by %q has already expired "+
+			"(OQ-AUDIT-05)", e.Fingerprint, e.To, e.Owner)
+	}
+}
+
+// LeaseBound reports whether entering a state requires a live lease.
+//
+// One function, consulted by both backends, so the rule cannot hold on one and
+// not the other.
+func LeaseBound(to model.State) bool { return to == model.AutoRemediating }
+
+// checkLeaseBound is the shared decision behind the rule.
+func checkLeaseBound(fp string, to model.State, lease Lease, now time.Time) error {
+	if !LeaseBound(to) {
+		return nil
+	}
+	if !lease.Held() {
+		return &ErrLeaseRequired{Fingerprint: fp, To: to}
+	}
+	if lease.Expired(now) {
+		return &ErrLeaseRequired{Fingerprint: fp, To: to, Owner: lease.Owner, Expired: true}
+	}
+	return nil
 }

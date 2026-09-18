@@ -509,6 +509,9 @@ func (m *Memory) transitionLocked(fp string, to model.State, tc model.Transition
 	if tc.At.IsZero() {
 		tc.At = m.clock()
 	}
+	if err := checkLeaseBound(fp, to, leaseOf(f), tc.At); err != nil {
+		return err
+	}
 	rec, err := model.ApplyTransition(fp, f.State, to, tc)
 	if err != nil {
 		return err
@@ -832,6 +835,11 @@ func (m *Memory) ReleaseLease(_ context.Context, fp string) error {
 	}
 	f.LeaseOwner, f.LeaseExpiresAt = "", nil
 	return nil
+}
+
+// leaseOf reads the lease off a retained record.
+func leaseOf(f *memFinding) Lease {
+	return Lease{Fingerprint: f.Fingerprint, Owner: f.LeaseOwner, ExpiresAt: f.LeaseExpiresAt}
 }
 
 func (m *Memory) GetLease(_ context.Context, fp string) (Lease, error) {

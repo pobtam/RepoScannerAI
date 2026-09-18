@@ -133,20 +133,28 @@ const (
 type Trigger string
 
 const (
-	TriggerFirstObservation  Trigger = "first_observation"
-	TriggerTriageComplete    Trigger = "triage_complete"
-	TriggerPolicyAuto        Trigger = "policy_auto_remediate"
-	TriggerPolicyTicket      Trigger = "policy_open_ticket_or_escalate"
-	TriggerPolicyDefer       Trigger = "policy_defer_upstream"
-	TriggerTriageNomination  Trigger = "triage_nomination"
-	TriggerPRCreated         Trigger = "pull_request_created"
-	TriggerAttemptFailed     Trigger = "attempt_failed"
-	TriggerLeaseExpiry       Trigger = "lease_expiry"
-	TriggerMergeWebhook      Trigger = "merge_webhook"
-	TriggerClosedUnmerged    Trigger = "closed_unmerged"
-	TriggerNotObserved       Trigger = "post_merge_scan_absent"
-	TriggerStillObserved     Trigger = "post_merge_scan_present"
-	TriggerUpstreamPublished Trigger = "upstream_published"
+	TriggerFirstObservation Trigger = "first_observation"
+	TriggerTriageComplete   Trigger = "triage_complete"
+	// TriggerRemediationDispatched — a fix attempt has STARTED for this
+	// finding, on the strength of policy's auto_remediate decision.
+	//
+	// The trigger is dispatch and not the decision (OQ-AUDIT-05). AUTO_REMEDIATING
+	// is the only lease-bound state (VM-AD §6.2): a finding placed there by a
+	// decision alone holds a lease nobody owns, which policy rule 2 then skips
+	// as in progress and the lease sweeper cannot see. The decision marks work
+	// claimable; entering the state is what claiming it looks like.
+	TriggerRemediationDispatched Trigger = "remediation_dispatched"
+	TriggerPolicyTicket          Trigger = "policy_open_ticket_or_escalate"
+	TriggerPolicyDefer           Trigger = "policy_defer_upstream"
+	TriggerTriageNomination      Trigger = "triage_nomination"
+	TriggerPRCreated             Trigger = "pull_request_created"
+	TriggerAttemptFailed         Trigger = "attempt_failed"
+	TriggerLeaseExpiry           Trigger = "lease_expiry"
+	TriggerMergeWebhook          Trigger = "merge_webhook"
+	TriggerClosedUnmerged        Trigger = "closed_unmerged"
+	TriggerNotObserved           Trigger = "post_merge_scan_absent"
+	TriggerStillObserved         Trigger = "post_merge_scan_present"
+	TriggerUpstreamPublished     Trigger = "upstream_published"
 	// TriggerRemediationLinkLost — the pull request record for a PR_OPEN
 	// finding is gone, so no state-sync can ever discover what became of it
 	// (VM-AD §6.1.2). The finding returns to the queue; re-planning derives the
@@ -242,7 +250,7 @@ var transitions = map[State]map[State]edge{
 		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	Triaged: {
-		AutoRemediating: {TriggerPolicyAuto, ActorOrchestrator},
+		AutoRemediating: {TriggerRemediationDispatched, ActorOrchestrator},
 		NeedsHuman:      {TriggerPolicyTicket, ActorOrchestrator},
 		BlockedUpstream: {TriggerPolicyDefer, ActorOrchestrator},
 		FPCandidate:     {TriggerTriageNomination, ActorTriage},
@@ -272,8 +280,12 @@ var transitions = map[State]map[State]edge{
 		Triaged:  {TriggerStillObserved, ActorScanWorker},
 	},
 	BlockedUpstream: {
-		AutoRemediating: {TriggerUpstreamPublished, ActorOrchestrator},
-		Verified:        {TriggerQualifyingScanAbsent, ActorScanWorker},
+		// The upstream fix shipped, so the consumer's bump is claimable. It
+		// returns to the QUEUE rather than to the lease-bound state: wave two
+		// decides that the work can proceed, and a dispatch claims it
+		// (OQ-AUDIT-05).
+		Triaged:  {TriggerUpstreamPublished, ActorOrchestrator},
+		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
 		// The fix shipped and this consumer still cannot be advanced. Without
 		// this edge it waits for something that has already happened, for
 		// ever (VM-AD §6.1.4).
@@ -291,8 +303,11 @@ var transitions = map[State]map[State]edge{
 		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	NeedsHuman: {
-		AutoRemediating: {TriggerHumanReset, ActorHuman},
-		Verified:        {TriggerQualifyingScanAbsent, ActorScanWorker},
+		// A human reset returns the finding to the queue, exactly as it does
+		// from DECLINED. Resetting straight into the lease-bound state would
+		// hand the finding a lease nobody holds (OQ-AUDIT-05).
+		Triaged:  {TriggerHumanReset, ActorHuman},
+		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
 	},
 	Declined: {
 		// Human reset only for *remediation* (VM-F-154). No automated path

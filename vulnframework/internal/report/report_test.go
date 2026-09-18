@@ -458,6 +458,13 @@ func TestReportCountsMatchStoreGroundTruth(t *testing.T) {
 			if to == model.PROpen {
 				actor = model.ActorWorker
 			}
+			// The lease-bound state is entered only with a lease, which is
+			// how a dispatch enters it in production (VM-AD §6.1.5).
+			if store.LeaseBound(to) {
+				if err := s.AcquireLease(ctx, fp, "fixworker-1", base.Add(time.Hour)); err != nil {
+					t.Fatalf("AcquireLease: %v", err)
+				}
+			}
 			if err := s.ApplyTransition(ctx, fp, to, model.TransitionContext{Actor: actor, Cause: "test"}); err != nil {
 				t.Fatalf("transition: %v", err)
 			}

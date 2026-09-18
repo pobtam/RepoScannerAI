@@ -139,9 +139,15 @@ func (d *Driver) ApplyWaveTwo(ctx context.Context, req WaveRequest) (WaveStats, 
 		}
 
 		if advance[f.Repo] {
-			if err := d.Store.ApplyTransition(ctx, f.Fingerprint, model.AutoRemediating, model.TransitionContext{
+			// To the QUEUE, not to the lease-bound state (VM-AD §6.1.5).
+			//
+			// Wave two decides that this consumer can proceed; it does not
+			// itself hold the finding. Advancing it into AUTO_REMEDIATING left
+			// every wave-advanced consumer looking like work in flight that no
+			// worker had claimed, which the stranding sweep then recovered.
+			if err := d.Store.ApplyTransition(ctx, f.Fingerprint, model.Triaged, model.TransitionContext{
 				Actor: model.ActorOrchestrator,
-				Cause: fmt.Sprintf("upstream fix to %s published as %s; advancing the consumer",
+				Cause: fmt.Sprintf("upstream fix to %s published as %s; the consumer bump is claimable",
 					req.Module, req.TargetVersion),
 				At: now,
 			}); err != nil {

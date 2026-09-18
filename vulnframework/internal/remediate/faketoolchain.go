@@ -190,7 +190,7 @@ func (f *FakeToolchain) Apply(_ context.Context, _ string, targets []Target) (Ap
 	return out, nil
 }
 
-func (f *FakeToolchain) Verify(_ context.Context, _ string, targets []Target, tools []string) (Verification, error) {
+func (f *FakeToolchain) Verify(_ context.Context, _ string, targets []Target, tools []string, expect []string) (Verification, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -205,10 +205,26 @@ func (f *FakeToolchain) Verify(_ context.Context, _ string, targets []Target, to
 
 	// The re-scan. Ground truth is the INSTALLED version against the version
 	// the advisory actually closes at — never the version the caller intended.
+	//
+	// Scoped to what this group was asked to close (OQ-AUDIT-06). A real
+	// re-scan sees the whole repository, and reporting another group's
+	// findings as this group's failure made every repository with two
+	// vulnerable modules unremediable — which no single-group test could show.
+	wanted := func(id string) bool {
+		if len(expect) == 0 {
+			return true
+		}
+		for _, e := range expect {
+			if e == id {
+				return true
+			}
+		}
+		return false
+	}
 	var remaining []string
 	for id, adv := range f.advisories {
 		installed, present := f.modules[adv.module]
-		if !present {
+		if !present || !wanted(id) {
 			continue
 		}
 		if store.CompareVersions(installed, adv.fixedAt) < 0 {
@@ -219,7 +235,7 @@ func (f *FakeToolchain) Verify(_ context.Context, _ string, targets []Target, to
 	// A fake that inferred a fix from a touched file would agree with any
 	// change at all, and the re-scan would stop being evidence.
 	for id := range f.sourceFindings {
-		if !f.closedSource[id] {
+		if !f.closedSource[id] && wanted(id) {
 			remaining = append(remaining, id)
 		}
 	}

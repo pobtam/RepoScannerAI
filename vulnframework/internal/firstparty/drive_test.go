@@ -168,8 +168,21 @@ func TestWaveTwoAdvancesBlockedConsumersButNotTheExcluded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get finding: %v", err)
 	}
-	if advanced.State != model.AutoRemediating {
-		t.Errorf("the dispatched consumer is %s, want AUTO_REMEDIATING (VM-F-606)", advanced.State)
+	// The advanced consumer is CLAIMABLE, not claimed (VM-AD §6.1.5).
+	//
+	// Wave two decides that the bump can proceed; it dispatches no worker and
+	// holds no lease. Advancing straight into AUTO_REMEDIATING made every
+	// wave-advanced consumer look like work in flight that nothing was doing —
+	// which policy rule 2 skips and the stranding sweep then recovers, pass
+	// after pass, against work that was never wrong (OQ-AUDIT-05).
+	if advanced.State != model.Triaged {
+		t.Errorf("the advanced consumer is %s, want TRIAGED: the wave makes the bump claimable "+
+			"and a dispatch claims it (VM-F-606, VM-AD §6.1.5)", advanced.State)
+	}
+	if lease, err := s.GetLease(ctx, fps[0]); err != nil {
+		t.Fatalf("GetLease: %v", err)
+	} else if lease.Held() {
+		t.Errorf("the wave left a lease on %s held by %q; it dispatched nothing", fps[0], lease.Owner)
 	}
 
 	// --- THE LIVENESS INVARIANT ------------------------------------------

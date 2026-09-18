@@ -27,6 +27,8 @@ green.
 | **10b** — headless client, §11.4 prompt, sandbox, VM-F-854 | **Green** | passing (extended gate) |
 | **11** — `internal/firstparty` — classification + wave propagation | **Green** | passing, OQ-P11-01 closed |
 | **12** — the GitHub App: fleet sync, webhooks, publisher, VM-F-614 | **Green** | passing (extended gate) |
+| **Gate 1** — the Producer-Coverage Audit (finding schema) | **Green** | passing |
+| **Gate 1b** — the Producer-Coverage Audit (store schema, OQ-AUDIT-04) | **Green** | passing (both backends) |
 | U0–U10 — frontend | Not started | |
 
 ---
@@ -3480,3 +3482,220 @@ Wiring a tool that reports enclosing symbols would restore per-function
 granularity. It is not needed for v1, and it should be driven by real users
 finding file granularity too coarse rather than by the design's original
 preference for it.
+
+---
+
+## Gate 1b — the Producer-Coverage Audit over the store schema (OQ-AUDIT-04)
+
+**Task:** *extend the producer-coverage audit over `store.Report`,
+`store.Ticket`, `store.RemediationPR`, `store.ModuleDep` and the coverage
+types. Expect more instances. Each field gets a conformance test that fails if
+its real producer stops writing it. Fix drops and writer gaps as found; record
+honest gaps (with a test) rather than guessing values.*
+
+**Status: green.** 448 top-level tests, 1007 including subtests. `go vet` and
+`gofmt` clean, `-race` clean, both store backends green.
+
+### What landed
+
+`internal/audit/storetypes_test.go` — **sixteen** store types censused against
+one pipeline run: `Run`, `RepoScanResult`, `PlanEntry`, `CoverageState`,
+`Escalation`, `StalenessReport`, `ModuleDep`, `Ticket`, `RunTicket`,
+`TicketOp`, `RemediationPR`, `RepoLock`, `Lease`, `CloseStats`, `Repo`,
+`Report`. **94 schema fields; 82 written by a real producer; 12 exempt, each
+naming the producer that writes it and why this run does not.**
+
+One run, not sixteen setups. A census assembled from disconnected fixtures
+would let a type look covered because some other test happened to populate it.
+This is a four-repository fleet swept twice, where each repository describes a
+different real outcome, because the coverage types exist to tell those outcomes
+apart and a fleet where everything succeeds cannot exercise them:
+
+* `org/wanaware-api` — real adapter output over the pinned fixtures, triaged,
+  scored, routed, ticketed, remediated, reported;
+* `org/wanaware-jobs` — a worker that starts and never reports (`no_result`);
+* `org/wanaware-edge` — the **real** `scan.Worker` over one adapter that runs
+  and one that dies, which is the only producer of `tools_failed`,
+  `failure_detail`, `failure_owner` and `duration_sec`;
+* `org/wanaware-batch` — funded out of the second sweep (`not_dispatched`,
+  which is what makes a deferral *streak* countable).
+
+The second sweep is not decoration. A coverage streak needs more than one run
+to count; `ConsecutiveDeferrals` and `SweepsSinceQualifying` cannot be reached
+by a single-run census at all. The second pass also carries a **new secret
+finding** (a credential committed since the last scan, derived from real
+gitleaks output by moving it to an unscanned file) against a **tracker that is
+down** — because `store.TicketOp`'s only producer is the failure path, and a
+census over a healthy system never sees the type written.
+
+Two values are read **mid-attempt**, through the `Fixer` seam: the repository
+lock and a finding's lease. Both are released before the attempt returns, so a
+census taken afterwards would see them unwritten and report a producer gap that
+does not exist. The values still come from the worker's own
+`AcquireRepoLockAt` / `AcquireLease`; the seam only decides *when* the census
+looks.
+
+### Three defects, each bigger than a missing field
+
+**OQ-AUDIT-05 — nothing dispatched remediation.** The audit could find no
+producer for `store.RemediationPR` or `store.RepoLock` anywhere in a full
+pipeline run. The reason was not a dropped field: **policy routed findings to
+`auto_remediate`, the remediation worker claimed findings from `TRIAGED`, and
+no step connected the two.** `cmd/fixworker/` is an empty directory. Every test
+that had ever exercised the worker placed its own findings by hand, in the
+state the worker wanted, so the gap was invisible to all of them — the same
+shape as the eight field-level instances, one level up.
+
+Worse, the two halves disagreed about what `AUTO_REMEDIATING` *means*:
+
+* the transition table entered it on a **decision** (policy `auto_remediate`,
+  wave two's `upstream_published`, a human reset — three separate rows);
+* the worker and the stranding sweep treat it as **claimed**, lease-bound, and
+  the worker's own cleanup goes out of its way never to leave a finding there
+  unleased (its comment says why: *"nothing would ever move it"*).
+
+Under the first reading, every routed finding was a strand: policy rule 2 skips
+it as in progress, the lease sweeper has no lease to expire, and the stranding
+sweep recovers it **every pass, loudly, against work that was never wrong** —
+which is precisely the false positive Phase 9b's negative test exists to
+prevent, reached from the other side.
+
+The resolution keeps the invariant the running code already depended on, and
+`AUTO_REMEDIATING` is now **entered only by a dispatch, only with a lease**:
+
+* `store` **refuses** the transition otherwise — `ErrLeaseRequired`, decided by
+  one shared function (`LeaseBound`, `checkLeaseBound`) consulted by both
+  backends, enforced inside the Postgres transaction that reads the lease. A
+  rule three callers forgot is not a rule to ask callers to remember;
+  capability-denial over instruction-compliance.
+* the three decision-shaped rows now target `TRIAGED`, the queue —
+  matching `DECLINED → TRIAGED`, which already worked this way for the same
+  trigger. VM-AD §6.1 amended, plus a new **§6.1.5** recording the invariant
+  and why three rows had it wrong.
+* `model.TestTheLeaseBoundStateHasExactlyOneWayIn` locks the shape: one entry,
+  so one place where the lease must be held, which is what makes the store's
+  refusal sufficient rather than partial.
+* `orchestrator.RemediationPass` is the missing step — the producer of leases,
+  repository locks, branches and pull-request records. It **re-evaluates
+  policy** rather than trusting the routing decision recorded earlier, because
+  the world moves between a decision and an attempt (a pull request may now
+  exist, the finding may have been declined) and acting on a stale decision is
+  how a `DECLINED` finding gets re-remediated (VM-F-154).
+* `Orchestrator.Lease` now acquires the lease *before* the transition and
+  releases it if the transition fails, so the pairing never half-applies.
+
+**OQ-AUDIT-06 — the verification gate answered the wrong question.** With the
+dispatch wired up, the first realistic repository produced twenty-six fix
+groups and **not one of them could verify**. `Toolchain.Verify`'s contract is
+"a re-run of the scanners that produced *these* findings", but the fake
+answered for the whole registry, so group A failed because B was still open and
+B failed because A was. A repository with two vulnerable modules would have
+been permanently unremediable, every group reported as `FIX_INEFFECTIVE`, for
+ever. Every prior test had exactly one group, where the two questions are the
+same sentence.
+
+`Verify` now takes `expect` — the identifiers this group must close — and
+`remediate.Expect` collects advisory id, rule id, fingerprint *and aliases*,
+because two tools report one vulnerability under different names and the gate
+must recognise its own finding whichever name comes back. Both halves are
+tested: a group verifies while another module stays vulnerable, and a group
+still fails on its own unclosed advisory (including under an alias).
+
+**OQ-AUDIT-04's own instance — `store.Report` had no producer at all.** Not a
+field: the whole type. `Generate` produced reports, `Issue` hashed them,
+`PublishRun` delivered the artifacts, and **nothing wrote the record**
+VM-ADR-15 exists for. The only writers were test fixtures building the record
+they then asserted on — anchoring ground truth at a projection compared against
+itself, which the standing lens forbids. `report.Record` is the producer now:
+it refuses a report with no identifier, no hash or no body (a record nothing
+can cite is not a record), stores the query so the report can be regenerated
+years later, and leaves immutability to the store's rule so every caller —
+including the API — gets the same one.
+
+### Honest gaps, recorded rather than filled
+
+* `store.Report.Supersedes` — **nothing writes it.** Supersession is modelled
+  and not driven (OQ-P7b-02). The exemption is the record; a plausible value
+  would be worse than an empty column.
+* `Ticket.MirrorBackend` / `MirrorRef` — written by `tracker.Mirror` where a
+  secondary backend is configured; none is in this run.
+* `Ticket.ClosedAt` — written when a finding verifies; nothing verified across
+  these two runs.
+* `Ticket.Reopened` — a write-only flag, never read back (VM-F-806).
+* `RemediationPR.ClosedAt` / `Merged` — written when the pull request closes;
+  it is open when the run ends.
+* `RemediationPR.TicketRef` / `TicketURL` — written by the *next* ticket pass;
+  the pull request does not exist when this run's pass runs.
+* `TicketOp.Attempts` — zero on first enqueue; only a failed drain increments it.
+* `Repo.Archived` — set when the fleet source stops listing a repository.
+* `Report.Redacted` / `WithheldCount` — false and zero for an unredacted report.
+
+Five of my own exemptions were **wrong claims** and the audit's stale-exemption
+check caught all five: `Run.ReposFailed`, `RepoScanResult.ToolsFailed` and
+`DurationSec`, `Escalation.LastQualifyingRun` and `LastQualifyingAt`,
+`StalenessReport.NeverScanned`. Each is genuinely written once the fleet
+contains a repository that fails, is deferred, or has never had a qualifying
+scan. That is the check doing exactly what it is for: an exemption is a claim
+about the code, and claims rot.
+
+### Mutation verification
+
+| Mutation | Result |
+|---|---|
+| `checkLeaseBound` drops the no-lease branch | `TestTheLeaseBoundStateIsRefusedWithoutALease` fails (memory **and** Postgres) |
+| `checkLeaseBound` drops the expired-lease branch | `TestAnExpiredLeaseDoesNotAuthoriseTheLeaseBoundState` fails (both backends) |
+| the Postgres backend stops consulting the rule | both refusal tests fail on `postgres` only |
+| a second edge into `AUTO_REMEDIATING` is added | `TestTheLeaseBoundStateHasExactlyOneWayIn` fails |
+| `RemediationPass` ignores the policy outcome | `TestADispatchPassDoesNotRemediateWhatPolicyNoLongerAllows` fails |
+| `RemediationPass` plans groups and dispatches nothing | `TestRoutedWorkIsDispatchedAllTheWayToAPullRequest` fails |
+| the re-scan is unscoped again | `TestOneGroupVerifiesWhileAnotherModuleIsStillVulnerable` fails |
+| `Expect` omits aliases | `TestExpectNamesEveryIdentifierAScannerMightUse` fails |
+| the sweep stops recording `tools_failed` | `store.RepoScanResult` census fails |
+| the worker stops linking a pull request to its fix group | `store.RemediationPR` census fails |
+| `report.Record` drops the query / hash / anchor run | `TestAnIssuedReportIsRecordedSoItCanBeCitedLater` **and** the `store.Report` census fail |
+
+The census mechanism itself is already guarded by
+`TestTheAuditItselfFailsWhenAProducerStops` and
+`TestTheSchemaEnumerationReachesNestedFields` from Gate 1; the mutations above
+target the per-type producers, which is where the per-type risk lives.
+
+### Fixtures that were more permissive than production
+
+Six test helpers walked findings into `AUTO_REMEDIATING` with a bare
+transition. All six now take the lease first — `store`, `report`, `tracker`,
+`orchestrator` — because a fixture that can reach a state the running system
+cannot reach is testing something that does not exist. The one test that
+*wants* an unleased `AUTO_REMEDIATING` (the stranding sweep's reason for
+existing) now reaches it the way production does: dispatch, then a worker that
+released its claim and died before reverting. That is the only route left, and
+the sweep must still recover it.
+
+### Assumptions
+
+* **A55.** `AUTO_REMEDIATING` means *claimed*, not *queued*. Chosen over the
+  alternative (a grace window measured from the state-entry timestamp, with the
+  worker adopting already-routed findings) because it needs no timing
+  heuristic: the invariant is checkable at every instant, the stranding sweep
+  keeps its exact current wording, and VM-AD §6.2's "only lease-bound state"
+  and §570's "on dispatch the orchestrator sets `lease_owner`" both read
+  literally true. Rejected alternative recorded here because it is the natural
+  reading of the old §6.1 table and someone will propose it again.
+* **A56.** `RemediationPass` re-evaluates policy rather than reading the
+  recorded decision. Costs one deterministic evaluation per queued finding;
+  buys immunity to stale decisions.
+* **A57.** `Expect` includes the fingerprint alongside the advisory and rule
+  identifiers, so a source-level group whose scanner reports no stable rule id
+  is still recognisable to its own gate.
+
+### Open questions
+
+* **OQ-AUDIT-07.** `cmd/fixworker` and `cmd/bumpworker` are empty directories.
+  `RemediationPass` is callable and tested, but nothing *runs* it on a
+  schedule; the orchestrator binary does not yet drive it. Wiring belongs with
+  the API server and the demo runner, where there is a process to hang it on.
+* **OQ-AUDIT-08.** No real `Toolchain` implementation exists — `go get`, `go
+  mod tidy`, `go build`, `go test -race` are specified (§11.3) and unwritten.
+  Every remediation test runs against `FakeToolchain`. This is a HUMAN /
+  pre-production item, not a code gap that a fake can close, and it now has a
+  name because OQ-AUDIT-06 showed that the interface's contract can be wrong in
+  the fake without anything noticing.

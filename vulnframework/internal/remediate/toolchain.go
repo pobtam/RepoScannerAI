@@ -40,7 +40,14 @@ type Toolchain interface {
 	// Verify runs the full post-change gate (VM-F-531): build, vet, test with
 	// the race detector, tidy check, and a RE-RUN of the scanners that produced
 	// these findings. The re-run is what distinguishes a fix from a change.
-	Verify(ctx context.Context, dir string, targets []Target, tools []string) (Verification, error)
+	//
+	// expect names the identifiers THIS group must close — advisory ids, rule
+	// ids, fingerprints. It is not decoration: a re-scan of a repository sees
+	// every finding in it, and a verification that failed on any of them would
+	// make a repository with two vulnerable modules unremediable, one group
+	// blocking the next for ever. The gate asks whether the group's own
+	// findings are gone (OQ-AUDIT-06).
+	Verify(ctx context.Context, dir string, targets []Target, tools []string, expect []string) (Verification, error)
 }
 
 // Check is a build-and-test result. Output is verbatim: summarising away a

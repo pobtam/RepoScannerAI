@@ -633,6 +633,23 @@ func observationsTx(ctx context.Context, q queryer, fp string) ([]SourceObservat
 // Validation is never skipped for the database's convenience: an illegal
 // transition must be rejected and logged, not silently applied (VM-F-152).
 func transitionTx(ctx context.Context, tx *sql.Tx, fp string, from, to model.State, tc model.TransitionContext) error {
+	// The lease-bound rule, read inside this transaction so a lease released
+	// concurrently cannot slip a finding into the state (OQ-AUDIT-05).
+	if LeaseBound(to) {
+		var owner sql.NullString
+		var expires sql.NullTime
+		if err := tx.QueryRowContext(ctx, qGetLease, fp).Scan(&owner, &expires); err != nil {
+			return err
+		}
+		lease := Lease{Fingerprint: fp, Owner: owner.String}
+		if expires.Valid {
+			at := expires.Time.UTC()
+			lease.ExpiresAt = &at
+		}
+		if err := checkLeaseBound(fp, to, lease, tc.At); err != nil {
+			return err
+		}
+	}
 	rec, err := model.ApplyTransition(fp, from, to, tc)
 	if err != nil {
 		return err

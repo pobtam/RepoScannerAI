@@ -48,8 +48,11 @@ func TestNoActiveLookingStateCanStrand(t *testing.T) {
 			setup: func(t *testing.T, s store.Store, fp string) {
 				mustTransition(t, s, fp, model.Triaged, model.ActorTriage)
 				mustTransition(t, s, fp, model.AutoRemediating, model.ActorOrchestrator)
-				// No lease: the worker released it and died before reverting,
-				// or was never leased at all.
+				// The worker released its claim and died before reverting the
+				// state. The finding cannot be PLACED here unleased any more
+				// (VM-AD §6.1.5), so this is the one way the condition still
+				// arises — and the sweep must still recover it.
+				releaseLease(t, s, fp)
 			},
 			want: model.Triaged,
 			why:  "the lease sweeper has no lease to find, and policy rule 2 skips it as in progress",
@@ -59,10 +62,15 @@ func TestNoActiveLookingStateCanStrand(t *testing.T) {
 			setup: func(t *testing.T, s store.Store, fp string) {
 				ctx := context.Background()
 				mustTransition(t, s, fp, model.Triaged, model.ActorTriage)
-				if err := s.AcquireLease(ctx, fp, "dead-worker", at.Add(-time.Hour)); err != nil {
+				// Dispatched with a live lease, as production does, and then
+				// the holder died: the lease lapsed where it lay.
+				if err := s.AcquireLease(ctx, fp, "dead-worker", at.Add(time.Hour)); err != nil {
 					t.Fatalf("acquire lease: %v", err)
 				}
 				mustTransition(t, s, fp, model.AutoRemediating, model.ActorOrchestrator)
+				if err := s.AcquireLease(ctx, fp, "dead-worker", at.Add(-time.Hour)); err != nil {
+					t.Fatalf("expiring the lease: %v", err)
+				}
 			},
 			want: model.Triaged,
 			why:  "an expired lease must be reclaimed whether or not the lease sweeper ran first",
@@ -332,12 +340,40 @@ func isActiveLooking(s model.State) bool {
 	return false
 }
 
+// mustTransition drives one legal transition.
+//
+// A dispatch into the lease-bound state takes the lease first, because that is
+// the only way production enters it and the store refuses anything else
+// (VM-AD §6.1.5). Tests that want the UNLEASED condition — which is what the
+// stranding sweep exists for — release the lease afterwards, which is how the
+// condition now arises in the running system.
 func mustTransition(t *testing.T, s store.Store, fp string, to model.State, actor model.Actor) {
 	t.Helper()
-	if err := s.ApplyTransition(context.Background(), fp, to, model.TransitionContext{
+	ctx := context.Background()
+	if store.LeaseBound(to) {
+		// Only where the caller has not already staged one: a test that set up
+		// a specific holder and expiry is describing the dispatch itself, and
+		// overwriting it would quietly change the scenario.
+		if lease, err := s.GetLease(ctx, fp); err == nil && !lease.Held() {
+			if err := s.AcquireLease(ctx, fp, "test-dispatcher", at.Add(time.Hour)); err != nil {
+				t.Fatalf("acquiring the lease before entering %s: %v", to, err)
+			}
+		}
+	}
+	if err := s.ApplyTransition(ctx, fp, to, model.TransitionContext{
 		Actor: actor, Cause: "test", At: at,
 	}); err != nil {
 		t.Fatalf("transition to %s: %v", to, err)
+	}
+}
+
+// releaseLease drops a finding's lease without touching its state, which is
+// how a finding comes to sit in the lease-bound state with nothing holding it:
+// a worker that released its claim without completing the revert.
+func releaseLease(t *testing.T, s store.Store, fp string) {
+	t.Helper()
+	if err := s.ReleaseLease(context.Background(), fp); err != nil {
+		t.Fatalf("ReleaseLease: %v", err)
 	}
 }
 

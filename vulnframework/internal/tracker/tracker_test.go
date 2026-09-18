@@ -467,6 +467,13 @@ func walk(t *testing.T, s store.Store, fp string, states []model.State) {
 		case model.PROpen:
 			actor = model.ActorWorker
 		}
+		// A dispatch holds a lease; the store refuses the lease-bound state
+		// without one (VM-AD §6.1.5).
+		if store.LeaseBound(to) {
+			if err := s.AcquireLease(ctx, fp, "fixworker-1", time.Now().UTC().Add(time.Hour)); err != nil {
+				t.Fatalf("AcquireLease: %v", err)
+			}
+		}
 		if err := s.ApplyTransition(ctx, fp, to, model.TransitionContext{
 			Actor: actor, Cause: "test walk",
 		}); err != nil {

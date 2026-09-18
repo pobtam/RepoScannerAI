@@ -32,12 +32,10 @@ var legalTransitions = []struct {
 	{model.PROpen, model.Declined, model.ActorOrchestrator},
 	{model.Merged, model.Verified, model.ActorScanWorker},
 	{model.Merged, model.Triaged, model.ActorScanWorker},
-	{model.BlockedUpstream, model.AutoRemediating, model.ActorOrchestrator},
 	{model.FPCandidate, model.Suppressed, model.ActorHuman},
 	{model.FPCandidate, model.Triaged, model.ActorHuman},
 	{model.Verified, model.Regressed, model.ActorScanWorker},
 	{model.Regressed, model.Triaged, model.ActorOrchestrator},
-	{model.NeedsHuman, model.AutoRemediating, model.ActorHuman},
 	{model.Declined, model.Triaged, model.ActorHuman},
 
 	// Disappearance is the universal verification trigger (VM-AD §6.1.1).
@@ -61,6 +59,18 @@ var legalTransitions = []struct {
 	// active state. It was the one gap in §6.1.1's universality: a finding
 	// fixed out of band before triage had even routed it.
 	{model.Detected, model.Verified, model.ActorScanWorker},
+
+	// VM-AD §6.1.5 — the lease-bound state is entered only by a dispatch.
+	//
+	// These two edges used to target AUTO_REMEDIATING: wave two on
+	// upstream_published, and a human resetting a NEEDS_HUMAN finding. Both
+	// were DECISIONS, and a decision holds no lease, so each produced a
+	// finding that policy skips as in progress, the lease sweeper cannot see,
+	// and the stranding sweep then recovers loudly against work that was never
+	// wrong. Both now target the queue, where a dispatch can claim them —
+	// which is the same shape as DECLINED -> TRIAGED for the same trigger.
+	{model.BlockedUpstream, model.Triaged, model.ActorOrchestrator},
+	{model.NeedsHuman, model.Triaged, model.ActorHuman},
 
 	// VM-AD §6.1.2 — a lost remediation link returns the finding to the queue.
 	//
@@ -545,5 +555,33 @@ func TestAHumanMayTakeAnyTransition(t *testing.T) {
 	})
 	if err == nil {
 		t.Error("a human took a transition absent from the table; the exception is about WHO, not WHAT")
+	}
+}
+
+// TestTheLeaseBoundStateHasExactlyOneWayIn is VM-AD §6.1.5.
+//
+// The defect this locks out recurred three times in one table: a transition
+// that entered AUTO_REMEDIATING on a DECISION (policy routed it, a wave
+// advanced it, a human reset it) rather than on a dispatch. Each one produced a
+// finding holding a lease nobody owned — skipped by policy rule 2 as in
+// progress, invisible to the lease sweeper, and recovered by the stranding
+// sweep against work that was never wrong.
+//
+// One way in means one place where the lease must be held, which is what makes
+// the store's refusal (store.ErrLeaseRequired) sufficient rather than partial.
+func TestTheLeaseBoundStateHasExactlyOneWayIn(t *testing.T) {
+	var in []model.State
+	for _, from := range append([]model.State{""}, model.AllStates...) {
+		if model.CanTransition(from, model.AutoRemediating) {
+			in = append(in, from)
+		}
+	}
+	if len(in) != 1 || in[0] != model.Triaged {
+		t.Errorf("entries into the lease-bound state = %v, want exactly [TRIAGED] (VM-AD §6.1.5). "+
+			"Every additional entry is another place a finding can be parked in a state "+
+			"that claims a worker holds it", in)
+	}
+	if want, ok := model.ActorFor(model.Triaged, model.AutoRemediating); !ok || want != model.ActorOrchestrator {
+		t.Errorf("the dispatch edge's actor = %q, want orchestrator", want)
 	}
 }
