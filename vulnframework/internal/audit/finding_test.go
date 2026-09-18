@@ -3,10 +3,13 @@ package audit_test
 import (
 	"context"
 	"reflect"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/audit"
+	"github.com/wanaware/vulnframework/internal/feed"
 	"github.com/wanaware/vulnframework/internal/fingerprint"
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/orchestrator"
@@ -80,6 +83,14 @@ func pipelineOutput(t *testing.T) []model.Finding {
 		t.Fatalf("reconcile: %v", err)
 	}
 
+	// The exploitation-intelligence pass, BEFORE scoring, because scoring
+	// reads what it writes (OQ-AUDIT-01(b)).
+	//
+	// The feeds are fakes — enabling the live ones is a HUMAN step — but the
+	// PRODUCER is real: internal/orchestrator.EnrichPass resolves each
+	// finding's identifiers, asks the sources, and writes the intel rows the
+	// projection joins in. Nothing here sets Classification.KEV by hand.
+	kev, epss := auditFeeds(t, realAdapterOutput(t))
 	// The real triage, scoring and policy passes.
 	cal, err := score.LoadCalibration("../../config/calibration.yaml")
 	if err != nil {
@@ -92,6 +103,12 @@ func pipelineOutput(t *testing.T) []model.Finding {
 	o := orchestrator.New(s, orchestrator.NewFakeDispatcher(), orchestrator.NewRateBudget(500),
 		orchestrator.Config{})
 	o.Clock = func() time.Time { return runAt }
+
+	if _, err := o.EnrichPass(ctx, feed.Multi{
+		Sources: []feed.Source{kev, epss}, Clock: func() time.Time { return runAt },
+	}, repo.Name); err != nil {
+		t.Fatalf("EnrichPass: %v", err)
+	}
 
 	tr := &triage.Triager{
 		Client: triage.NewFakeClient(), Cache: triage.NewMemoryCache(),
@@ -159,8 +176,6 @@ var findingExemptions = map[audit.FieldPath]audit.Exemption{
 		Why: "requires config/firstparty.yaml, which does not ship — populating it is an " +
 			"organisational act. Covered end-to-end by internal/firstparty's scan-to-decision test",
 	},
-	"Classification.EPSS": {Producer: "nothing — VM-OQ-07 open", Why: "see OQ-AUDIT-01"},
-	"Classification.KEV":  {Producer: "nothing — no KEV feed wired", Why: "see OQ-AUDIT-01"},
 	"Classification.Transitive": {
 		Producer: "internal/scan/adapters (govulncheck)",
 		Why:      "boolean; its false value is indistinguishable from unwritten",
@@ -277,4 +292,55 @@ func TestFingerprintIsWrittenForEveryCategory(t *testing.T) {
 				"category and proves nothing about it", c)
 		}
 	}
+}
+
+// auditFeeds builds KEV and EPSS sources that answer for the CVE identifiers
+// the real adapters actually produced.
+//
+// Derived from adapter output rather than invented, so the census exercises the
+// alias resolution a real deployment needs: the feeds are CVE-keyed and most of
+// these findings are primarily GO- or GHSA- identified, so a pipeline that
+// asked only about primary identifiers would enrich almost nothing and the
+// census would show it.
+//
+// Not every identifier is answered. One CVE is deliberately left out of both
+// catalogues, because "in neither catalogue" is the common case and a fixture
+// where every lookup succeeds would never exercise the unavailable path.
+func auditFeeds(t *testing.T, raws []model.RawFinding) (*feed.Fake, *feed.Fake) {
+	t.Helper()
+	kev, epss := feed.NewFakeKEV(), feed.NewFakeEPSS()
+
+	var cves []string
+	seen := map[string]bool{}
+	for _, raw := range raws {
+		for _, id := range append([]string{raw.PrimaryID}, raw.Aliases...) {
+			if strings.HasPrefix(id, "CVE-") && !seen[id] {
+				seen[id] = true
+				cves = append(cves, id)
+			}
+		}
+	}
+	sort.Strings(cves)
+	if len(cves) < 3 {
+		t.Fatalf("the real adapters produced %d CVE identifiers; the feed census needs several", len(cves))
+	}
+
+	kevAsOf := runAt.Add(-36 * time.Hour)
+	epssAsOf := runAt.Add(-24 * time.Hour)
+	for i, cve := range cves {
+		if i == 0 {
+			// In neither catalogue: nothing answers, and the scores of the
+			// findings carrying it must say so.
+			continue
+		}
+		if i%3 == 1 {
+			kev.WithKEV(cve, kevAsOf)
+		} else {
+			// Checked and NOT listed, which is an answer — distinct from the
+			// identifier above, which nothing answered about at all.
+			kev.WithNotKEV(cve, kevAsOf)
+		}
+		epss.WithEPSS(cve, float64(i%97)/100.0, epssAsOf)
+	}
+	return kev, epss
 }

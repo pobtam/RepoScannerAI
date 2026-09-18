@@ -351,6 +351,25 @@ ON CONFLICT (id) DO UPDATE SET
 
 	qWebhookHealth = `SELECT last_delivery_at, deliveries FROM webhook_health WHERE id = 1`
 
+	// --- Exploitation intelligence (OQ-AUDIT-01(b)) -------------------------
+
+	qUpsertIntel = `
+INSERT INTO vuln_intel (id, epss, epss_available, epss_as_of, kev, kev_available, kev_as_of, fetched_at, sources)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+ON CONFLICT (id) DO UPDATE SET
+  epss           = EXCLUDED.epss,
+  epss_available = EXCLUDED.epss_available,
+  epss_as_of     = EXCLUDED.epss_as_of,
+  kev            = EXCLUDED.kev,
+  kev_available  = EXCLUDED.kev_available,
+  kev_as_of      = EXCLUDED.kev_as_of,
+  fetched_at     = EXCLUDED.fetched_at,
+  sources        = EXCLUDED.sources`
+
+	qIntelFor = `
+SELECT id, epss, epss_available, epss_as_of, kev, kev_available, kev_as_of, fetched_at, sources
+FROM vuln_intel WHERE id = ANY($1)`
+
 	qDeletePRFindings = `DELETE FROM remediation_pr_findings WHERE branch = $1`
 
 	qInsertPRFinding = `

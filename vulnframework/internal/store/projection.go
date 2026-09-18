@@ -432,3 +432,94 @@ func firstNonEmpty(in ...string) string {
 	}
 	return ""
 }
+
+// ApplyIntel fills a projection's exploitation-intelligence fields from the
+// intel rows, matching on ANY of the finding's identifiers.
+//
+// One shared function, called by both backends, because a join written twice
+// is a join that will disagree twice — and this one decides whether a finding
+// reads as known-exploited.
+//
+// Matching on aliases is not an optimisation. The feeds are CVE-keyed and this
+// framework's findings are keyed by GO- and GHSA- identifiers as often as not,
+// so a lookup that only consulted the primary identifier would report "no KEV
+// data" for the majority of Go advisories — which is indistinguishable, in the
+// score, from "checked and not exploited".
+//
+// Where two identifiers of one finding both have rows, the FRESHER snapshot
+// wins per field: the question is what is true now, and preferring the scarier
+// of two answers is how a stale row outlives its correction.
+func ApplyIntel(p *Projection, intel map[string]Intel) {
+	ApplyIntelTo(&p.Classification, append([]string{p.PrimaryID}, p.Aliases...), intel)
+}
+
+// ApplyIntelToFinding is the same join against a materialised finding, which
+// is where both backends apply it: joined at READ time, so a feed refresh is
+// visible without waiting for the next scan to reproject.
+func ApplyIntelToFinding(f *model.Finding, intel map[string]Intel) {
+	ApplyIntelTo(&f.Classification, IntelIDs(*f), intel)
+}
+
+// ApplyIntelTo fills a classification from the intel rows matching any of ids.
+func ApplyIntelTo(c *model.Classification, ids []string, intel map[string]Intel) {
+	if len(intel) == 0 {
+		return
+	}
+	var epss *Intel
+	var kev *Intel
+	for _, id := range ids {
+		row, ok := intel[id]
+		if !ok {
+			continue
+		}
+		if row.EPSSAvailable && (epss == nil || fresher(row.EPSSAsOf, epss.EPSSAsOf)) {
+			r := row
+			epss = &r
+		}
+		if row.KEVAvailable && (kev == nil || fresher(row.KEVAsOf, kev.KEVAsOf)) {
+			r := row
+			kev = &r
+		}
+	}
+
+	if epss != nil {
+		c.EPSS = epss.EPSS
+		c.EPSSAvailable = true
+		c.EPSSAsOf = epss.EPSSAsOf
+	}
+	if kev != nil {
+		c.KEV = kev.KEV
+		c.KEVAvailable = true
+		c.KEVAsOf = kev.KEVAsOf
+	}
+}
+
+// fresher reports whether a is a later snapshot than b. A nil date is not
+// fresher than anything: an answer whose age is unknown cannot be preferred
+// over one whose age is known.
+func fresher(a, b *time.Time) bool {
+	if a == nil {
+		return false
+	}
+	if b == nil {
+		return true
+	}
+	return a.After(*b)
+}
+
+// IntelIDs returns the identifiers worth asking the feeds about for a finding.
+//
+// Every identifier, primary and alias, because the feeds are CVE-keyed and the
+// caller cannot know which of a finding's names the catalogue uses.
+func IntelIDs(f model.Finding) []string {
+	out := make([]string, 0, 1+len(f.Identity.Aliases))
+	seen := map[string]bool{}
+	for _, id := range append([]string{f.Identity.PrimaryID}, f.Identity.Aliases...) {
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		out = append(out, id)
+	}
+	return out
+}

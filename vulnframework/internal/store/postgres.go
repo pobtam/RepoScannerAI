@@ -514,6 +514,30 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 		return nil, err
 	}
 
+	// The feeds' answers, joined at READ time in ONE query for the whole page
+	// (OQ-AUDIT-01(b)). Not baked into the stored projection: EPSS
+	// republishes daily, and a value frozen into the document would not change
+	// until the next scan reprojected the finding.
+	if len(out) > 0 {
+		var ids []string
+		seen := map[string]bool{}
+		for i := range out {
+			for _, id := range IntelIDs(out[i]) {
+				if !seen[id] {
+					seen[id] = true
+					ids = append(ids, id)
+				}
+			}
+		}
+		intel, err := p.IntelFor(ctx, ids)
+		if err != nil {
+			return nil, err
+		}
+		for i := range out {
+			ApplyIntelToFinding(&out[i], intel)
+		}
+	}
+
 	// The ticket reference is joined from the tickets table rather than read
 	// from the finding document. The document is rebuilt from observations on
 	// every scan; a reference kept inside it would be erased by the next run,
@@ -734,6 +758,16 @@ func reprojectTx(ctx context.Context, tx *sql.Tx, fp string) error {
 }
 
 // --- small conversions ------------------------------------------------------
+
+// nullTime renders an absent timestamp as SQL NULL. An absent date must not
+// become the zero time: "no snapshot" and "a snapshot from year one" are
+// different claims, and only one of them is true.
+func nullTime(t *time.Time) any {
+	if t == nil {
+		return nil
+	}
+	return t.UTC()
+}
 
 func nullString(s string) any {
 	if s == "" {
@@ -1660,6 +1694,79 @@ func (p *Postgres) WebhookHealth(ctx context.Context) (WebhookHealth, error) {
 	}
 	h.LastDeliveryAt = h.LastDeliveryAt.UTC()
 	return h, nil
+}
+
+// --- Exploitation intelligence (OQ-AUDIT-01(b)) -----------------------------
+
+func (p *Postgres) SaveIntel(ctx context.Context, rows []Intel) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, row := range rows {
+		if row.ID == "" {
+			return fmt.Errorf("store: intelligence row with no identifier")
+		}
+		var epss any
+		if row.EPSSAvailable {
+			epss = row.EPSS
+		}
+		if _, err := tx.ExecContext(ctx, qUpsertIntel,
+			row.ID, epss, row.EPSSAvailable, nullTime(row.EPSSAsOf),
+			row.KEV, row.KEVAvailable, nullTime(row.KEVAsOf),
+			row.FetchedAt.UTC(), pgTextArray(row.Sources)); err != nil {
+			return fmt.Errorf("store: saving intelligence for %s: %w", row.ID, err)
+		}
+	}
+	return tx.Commit()
+}
+
+func (p *Postgres) IntelFor(ctx context.Context, ids []string) (map[string]Intel, error) {
+	out := map[string]Intel{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := p.db.QueryContext(ctx, qIntelFor, pgTextArray(ids))
+	if err != nil {
+		return nil, fmt.Errorf("store: reading exploitation intelligence: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			row     Intel
+			epss    sql.NullFloat64
+			epssAt  sql.NullTime
+			kevAt   sql.NullTime
+			sources sql.NullString
+		)
+		if err := rows.Scan(&row.ID, &epss, &row.EPSSAvailable, &epssAt,
+			&row.KEV, &row.KEVAvailable, &kevAt, &row.FetchedAt, &sources); err != nil {
+			return nil, err
+		}
+		// A NULL epss stays zero with EPSSAvailable false: the column and the
+		// flag express different facts and neither substitutes for the other.
+		if epss.Valid {
+			row.EPSS = epss.Float64
+		}
+		if epssAt.Valid {
+			at := epssAt.Time.UTC()
+			row.EPSSAsOf = &at
+		}
+		if kevAt.Valid {
+			at := kevAt.Time.UTC()
+			row.KEVAsOf = &at
+		}
+		row.FetchedAt = row.FetchedAt.UTC()
+		row.Sources = parseTextArray(sources.String)
+		out[row.ID] = row
+	}
+	return out, rows.Err()
 }
 
 // openPRURLs returns the open pull request URL per finding, for the projection.

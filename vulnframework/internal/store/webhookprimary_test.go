@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/store"
 )
 
@@ -184,4 +185,71 @@ func TestWebhookHealthDistinguishesQuietFromBroken(t *testing.T) {
 			t.Errorf("a late redelivery made the path look silent: %+v", h)
 		}
 	})
+}
+
+// OQ-AUDIT-01(b) — the intelligence join.
+//
+// The join is a shared pure function because it decides whether a finding reads
+// as known-exploited, and a rule written twice is a rule that will disagree
+// twice.
+
+func TestTheIntelJoinPrefersTheFresherSnapshotNotTheScarierOne(t *testing.T) {
+	old := whNow.Add(-30 * 24 * time.Hour)
+	recent := whNow.Add(-24 * time.Hour)
+
+	c := model.Classification{}
+	store.ApplyIntelTo(&c, []string{"GO-2023-2402", "CVE-2023-48795", "GHSA-45x7-px36-x8w8"},
+		map[string]store.Intel{
+			// The alias with the alarming, month-old number.
+			"GHSA-45x7-px36-x8w8": {
+				ID: "GHSA-45x7-px36-x8w8", EPSS: 0.97, EPSSAvailable: true, EPSSAsOf: &old,
+				KEV: true, KEVAvailable: true, KEVAsOf: &old,
+			},
+			// The CVE, rechecked yesterday and downgraded.
+			"CVE-2023-48795": {
+				ID: "CVE-2023-48795", EPSS: 0.04, EPSSAvailable: true, EPSSAsOf: &recent,
+				KEV: false, KEVAvailable: true, KEVAsOf: &recent,
+			},
+		})
+
+	if c.EPSS != 0.04 {
+		t.Errorf("epss = %.4f, want 0.04 — the fresher snapshot. Preferring the higher number "+
+			"means a correction never lands: the finding keeps last month's score for ever", c.EPSS)
+	}
+	if c.KEV {
+		t.Error("kev = true from a month-old row, while yesterday's recheck says it is not listed")
+	}
+	if !c.EPSSAvailable || !c.KEVAvailable || c.EPSSAsOf == nil || c.KEVAsOf == nil {
+		t.Errorf("the join dropped availability or the snapshot dates: %+v", c)
+	}
+	if !c.EPSSAsOf.Equal(recent) {
+		t.Errorf("epss_as_of = %v, want the fresher date %v", c.EPSSAsOf, recent)
+	}
+}
+
+// TestTheIntelJoinMatchesOnAliases is the reason the join takes every
+// identifier: the feeds are CVE-keyed and most Go advisories are primarily
+// GO- identified, so a primary-only lookup would report "no exploitation data"
+// for the majority of them — indistinguishable, in the score, from "checked
+// and not exploited".
+func TestTheIntelJoinMatchesOnAliases(t *testing.T) {
+	asOf := whNow.Add(-12 * time.Hour)
+	c := model.Classification{}
+	store.ApplyIntelTo(&c, []string{"GO-2023-2402", "CVE-2023-48795"}, map[string]store.Intel{
+		"CVE-2023-48795": {ID: "CVE-2023-48795", KEV: true, KEVAvailable: true, KEVAsOf: &asOf},
+	})
+	if !c.KEV || !c.KEVAvailable {
+		t.Errorf("a CVE-keyed answer did not reach a GO-identified finding: %+v", c)
+	}
+}
+
+// TestTheIntelJoinAssertsNothingWhenNothingIsKnown is the negative.
+func TestTheIntelJoinAssertsNothingWhenNothingIsKnown(t *testing.T) {
+	c := model.Classification{}
+	store.ApplyIntelTo(&c, []string{"GO-2023-2402"}, map[string]store.Intel{
+		"CVE-9999-0001": {ID: "CVE-9999-0001", KEV: true, KEVAvailable: true},
+	})
+	if c.KEVAvailable || c.EPSSAvailable || c.KEV {
+		t.Errorf("the join asserted an answer that was about a different vulnerability: %+v", c)
+	}
 }

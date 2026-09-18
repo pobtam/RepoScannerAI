@@ -3806,3 +3806,139 @@ Each on **both** backends where the code is backend-specific.
   which is exactly the shape of gap this log exists to name: the fallback
   carries everything in a real deployment, and it is the fallback's *bounded*
   form that would carry it.
+
+---
+
+## OQ-AUDIT-01(b) — the exploitation feeds get a producer
+
+**Task:** *KEV/EPSS feeds — plumbing plus a weakest-guarantee fake only. Feed
+clients behind an interface with a fake that models stale, missing and
+malformed data. Producer-coverage: EPSS/KEV fields are now written by a real
+producer (the feed) in tests via the fake. Keep the `EPSSAvailable` /
+`KEVAvailable` tri-state and the inline provenance caveat. Live enablement is
+a HUMAN step.*
+
+**Status: green.** 481 top-level tests, 1077 including subtests. Both backends.
+No network, no credentials, no live feed.
+
+### What the audit had found
+
+The composite score declares five inputs. Two of them —
+`Classification.KEV` and `Classification.EPSS` — were written by **nothing**,
+and the `kev_boost: 3.0` configured since Phase 5 could never fire. Part (a)
+made the score say so; part (b) is the producer, and the instruction was
+explicit that (a) must not be allowed to mask (b).
+
+### What landed
+
+`internal/feed` — the boundary, with a hostile fake and no live client:
+
+* `Assessment` carries **per-field** availability and per-field snapshot dates.
+  KEV and EPSS are separate publications with separate outages, and one
+  answering is not the other answering: a finding can be known-exploited with
+  no EPSS score at all, which is the most urgent combination there is.
+* `Source.Lookup` is **batched** and **omits** what it does not know. An
+  identifier absent from the result means "this source does not know"; a
+  zero-valued entry would mean "measured, harmless". Implementations must never
+  zero-fill.
+* `Multi.Lookup` merges sources **per field**, preferring the **fresher**
+  snapshot rather than the higher score — taking the scarier of two answers is
+  how a feed's stale row outlives its own correction. It is order-independent.
+* Published rows that cannot be believed are **dropped, not repaired**: an EPSS
+  outside 0..1, a missing snapshot date, a date in the future. Clamping 1.7 to
+  1.0 would turn a corrupt row into the most urgent finding in the fleet. A
+  dropped row leaves the identifier **unknown**, which is the truth.
+* `feed.Fake` models the real feeds' weakest permitted behaviour: **CVE-keyed**
+  (it does not answer to `GO-` or `GHSA-` identifiers, because the real ones do
+  not), stale snapshots, absent identifiers, "checked and not listed" as
+  distinct from silence, rows that echo an identifier with no score, malformed
+  rows, silent truncation, rate limits, batch-size refusals, and full outages.
+
+`store.Intel` + migration 0012 — keyed by **identifier**, not by finding,
+because EPSS and KEV are properties of a vulnerability rather than of an
+occurrence: one row serves every finding in the fleet carrying the identifier,
+and per-finding copies would let two findings of the same CVE disagree about
+whether it is being exploited. The schema stores availability **separately**
+from the value, with `CHECK` constraints that an available answer has a date
+and an EPSS is in range — a NULL score and a score of 0 are different facts and
+the table can say which.
+
+`store.ApplyIntelTo` — one shared join, called by both backends, matching on
+**every** identifier a finding carries. That is not an optimisation: the feeds
+are CVE-keyed and this framework's findings are `GO-`/`GHSA-` identified as
+often as not, so a primary-only lookup would report "no exploitation data" for
+most Go advisories — indistinguishable, in the score, from "checked and not
+exploited".
+
+The join happens at **read** time in both backends. A value baked into the
+stored projection would not change until the next scan reprojected the
+finding, so a feed refresh during an incident would reach the repositories that
+happened to be scanned that hour and no others.
+
+`orchestrator.EnrichPass` — the producer. It runs **before** scoring, offers
+every identifier of every open finding in **one batch per source**, records
+what each source could not answer, and writes only rows that **say something**.
+`RunEnrichment` refreshes on its own schedule, because tying it to scans would
+mean a weekly-scanned repository scored against week-old exploitation data.
+
+`score` — `Input` gained the snapshot dates and `Now`; `Result` gained
+`StaleInputs`. A stale answer is **used and labelled**, never discarded:
+"known exploited as of nine days ago" outranks silence. The caveat carries the
+date inline, so the qualification survives being quoted onward. Freshness is
+calibration (`feed_freshness_days: 7`), validated, and a zero falls back to the
+working default rather than meaning "never stale".
+
+`RecoveryFeedUnavailable` — a pass that scored a fleet without a feed says so.
+A priority computed without KEV and EPSS is narrower than the ones computed
+beside it, and nothing about the number shows that.
+
+### The audit closed its own gap
+
+Adding the four new `Classification` fields made both censuses fail on the same
+turn — the mechanism working on new schema. Then, with `EnrichPass` wired into
+the finding census, the audit reported **`Classification.EPSS` and
+`Classification.KEV` as exemptions that are no longer true**: a real producer
+writes them now. Those two exemptions are deleted. The `RawFinding` census
+keeps six exemptions naming the feed rather than an adapter, because a scanner
+reporting whether the world is exploiting a vulnerability would be reporting
+something it cannot know. **44 of 60 finding fields now have a real producer,
+up from 38.**
+
+The census's feed fixture is derived from real adapter output — the CVE aliases
+the pinned tools actually produce — and deliberately leaves one CVE out of both
+catalogues, because "in neither catalogue" is the common case and a fixture
+where every lookup succeeds would never exercise the unavailable path.
+
+### Mutation verification
+
+| Mutation | Result |
+|---|---|
+| the pass asks only about primary identifiers | `TestEnrichmentResolvesAliasesAndReachesTheScore` fails (both backends) |
+| a row is stored for an answer that said nothing | `TestAnEmptyAnswerIsNotStoredAsAnAnswer` fails (both backends) |
+| a source outage is absorbed silently | `TestAFeedOutageIsRecordedLoudly…` + three feed tests fail |
+| the join carries the value and drops the availability flag | `TestEnrichmentResolvesAliases…` fails |
+| the join prefers the scarier answer over the fresher one | `TestTheIntelJoinPrefersTheFresherSnapshotNotTheScarierOne` fails |
+
+### Assumptions
+
+* **A61.** Intelligence is keyed by identifier in its own table, not stored on
+  the finding. Rejected alternative: a per-finding column, which would have
+  needed one row per finding per advisory and let two findings of the same CVE
+  disagree.
+* **A62.** A stale snapshot is used and labelled rather than dropped. The
+  opposite choice discards "known exploited last month", which is worse than
+  silence about it.
+* **A63.** An identifier nothing answered about gets **no row**. The absence of
+  a row is the honest record; a row with both flags false is indistinguishable
+  from one never fetched, and the next pass would have no reason to doubt it.
+
+### HUMAN step (not a code gap)
+
+**Live feeds are not wired and will not be by this build.** The interface has
+one implementation: the fake. Enabling them needs network access, a decision
+about where the daily EPSS snapshot is cached, and a decision about failure
+budgets when a third-party publication is down for a day. Both belong in
+`FINAL-STATUS.md`'s human checklist. What this item guarantees is that the
+framework scores, reports and tickets **correctly and honestly** while they are
+absent — and that the day someone wires a real client, the producer-coverage
+test proves the values still arrive.

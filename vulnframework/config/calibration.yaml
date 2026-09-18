@@ -30,6 +30,14 @@ scoring:
   kev_boost: 3.0        # in CISA KEV: known-exploited outranks any score
   epss_coefficient: 2.0 # multiplied by the EPSS probability (0..1)
 
+  # How old an exploitation-intelligence snapshot may be before a score says so
+  # (OQ-AUDIT-01(b)). EPSS republishes daily and KEV several times a week, so a
+  # snapshot older than this is still an answer — it is simply an answer about
+  # last week, and during an incident that is the distinction that matters. The
+  # value is NOT a cutoff: a stale answer is used and qualified, never
+  # discarded, because "known exploited as of nine days ago" outranks silence.
+  feed_freshness_days: 7
+
   # Reachability multipliers. The tri-state is load-bearing (VM-F-243): unknown
   # sits strictly between the two determinations, so it can never be silently
   # read as either. Treating unknown as reachable would let transitive npm

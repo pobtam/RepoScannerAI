@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
 )
@@ -42,6 +43,16 @@ type Input struct {
 	// a score has to say so (OQ-AUDIT-01).
 	EPSSAvailable bool
 	KEVAvailable  bool
+
+	// EPSSAsOf and KEVAsOf are the snapshot dates behind those two inputs, and
+	// Now is the clock the age is measured against.
+	//
+	// An age is part of the answer. "EPSS 0.94" and "EPSS 0.94 as of eleven
+	// days ago" support different decisions, and the second one has to say so
+	// where the number is read rather than in a footnote about feeds.
+	EPSSAsOf *time.Time
+	KEVAsOf  *time.Time
+	Now      time.Time
 }
 
 // Result is a scored finding, with the arithmetic retained.
@@ -68,6 +79,13 @@ type Result struct {
 	// narrower one, and the difference is invisible in the number. Naming them
 	// is what lets a reader judge how much of the judgement is actually there.
 	UnavailableInputs []string `json:"unavailable_inputs,omitempty"`
+
+	// StaleInputs names the inputs whose snapshot is older than the
+	// calibrated freshness window. They ARE used — a stale answer beats
+	// silence — and they are labelled, because a reader deciding on the
+	// strength of "known exploited" is entitled to know it was true last week
+	// and has not been rechecked.
+	StaleInputs []string `json:"stale_inputs,omitempty"`
 
 	// Caveat travels WITH the score, not in a document-level block a reader
 	// may never reach. A priority is quoted onward — into a ticket, a slide, a
@@ -147,11 +165,17 @@ func (s *Scorer) Score(in Input) Result {
 		} else {
 			r.Explain = append(r.Explain, "kev=false (checked against CISA KEV)")
 		}
+		if age, stale := s.staleness(in.KEVAsOf, in.Now); stale {
+			r.StaleInputs = append(r.StaleInputs, fmt.Sprintf("KEV as of %s (%d days old)",
+				in.KEVAsOf.Format("2006-01-02"), age))
+			r.Explain = append(r.Explain, fmt.Sprintf("kev snapshot is %d days old", age))
+		}
 	} else {
 		r.UnavailableInputs = append(r.UnavailableInputs, "KEV (CISA known-exploited)")
 		r.Explain = append(r.Explain, fmt.Sprintf(
-			"kev UNAVAILABLE: no feed is wired, so kev_boost=+%.2f can never apply. This is not "+
-				"kev=false — nobody looked (OQ-AUDIT-01)", s.Cal.Scoring.KEVBoost))
+			"kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+%.2f "+
+				"can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+			s.Cal.Scoring.KEVBoost))
 	}
 
 	if in.EPSSAvailable {
@@ -161,12 +185,17 @@ func (s *Scorer) Score(in Input) Result {
 		} else {
 			r.Explain = append(r.Explain, "epss=0 (measured)")
 		}
+		if age, stale := s.staleness(in.EPSSAsOf, in.Now); stale {
+			r.StaleInputs = append(r.StaleInputs, fmt.Sprintf("EPSS as of %s (%d days old)",
+				in.EPSSAsOf.Format("2006-01-02"), age))
+			r.Explain = append(r.Explain, fmt.Sprintf("epss snapshot is %d days old", age))
+		}
 	} else {
 		r.UnavailableInputs = append(r.UnavailableInputs, "EPSS (exploit prediction)")
 		r.Explain = append(r.Explain, fmt.Sprintf(
-			"epss UNAVAILABLE: no feed is wired, so the epss coefficient of %.2f can never apply. "+
-				"This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
-			s.Cal.Scoring.EPSSCoefficient))
+			"epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss "+
+				"coefficient of %.2f can never apply. This is not epss=0 — nobody looked "+
+				"(OQ-AUDIT-01, VM-OQ-07)", s.Cal.Scoring.EPSSCoefficient))
 	}
 
 	// Reachability is consumed as a tri-state. Unknown has its own multiplier,
@@ -209,7 +238,7 @@ func (s *Scorer) Score(in Input) Result {
 	r.Score = (r.Base + r.KEVBoost + r.EPSSBoost) *
 		r.ReachMultiplier * r.DepMultiplier * r.TierMultiplier * r.FanOutMult
 	r.Priority = s.priorityOf(r.Score)
-	r.Caveat = caveatFor(r.UnavailableInputs)
+	r.Caveat = caveatFor(r.UnavailableInputs, r.StaleInputs)
 	r.Explain = append(r.Explain, fmt.Sprintf("score=%.4f priority=%s", r.Score, r.Priority))
 	return r
 }
@@ -286,12 +315,21 @@ const declaredInputs = 5
 // the two questions that most often change what a human does about a finding.
 // A score computed without them is not slightly less informed; it is missing
 // the part that would have argued loudest.
-func caveatFor(unavailable []string) string {
+func caveatFor(unavailable, stale []string) string {
 	if len(unavailable) == 0 {
-		return ""
+		if len(stale) == 0 {
+			return ""
+		}
+		// Every input answered; some answered about last week. The number is
+		// usable and the age travels with it.
+		return fmt.Sprintf(
+			"This priority uses exploitation intelligence that has not been refreshed: %s. A stale "+
+				"answer beats silence, and it is still an answer about the past — recheck before "+
+				"acting on it during an active incident.",
+			strings.Join(stale, "; "))
 	}
 	available := declaredInputs - len(unavailable)
-	return fmt.Sprintf(
+	out := fmt.Sprintf(
 		"This priority rests on %d of %d declared inputs: %s %s unavailable because no feed is "+
 			"wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now "+
 			"and how likely it is to be — the questions that most often change what a human does — "+
@@ -299,6 +337,35 @@ func caveatFor(unavailable []string) string {
 			"argued loudest. Treat it as a floor, not an assessment.",
 		available, declaredInputs, strings.Join(unavailable, " and "),
 		plural(len(unavailable), "is", "are"))
+	if len(stale) > 0 {
+		out += fmt.Sprintf(" What did answer is not current: %s.", strings.Join(stale, "; "))
+	}
+	return out
+}
+
+// staleness reports the age in days of a snapshot and whether it exceeds the
+// calibrated freshness window.
+//
+// A missing date is not stale — it is unavailable, handled by the caller — and
+// a zero window means the question was never calibrated, in which case the
+// default applies rather than "everything is fresh".
+func (s *Scorer) staleness(asOf *time.Time, now time.Time) (int, bool) {
+	if asOf == nil || asOf.IsZero() || now.IsZero() {
+		return 0, false
+	}
+	days := int(now.UTC().Sub(asOf.UTC()).Hours() / 24)
+	if days < 0 {
+		days = 0
+	}
+	return days, days > s.feedFreshnessDays()
+}
+
+// feedFreshnessDays is the calibrated window, or the working default.
+func (s *Scorer) feedFreshnessDays() int {
+	if s.Cal.Scoring.FeedFreshnessDays > 0 {
+		return s.Cal.Scoring.FeedFreshnessDays
+	}
+	return 7
 }
 
 func plural(n int, one, many string) string {

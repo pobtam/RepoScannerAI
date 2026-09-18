@@ -430,6 +430,17 @@ type Store interface {
 	// bounded batch, oldest first so nothing starves.
 	UnconfirmedRemediationPRs(ctx context.Context, repo string, since time.Time, limit int) ([]RemediationPR, error)
 
+	// --- Exploitation intelligence (OQ-AUDIT-01(b)) ---
+
+	// SaveIntel records what the feeds said, keyed by identifier. Repeated
+	// saves for one identifier overwrite: a later fetch is a better answer,
+	// and keeping a history of feed snapshots is a different feature.
+	SaveIntel(ctx context.Context, rows []Intel) error
+	// IntelFor returns what is known about these identifiers. Identifiers with
+	// no row are OMITTED, never zero-filled: the caller must be able to tell
+	// "not looked up" from "looked up and negligible".
+	IntelFor(ctx context.Context, ids []string) (map[string]Intel, error)
+
 	// --- Webhook health (OQ-P12-01) ---
 
 	// RecordWebhookDelivery notes that a VERIFIED delivery arrived.

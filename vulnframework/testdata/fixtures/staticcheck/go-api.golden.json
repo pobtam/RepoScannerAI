@@ -21,6 +21,8 @@
     "Classification": {
       "severity": "MEDIUM",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "true",
       "dep_class": "n/a",
       "transitive": false,

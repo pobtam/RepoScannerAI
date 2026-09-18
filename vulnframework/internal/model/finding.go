@@ -132,10 +132,27 @@ type Versions struct {
 
 // Classification carries the risk attributes that feed scoring (VM-AD §9.4).
 type Classification struct {
-	Severity       Severity  `json:"severity"`
-	CVSS           float64   `json:"cvss,omitempty"`
-	EPSS           float64   `json:"epss,omitempty"`
-	KEV            bool      `json:"kev"`
+	Severity Severity `json:"severity"`
+	CVSS     float64  `json:"cvss,omitempty"`
+	EPSS     float64  `json:"epss,omitempty"`
+	KEV      bool     `json:"kev"`
+
+	// EPSSAvailable and KEVAvailable say whether the enrichment feed ANSWERED,
+	// as distinct from answering zero or false (OQ-AUDIT-01).
+	//
+	// An EPSS of 0 with EPSSAvailable means measured and negligible. An EPSS
+	// of 0 without it means nobody looked, and the two must never render as
+	// the same thing: collapsing them lets a feed outage read as good news.
+	// This is reachability's tri-state discipline applied to the two inputs
+	// that most often change what a human does.
+	EPSSAvailable bool `json:"epss_available"`
+	KEVAvailable  bool `json:"kev_available"`
+	// EPSSAsOf and KEVAsOf are the snapshot dates. EPSS publishes daily and is
+	// routinely behind; a score quoted without its date cannot be judged, and
+	// during an incident the number that matters is the one not yet published.
+	EPSSAsOf *time.Time `json:"epss_as_of,omitempty"`
+	KEVAsOf  *time.Time `json:"kev_as_of,omitempty"`
+
 	Reachable      Reachable `json:"reachable"`
 	DepClass       DepClass  `json:"dep_class,omitempty"`
 	Transitive     bool      `json:"transitive"`

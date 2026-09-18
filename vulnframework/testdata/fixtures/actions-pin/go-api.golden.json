@@ -21,6 +21,8 @@
     "Classification": {
       "severity": "MEDIUM",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "unknown",
       "dep_class": "n/a",
       "transitive": false,
@@ -61,6 +63,8 @@
     "Classification": {
       "severity": "MEDIUM",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "unknown",
       "dep_class": "n/a",
       "transitive": false,
@@ -101,6 +105,8 @@
     "Classification": {
       "severity": "MEDIUM",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "unknown",
       "dep_class": "n/a",
       "transitive": false,

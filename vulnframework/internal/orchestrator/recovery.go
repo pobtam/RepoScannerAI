@@ -30,6 +30,13 @@ const (
 	// RecoveryMergedWithoutPublish — a Wave 1 fix merged and never shipped
 	// (VM-F-614).
 	RecoveryMergedWithoutPublish RecoveryKind = "merged_without_publish"
+	// RecoveryFeedUnavailable — an exploitation-intelligence source could not
+	// answer, so this pass scored without it (OQ-AUDIT-01).
+	//
+	// Recorded because the score cannot say it loudly enough on its own: a
+	// priority computed without KEV and EPSS is narrower than the ones
+	// computed beside it, and nothing about the number shows that.
+	RecoveryFeedUnavailable RecoveryKind = "feed_unavailable"
 	// RecoveryWebhookSilent — the webhook path has delivered nothing inside
 	// the silence window, so reconciliation reverted to asking the remote
 	// about every open pull request (OQ-P12-01).

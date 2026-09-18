@@ -30,6 +30,10 @@ type Calibration struct {
 		DepClass        map[string]float64 `yaml:"dep_class"`
 		Tier            map[int]float64    `yaml:"tier"`
 		PriorityBands   map[string]float64 `yaml:"priority_bands"`
+		// FeedFreshnessDays is how old an exploitation-intelligence snapshot
+		// may be before a score qualifies itself. Not a cutoff: a stale
+		// answer is used and labelled, never dropped.
+		FeedFreshnessDays int `yaml:"feed_freshness_days"`
 	} `yaml:"scoring"`
 
 	FanOut struct {
@@ -145,6 +149,15 @@ func (c Calibration) Validate() error {
 	}
 	if !(p0 > p1 && p1 > p2) {
 		return fmt.Errorf("calibration: priority bands must descend, got P0=%v P1=%v P2=%v", p0, p1, p2)
+	}
+
+	// The freshness window must be positive where it is set at all. Zero
+	// falls back to the working default rather than meaning "never stale":
+	// a window of zero would mark every answer stale, and a window of
+	// infinity would mark none — and the second failure is silent.
+	if c.Scoring.FeedFreshnessDays < 0 {
+		return fmt.Errorf("calibration: scoring.feed_freshness_days must be positive, got %d",
+			c.Scoring.FeedFreshnessDays)
 	}
 
 	if _, err := c.SLAWindows(); err != nil {

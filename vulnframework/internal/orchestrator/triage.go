@@ -126,6 +126,15 @@ func (o *Orchestrator) TriageAndRoute(
 				CVSS: f.Classification.CVSS, EPSS: f.Classification.EPSS,
 				KEV: f.Classification.KEV, Reachable: f.Classification.Reachable,
 				DepClass: f.Classification.DepClass, Tier: repo.Tier,
+				// Availability and snapshot dates, carried from the feeds
+				// (OQ-AUDIT-01(b)). Passing the values without the flags is
+				// exactly how a feed outage read as "epss=0, kev=false" —
+				// which is the shape of defect the audit found.
+				EPSSAvailable: f.Classification.EPSSAvailable,
+				KEVAvailable:  f.Classification.KEVAvailable,
+				EPSSAsOf:      f.Classification.EPSSAsOf,
+				KEVAsOf:       f.Classification.KEVAsOf,
+				Now:           o.clock(),
 			})
 			if err := o.Store.SetPriority(ctx, f.Fingerprint, res.Priority, nil); err != nil {
 				return stats, err

@@ -29,6 +29,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -80,6 +82,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -131,6 +135,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -182,6 +188,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -233,6 +241,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -284,6 +294,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -335,6 +347,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -386,6 +400,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -437,6 +453,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -488,6 +506,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -539,6 +559,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -590,6 +612,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -641,6 +665,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -692,6 +718,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -743,6 +771,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -794,6 +824,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -845,6 +877,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -896,6 +930,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -947,6 +983,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -998,6 +1036,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -1049,6 +1089,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -1100,6 +1142,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -1151,6 +1195,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -1202,6 +1248,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -1253,6 +1301,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -1304,6 +1354,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -1355,6 +1407,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,
@@ -1406,6 +1460,8 @@
     "Classification": {
       "severity": "UNKNOWN",
       "kev": false,
+      "epss_available": false,
+      "kev_available": false,
       "reachable": "false",
       "dep_class": "production",
       "transitive": false,

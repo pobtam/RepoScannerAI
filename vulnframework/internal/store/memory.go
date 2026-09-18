@@ -38,6 +38,7 @@ type Memory struct {
 	repoLocks      map[string]RepoLock
 	remediationPRs map[string]RemediationPR
 	webhook        WebhookHealth
+	intel          map[string]Intel
 	runTickets     map[string]RunTicket
 	deps           map[string]map[string]ModuleDep
 	ticketOps      []TicketOp
@@ -91,6 +92,7 @@ func NewMemory() *Memory {
 		transitions:  map[string][]model.StateTransition{},
 		plan:         map[string]map[string]PlanEntry{},
 		reports:      map[string]Report{},
+		intel:        map[string]Intel{},
 	}
 }
 
@@ -128,6 +130,7 @@ func (m *Memory) MigrateTo(_ context.Context, version int) error {
 		m.transitions = map[string][]model.StateTransition{}
 		m.plan = map[string]map[string]PlanEntry{}
 		m.reports = map[string]Report{}
+		m.intel = map[string]Intel{}
 	}
 	m.schemaVersion = version
 	return nil
@@ -538,7 +541,7 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 	obs := LatestPerSource(m.observations[f.Fingerprint])
 	p := Project(obs)
 
-	return model.Finding{
+	out := model.Finding{
 		SchemaVersion: model.SchemaVersion,
 		Fingerprint:   f.Fingerprint,
 		Repo:          f.Repo,
@@ -592,6 +595,14 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 			UpstreamFinding: optionalString(f.UpstreamFinding),
 		},
 	}
+	// The feeds' answers, joined in at READ time (OQ-AUDIT-01(b)).
+	//
+	// Not baked into the stored projection: EPSS republishes daily, and a
+	// value frozen into the document would not change until the next scan
+	// reprojected the finding — so a refresh during an incident would reach
+	// the repositories being scanned and no others.
+	ApplyIntelToFinding(&out, m.intelFor(IntelIDs(out)))
+	return out
 }
 
 // ticketRef surfaces the ticket reference from the ticket table, never from the
@@ -836,6 +847,52 @@ func (m *Memory) ReleaseLease(_ context.Context, fp string) error {
 	}
 	f.LeaseOwner, f.LeaseExpiresAt = "", nil
 	return nil
+}
+
+// --- Exploitation intelligence (OQ-AUDIT-01(b)) -----------------------------
+
+func (m *Memory) SaveIntel(_ context.Context, rows []Intel) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.intel == nil {
+		m.intel = map[string]Intel{}
+	}
+	for _, row := range rows {
+		if row.ID == "" {
+			return fmt.Errorf("store: intelligence row with no identifier")
+		}
+		if row.EPSSAvailable && row.EPSSAsOf == nil {
+			return fmt.Errorf("store: %s has an EPSS score with no snapshot date; a score whose "+
+				"age is unknown cannot be qualified", row.ID)
+		}
+		if row.KEVAvailable && row.KEVAsOf == nil {
+			return fmt.Errorf("store: %s has a KEV answer with no catalogue date", row.ID)
+		}
+		if row.EPSSAvailable && (row.EPSS < 0 || row.EPSS > 1) {
+			return fmt.Errorf("store: %s has an EPSS of %.4f, outside 0..1", row.ID, row.EPSS)
+		}
+		m.intel[row.ID] = row
+	}
+	return nil
+}
+
+func (m *Memory) IntelFor(_ context.Context, ids []string) (map[string]Intel, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.intelFor(ids), nil
+}
+
+// intelFor is the unlocked read, so the projection can use it.
+func (m *Memory) intelFor(ids []string) map[string]Intel {
+	out := map[string]Intel{}
+	for _, id := range ids {
+		if row, ok := m.intel[id]; ok {
+			out[id] = row
+		}
+		// Omitted otherwise. Never zero-filled: the caller has to be able to
+		// tell "not looked up" from "looked up and negligible".
+	}
+	return out
 }
 
 // leaseOf reads the lease off a retained record.

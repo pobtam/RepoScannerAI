@@ -102,16 +102,38 @@ var rawFindingExemptions = map[audit.FieldPath]audit.Exemption{
 			"This field is why the audit exists: it was read by policy rule 6 and written by " +
 			"nothing for five phases",
 	},
+	// The four exploitation-intelligence fields are NOT an adapter's to write.
+	//
+	// A scanner reports what it found in a repository; whether the world is
+	// exploiting that vulnerability today is a separate publication with its
+	// own cadence and its own outages. They reach a FINDING through the intel
+	// join (internal/store.ApplyIntel), whose producer is
+	// internal/orchestrator.EnrichPass over internal/feed — and the finding
+	// census proves that producer writes them.
 	"Classification.EPSS": {
-		Producer: "not yet written by anything",
-		Why: "VM-OQ-07 is open on the EPSS source. The scoring multiplier reads it and it is " +
-			"always zero, which means EPSS contributes nothing to any priority today. Recorded " +
-			"as a genuine gap rather than exempted away — see OQ-AUDIT-01",
+		Producer: "internal/orchestrator.EnrichPass via internal/feed (not an adapter)",
+		Why: "exploitation intelligence is published separately from scan results and joined onto " +
+			"the finding; an adapter that wrote it would be reporting something it cannot know",
 	},
 	"Classification.KEV": {
-		Producer: "not yet written by anything",
-		Why: "no KEV feed is wired. kev_boost is 3.0 in calibration and can never apply. " +
-			"See OQ-AUDIT-01",
+		Producer: "internal/orchestrator.EnrichPass via internal/feed (not an adapter)",
+		Why:      "as above",
+	},
+	"Classification.EPSSAvailable": {
+		Producer: "internal/orchestrator.EnrichPass via internal/feed (not an adapter)",
+		Why:      "as above",
+	},
+	"Classification.KEVAvailable": {
+		Producer: "internal/orchestrator.EnrichPass via internal/feed (not an adapter)",
+		Why:      "as above",
+	},
+	"Classification.EPSSAsOf": {
+		Producer: "internal/orchestrator.EnrichPass via internal/feed (not an adapter)",
+		Why:      "the feed's snapshot date; a scanner has no snapshot",
+	},
+	"Classification.KEVAsOf": {
+		Producer: "internal/orchestrator.EnrichPass via internal/feed (not an adapter)",
+		Why:      "as above",
 	},
 	"Classification.Transitive": {
 		Producer: "internal/scan/adapters (govulncheck only, from trace depth)",
