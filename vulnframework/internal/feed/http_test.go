@@ -33,7 +33,7 @@ import (
 
 func fixtureBytes(t *testing.T, name string) []byte {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("..", "..", "testdata", "fixtures", "feeds", name))
+	b, err := os.ReadFile(filepath.Join("..", "..", "testdata", "feeds", name))
 	if err != nil {
 		t.Fatalf("reading fixture %s: %v", name, err)
 	}
