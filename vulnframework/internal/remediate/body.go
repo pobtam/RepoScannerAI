@@ -2,6 +2,7 @@ package remediate
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ import (
 // Verification output is included verbatim. Summarising away a failure is a
 // defect (VM-F-532), and the same applies to a success: a reviewer should be
 // able to see what was actually run, not a claim that it passed.
-func Body(group FixGroup, targets []Target, v Verification) string {
+func Body(group FixGroup, targets []Target, applied Applied, v Verification) string {
 	var b strings.Builder
 
 	b.WriteString("## What this changes\n\n")
@@ -25,7 +26,34 @@ func Body(group FixGroup, targets []Target, v Verification) string {
 	} else {
 		b.WriteString("| Module | From | To | Closes |\n|---|---|---|---|\n")
 		for _, t := range targets {
-			fmt.Fprintf(&b, "| `%s` | %s | **%s** | %s |\n", t.Module, dash(t.From), t.To, strings.Join(t.Closes, ", "))
+			to := t.To
+			// What the module ACTUALLY resolved to, where that differs from
+			// what was asked for. A proxy that has not mirrored a tag
+			// resolves lower, and a table stating the requested version would
+			// tell a reviewer a bump happened that did not.
+			if got, ok := applied.Bumped[t.Module]; ok && got != "" {
+				to = got
+			}
+			fmt.Fprintf(&b, "| `%s` | %s | **%s** | %s |\n", t.Module, dash(t.From), to, strings.Join(t.Closes, ", "))
+		}
+		b.WriteString("\n")
+	}
+
+	// Anything the bisect dropped (VM-AD §11.3, VM-F-543's "anything deferred
+	// and why").
+	//
+	// This is beside the table rather than at the foot of the page because of
+	// how it is read: a reviewer checks the modules listed, not the modules
+	// absent. A bump that was attempted and removed leaves no trace in the
+	// diff at all, so a reviewer who is not told here will conclude the group
+	// was fully remediated — and the finding it belonged to is still open.
+	if len(applied.Dropped) > 0 {
+		b.WriteString("## Attempted and dropped\n\n")
+		b.WriteString("These were part of the same fix group and are **not** in this pull request. " +
+			"The findings they would have closed remain open.\n\n")
+		b.WriteString("| Module | Why it was dropped |\n|---|---|\n")
+		for _, module := range sortedDropped(applied.Dropped) {
+			fmt.Fprintf(&b, "| `%s` | %s |\n", module, applied.Dropped[module])
 		}
 		b.WriteString("\n")
 	}
@@ -76,12 +104,35 @@ func Body(group FixGroup, targets []Target, v Verification) string {
 	}
 	b.WriteString("- No suppression directive was added, and none may be: if suppression is the right answer " +
 		"here, say so in review and the finding is marked `SUPPRESSION_PROPOSED` (VM-F-507).\n")
+	if len(applied.Dropped) > 0 {
+		// Stated twice, once beside the table and once here, because the two
+		// are read by different people at different moments: the table by
+		// whoever checks the modules, this by whoever decides whether the
+		// finding can be closed. A deferral that appears only next to a
+		// table gets quoted as a completed fix.
+		fmt.Fprintf(&b, "- **Not everything in this fix group is here.** %s was dropped; see "+
+			"\"Attempted and dropped\" above. Merging this does not remediate %s.\n",
+			strings.Join(sortedDropped(applied.Dropped), ", "),
+			pluralise(len(applied.Dropped), "that module", "those modules"))
+	}
 	b.WriteString("- This pull request is not merged automatically (VM-F-541). It needs a human decision.\n")
 
 	b.WriteString("\n---\n\n")
 	fmt.Fprintf(&b, "_Fix group `%s`, branch `%s`. Machine-generated. Re-running remediation for this group "+
 		"finds this pull request rather than opening another (VM-F-502)._\n", group.ID, group.Branch)
 	return b.String()
+}
+
+// sortedDropped orders the dropped modules, so the same bisect outcome always
+// renders the same body. A map's iteration order would make an unchanged
+// result look like a different one on every re-run.
+func sortedDropped(dropped map[string]string) []string {
+	out := make([]string, 0, len(dropped))
+	for module := range dropped {
+		out = append(out, module)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // breakingTargets names bumps that cross a major version.
@@ -115,4 +166,13 @@ func dash(s string) string {
 		return "—"
 	}
 	return s
+}
+
+// pluralise picks a form. Trivial, and present because a pull request body
+// that reads as though it were generated is one a reviewer skims.
+func pluralise(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
 }

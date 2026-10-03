@@ -46,6 +46,9 @@ type FakeToolchain struct {
 	edited         []string
 	addedLines     []string
 
+	// unbumpable maps a module the bisect drops to why.
+	unbumpable map[string]string
+
 	baselineFailure  *Check
 	verifyBuildFails bool
 	verifyTestsFails bool
@@ -65,6 +68,7 @@ func NewFakeToolchain() *FakeToolchain {
 		modules: map[string]string{}, ceilings: map[string]string{},
 		advisories: map[string]advisory{}, tests: map[string]bool{},
 		sourceFindings: map[string]string{}, closedSource: map[string]bool{},
+		unbumpable: map[string]string{},
 	}
 }
 
@@ -128,6 +132,28 @@ func (f *FakeToolchain) WithExtraChangedFile(path string) *FakeToolchain {
 	return f
 }
 
+// WithUnbumpable makes a module one the bisect drops.
+//
+// It exists because the real toolchain can do this and, until it could, the
+// fake could not — which is the "fake kinder than production" failure this
+// build has recorded four times. `Applied.Dropped` was written by nothing and
+// read by nothing for the whole of the build; a fake that could not produce
+// the value would have left the consumer untestable as soon as one existed.
+//
+// Modelled as the OUTCOME of a bisect rather than its mechanism. The fake does
+// not build anything, so it cannot discover which bump is at fault; what it
+// can do faithfully is present the harness with the result — a module left at
+// its old version, with a reason.
+func (f *FakeToolchain) WithUnbumpable(module, why string) *FakeToolchain {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.unbumpable == nil {
+		f.unbumpable = map[string]string{}
+	}
+	f.unbumpable[module] = why
+	return f
+}
+
 // WithApplyError makes the bump itself fail.
 func (f *FakeToolchain) WithApplyError(err error) *FakeToolchain {
 	f.mu.Lock()
@@ -164,6 +190,16 @@ func (f *FakeToolchain) Apply(_ context.Context, _ string, targets []Target) (Ap
 	out := Applied{Bumped: map[string]string{}, Dropped: map[string]string{}}
 	var log strings.Builder
 	for _, t := range targets {
+		// A module the batch could not be built with. The real toolchain
+		// discovers this by bisecting a failing build; the fake is handed the
+		// outcome. Either way the module is left where it was, and the
+		// reviewer has to be told (VM-AD §11.3).
+		if why, dropped := f.unbumpable[t.Module]; dropped {
+			out.Dropped[t.Module] = why
+			fmt.Fprintf(&log, "gotool: dropping %s %s → %s: %s\n", t.Module, t.From, t.To, why)
+			continue
+		}
+
 		resolved := t.To
 		// A proxy that has not mirrored the tag resolves lower. The framework
 		// is not told; it has to find out by re-scanning.

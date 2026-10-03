@@ -367,7 +367,7 @@ func (w *Worker) Remediate(ctx context.Context, group FixGroup) (Result, error) 
 		return res, err
 	}
 
-	pr, err := w.openPR(ctx, group, targets, verification, base)
+	pr, err := w.openPR(ctx, group, targets, applied, verification, base)
 	if err != nil {
 		return res, err
 	}
@@ -506,11 +506,11 @@ func (w *Worker) recordPR(ctx context.Context, group FixGroup, pr gh.PullRequest
 	})
 }
 
-func (w *Worker) openPR(ctx context.Context, group FixGroup, targets []Target, v Verification, base string) (gh.PullRequest, error) {
+func (w *Worker) openPR(ctx context.Context, group FixGroup, targets []Target, applied Applied, v Verification, base string) (gh.PullRequest, error) {
 	pr, err := w.PR.OpenPR(ctx, group.Repo, gh.OpenRequest{
 		Head: group.Branch, Base: base,
 		Title:  w.title(group),
-		Body:   Body(group, targets, v),
+		Body:   Body(group, targets, applied, v),
 		Labels: prLabels(),
 	})
 	if err == nil {

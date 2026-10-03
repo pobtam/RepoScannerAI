@@ -664,7 +664,7 @@ func TestAgentActionsAreAttributableAndLogged(t *testing.T) {
 
 	// And what it declined to do is on the pull request, not only in a log:
 	// a reviewer needs to know what was left undone (VM-F-543).
-	body := remediate.Body(res.Group, nil, res.Verification)
+	body := remediate.Body(res.Group, nil, res.Applied, res.Verification)
 	_ = body
 }
 
