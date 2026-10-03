@@ -34,6 +34,17 @@ type Config struct {
 	// silently grants everything.
 	Auth Authenticator
 
+	// AccessLog records who looked at what (VM-UI-F-805), including the
+	// requests that were REFUSED — which are the ones an incident review
+	// reads.
+	//
+	// Nil disables it, and that is a deliberate configuration rather than a
+	// default: where the records go, how long they are kept and whether they
+	// must be tamper-evident are deployment decisions (D6). What is not a
+	// deployment decision is whether refusals are recorded, which is why
+	// that lives in the middleware rather than in the implementation.
+	AccessLog AccessLog
+
 	// UnavailableScoringInputs names the declared scoring inputs no feed
 	// answers in this deployment. Passed in rather than assumed so the caveat
 	// CLEARS when the feeds are wired.
@@ -96,8 +107,14 @@ func New(cfg Config) (*Server, error) {
 }
 
 // Handler returns the server's handler with middleware applied.
+//
+// The access log wraps withPrincipal rather than sitting inside it. That
+// ordering is the substance: a request refused BEFORE a principal is
+// established is still a request somebody made, and somebody repeatedly
+// failing authentication is precisely what the log is for. Inside, it would
+// see only what got past.
 func (s *Server) Handler() http.Handler {
-	return s.recoverPanic(s.withPrincipal(s.mux))
+	return s.recoverPanic(s.withAccessLog(s.withPrincipal(s.mux)))
 }
 
 func (s *Server) now() time.Time { return s.cfg.Clock().UTC() }
@@ -149,6 +166,12 @@ func (s *Server) withPrincipal(next http.Handler) http.Handler {
 				"sign in through the organisation identity provider and retry")
 			return
 		}
+		// Handed to the access log before the privilege check, so a caller
+		// the identity provider named but did not grade is recorded WITH
+		// their identity. An undetermined privilege logged anonymously would
+		// make a misconfigured group mapping impossible to attribute.
+		recordPrincipal(r.Context(), p)
+
 		if !p.Determined() {
 			s.fail(w, r, http.StatusForbidden, "privilege undetermined",
 				"the identity provider did not return a privilege level for this caller",

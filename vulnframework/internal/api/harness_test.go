@@ -513,6 +513,30 @@ func init() {
 
 var _ = fmt.Sprintf
 
+// serverWithAccessLog builds a server over the same seeded store with an
+// access log attached.
+//
+// A nil authenticator keeps the harness's fully-privileged default, so a test
+// that is about the LOG does not have to restate the identity it does not care
+// about.
+func (h *harness) serverWithAccessLog(t *testing.T, log api.AccessLog, auth api.Authenticator) *api.Server {
+	t.Helper()
+	if auth == nil {
+		auth = api.DemoAuth{Level: report.LevelSecurityOwner}
+	}
+	srv, err := api.New(api.Config{
+		Store: h.Store, Calibration: h.Cal,
+		Auth:      auth,
+		AccessLog: log,
+		Logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Clock:     func() time.Time { return apiNow },
+	})
+	if err != nil {
+		t.Fatalf("api.New: %v", err)
+	}
+	return srv
+}
+
 // replaceAuth rebuilds the server over the same store with a different
 // principal, so the privilege tests exercise the real handlers rather than the
 // authenticator in isolation.

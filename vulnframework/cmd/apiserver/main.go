@@ -80,6 +80,15 @@ func run() error {
 
 	cfg := api.Config{Calibration: cal, Policy: pol, Logger: log}
 
+	// Access logging (VM-UI-F-805), on in both modes.
+	//
+	// On in the demonstration too, because a control that is only enabled in
+	// production is a control nobody has watched working. Where these records
+	// go, how long they are kept and whether they must be tamper-evident are
+	// deployment decisions (D6); a structured logger needs none of those
+	// decided and is therefore the version that actually runs.
+	cfg.AccessLog = api.SlogAccessLog{Logger: log}
+
 	var registry *firstparty.Registry
 	if *fpPath != "" {
 		raw, err := os.ReadFile(*fpPath)
