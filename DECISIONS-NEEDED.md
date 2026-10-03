@@ -9,6 +9,16 @@ rather than assumed.
 Nothing in this list blocks running the framework or reading the interface.
 Each one blocks a specific step towards production, and says which.
 
+**`GO-LIVE-CHECKLIST.md` is the ordered version of this file**: the same
+items, sequenced, each with its exact precondition, what unblocks it, and what
+is already built for it. Read this one to understand a decision; read that one
+to make them in a safe order.
+
+**What changed since this was written.** The finishing pass built the CODE for
+several of these and left every DECISION untouched, which is the distinction
+the two documents keep. Where an item now has a real implementation waiting on
+a human, it says so below.
+
 ---
 
 ## D1 — The first live agent run against a real repository
@@ -64,6 +74,20 @@ needs Linux namespaces.
 **Until it passes:** the agent path is code-complete and unproven. Treat the
 fake's green tests as evidence about the harness, not about the isolation.
 
+**Since written:** the probe suite and the CI job both exist
+(`internal/sandbox/real_test.go` under the `sandboxprobe` build tag, and
+`.github/workflows/sandbox-probe.yml`). The **macOS half now passes** on the
+development machine — network, environment and filesystem boundaries all held
+under `sandbox-exec`.
+
+Writing it found a defect that made the environment probe incapable of ever
+passing against a real backend: the canary was injected past the allowlist
+into the child's own environment, and no isolation backend strips environment
+variables. See BUILD-LOG, finishing pass.
+
+What remains is Linux: real `bwrap`, and the orphan-pipe hazard that does not
+reproduce on macOS.
+
 ---
 
 ## D3 — Live KEV and EPSS feeds
@@ -94,6 +118,16 @@ implementation and it is the fake.
 inline, wherever it is rendered. The scorer's `kev_boost` and
 `epss_coefficient` are configured and can never fire.
 
+**Since written:** `feed.KEVSource` and `feed.EPSSSource` are implemented and
+tested — a feed that is down is `*ErrUnavailable` and never an empty result, a
+truncated catalogue is refused, an unlisted identifier is omitted rather than
+zero-filled, a malformed row is dropped and counted.
+
+**One thing to do before the decisions below.** The fixtures in
+`testdata/feeds/` were written by hand to the publishers' documented formats
+and NOT captured from the live services, because this build has no network.
+Capture one real response from each endpoint and diff it first.
+
 ---
 
 ## D4 — GitHub App installation and credentials
@@ -119,6 +153,13 @@ complete and tested.
    deliver externally until an identity binding exists
    (`ErrIdentityUnbound`) — a deliberate refusal, not a gap.
 
+**Since written:** `gh.AppClient` and `gh.RESTOps` are implemented and tested
+against recorded responses. The behaviours the hostile fake models all have
+real counterparts: lost-page detection against the server's declared total,
+rate limits in all three forms GitHub expresses them, 422-duplicate adoption,
+`merged_at` as well as `merged`, and an empty listing refused as
+`ErrEmptyFleet`.
+
 ---
 
 ## D5 — Real scanners, pinned and reproducible
@@ -143,6 +184,16 @@ runs against `FakeToolchain`.
    `Verify` answered a subtly different question from the one the interface
    asks, and no single-group test could see it.
 
+**Since written:** the Go half of the third decision is **done**.
+`internal/remediate/gotool` is the real toolchain — `go build`, `go vet`,
+`go test -race`, `go get` with bisection, `go mod tidy`, and a re-run of the
+scanners — proved against controlled fixture modules and a local module proxy,
+under sandbox confinement.
+
+VM-AD §11.3 also specifies JavaScript, and that is still unwritten
+(OQ-FIN-01). A JavaScript repository cannot be remediated; remediation
+declines it rather than getting it wrong.
+
 ---
 
 ## D6 — Authentication and authorisation in front of the API
@@ -163,6 +214,12 @@ demonstration binds to localhost and its data is invented.
    cannot set those headers, which is a deployment property this code cannot
    check.
 3. **Access logging.** VM-UI-F-805 asks for it and nothing logs access today.
+
+**Since written:** the third decision's blocker is gone. **Access logging is
+implemented** (VM-UI-F-805), and it records REFUSALS as well as reads — a log
+of successful reads is blind to somebody probing what they cannot see. Where
+the records go, how long they are kept and whether they must be tamper-evident
+remain yours.
 
 ---
 
@@ -221,6 +278,14 @@ it with a guess.
 
 **The decision:** what supersession means operationally (a corrected figure? a
 re-issue after a redaction change?) and which path sets it.
+
+**Since written:** the MECHANISM is built. `report.Query.Supersedes` carries
+the relationship, the store enforces that a report may be superseded at most
+once across both backends, the superseded report is never deleted or modified,
+and the interface states the relationship on both reports.
+
+The decision below is untouched and is still yours: what supersession MEANS
+operationally, and which path sets it. The mechanism consumes that decision.
 
 ---
 

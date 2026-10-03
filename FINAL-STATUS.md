@@ -6,12 +6,14 @@ The framework is **code-complete against its specification and demonstrable on
 a laptop**. That is not the same as production-deployed, and the difference is
 not a matter of configuration. This document says exactly where the line is.
 
-**Test counts at the time of writing:** 519 Go tests (816 including subtests)
-across 26 packages, and 67 interface tests. Both storage backends — in-memory
-and PostgreSQL — are held to one conformance suite. `go vet`, `gofmt` and
-`-race` are clean. Every acceptance gate was written before the code it
-gates, and every check in every gate was confirmed to FAIL when the behaviour
-it asserts was deliberately broken.
+**Test counts at the time of writing:** 626 Go tests (1,191 test runs
+including subtests) across 23 packages, plus 15 more in the build-tagged
+sandbox probe suite, and 94 interface tests. Both storage backends — in-memory
+and PostgreSQL — are held to one conformance suite, and 632 Go tests pass with
+PostgreSQL present. `go vet`, `gofmt`, `-race` and `tsc --noEmit` are clean.
+Every acceptance gate was written before the code it gates, and every check in
+every gate was confirmed to FAIL when the behaviour it asserts was deliberately
+broken.
 
 ---
 
@@ -24,131 +26,110 @@ These work, end to end, with no credentials and no network:
 | **Fingerprinting and identity** | Real. Deterministic, stable across reformatting, unstable across genuine identity change. Line numbers are never hashed. |
 | **Scanner adapters** (9) | Real, and tested against **real captured tool output** in `testdata/fixtures`. The tools themselves are not installed — see §2. |
 | **Cross-tool merge** | Real. One vulnerability reported by three tools is one finding, resolved through published alias data. |
-| **The store** | Real, on **two backends** held to one conformance suite. 12 migrations with a checksum guard: an applied migration edited in place is refused. |
-| **State machine** | Real, normative, and enforced. Every illegal transition is rejected with an error; the actor is enforced, not advisory; the lease-bound state cannot be entered without a lease. |
-| **Run identity** | Real. A per-kind monotonic sequence, never a timestamp — two runs started in the same second are distinguishable. |
-| **Triage** | Real, against a fake model client. Prompt-injection resistant: tested with a model that actually complies with the injected instruction. |
+| **The store** | Real, on **two backends** held to one conformance suite. 13 migrations with a checksum guard: an applied migration edited in place is refused. |
+| **State machine** | Real, normative, and enforced. Every illegal transition is rejected; the actor is enforced, not advisory; the lease-bound state cannot be entered without a lease. |
+| **Run identity** | Real. A per-kind monotonic sequence, never a timestamp. |
+| **Triage** | Real, against a fake model client **and** a real HTTP client — see §2 for which is wired. Prompt-injection resistant: tested with a model that actually complies with the injected instruction. |
 | **Scoring and SLA** | Real and deterministic. Never inferred. Names the inputs that did not answer, inline. |
-| **Policy** | Real. A decision table that is total over its declared domain; a hole fails loudly rather than defaulting to a ticket. |
-| **Deterministic remediation** | Real end to end: repository lock, lease, branch, bump, guard, verify, commit, push, pull request. Against a fake toolchain — see §2. |
+| **Policy** | Real. A decision table total over its declared domain; a hole fails loudly rather than defaulting to a ticket. |
+| **Deterministic remediation** | Real end to end: repository lock, lease, branch, bump, guard, verify, commit, push, pull request. |
+| **The Go toolchain** | **Real.** `go build`, `go vet`, `go test -race`, `go get` with bisection, `go mod tidy`, and a re-run of the scanners — proved against controlled fixture modules and a local module proxy, under sandbox confinement. Go only; see §2. |
 | **The path deny-list guard** | Real, and structurally unavoidable. It runs on the tree, unconditionally, before any push, whatever the fixer reports it did. |
 | **Agentic remediation** | Real harness, fake agent. The agent is capability-denied by construction: it cannot reach the guard, a credential or the network. |
-| **Sandbox** | Real implementation, **unproven** — see §2 and D2. |
+| **Sandbox** | Real implementation. **Proven on macOS**, unproven on Linux — see §2 and D2. |
 | **First-party waves** | Real: classification, reverse-dependency index, blast radius, two-wave propagation, replace-directive exclusion. |
 | **Tickets** | Real, three backends behind one interface, with a durable operation queue that drains automatically on recovery. |
-| **Reports** | Real: run-anchored, immutable, content-hashed, storing the query that produced them, with redaction by privilege level. |
-| **GitHub App surface** | Real code: fleet sync, webhook verification with constant-time HMAC, exactly-once delivery handling, publisher. Not installed — see D4. |
-| **Exploitation intelligence** | Real boundary, **fake feeds only** — see D3. |
-| **The HTTP API** | Real. 20 endpoints, server-side filtering, cursor pagination, facet counts, and a schema generated by reflection over the response types. |
-| **The web interface** | Real, built against the generated schema, with runtime validation of every response. |
+| **Reports** | Real: run-anchored, immutable, content-hashed, storing the query that produced them, redaction by privilege level, and **supersession lineage**. |
+| **GitHub surface** | Real code: fleet sync, webhook verification with constant-time HMAC, exactly-once delivery handling, publisher, **and a real REST and git client**. Not installed — see D4. |
+| **Exploitation intelligence** | Real boundary, **and real KEV and EPSS clients**. Not wired — see §2 and D3. |
+| **The HTTP API** | Real. 20 endpoints, server-side filtering, cursor pagination, facet counts, a schema generated by reflection over the response types, and **access logging**. |
+| **The web interface** | Real, built against the generated schema, with runtime validation of every response and geometry guards on four views. |
+| **`cmd/fixworker`** | Real. One remediation pass per invocation; refuses outright outside demonstration mode. |
 | **The demonstration** | Real pipeline over **fabricated** input. It runs the actual orchestrator, store, triage, scoring, policy, ticket, remediation and report code. |
 
 ### The honesty properties, which are the point
 
-Each of these is enforced by a test whose failure was verified by deliberately
-breaking the behaviour:
+Each is enforced by a test whose failure was verified by deliberately breaking
+the behaviour:
 
 * **No credential value exists anywhere.** The finding record has nowhere to
-  put one. Three independent layers check it: the report boundary, the API's
-  response guard (which REFUSES a response rather than scrubbing it), and the
-  interface's own assertion on receipt. A test walks every endpoint hunting a
-  credential seeded into a triage narrative.
+  put one. Layers check it at the report boundary, the API's response guard
+  (which REFUSES a response rather than scrubbing it), the interface's own
+  assertion on receipt, the triage request body, the agent prompt, and git
+  error messages.
 * **Absence is never resolution.** A finding the last scan did not observe is
-  marked, with the reason, and the words travel with the marker. A failed scan
-  cannot verify anything.
-* **Unknown is never zero.** Reachability is a tri-state everywhere. An
+  marked, with the reason. A failed scan cannot verify anything. **A scanner
+  that could not run makes a verification fail**, because silence from a tool
+  that did not run looks exactly like a fixed repository.
+* **Unknown is never zero.** Reachability is tri-state everywhere. An
   exploitation input nothing answered is ABSENT from the API response, not
-  0.0, and the interface renders "not looked up".
+  0.0. An EPSS of 0.0 that was MEASURED is a different fact and is carried as
+  one.
 * **A caveat travels with its number.** Provisional SLA windows, uncalibrated
   thresholds and partial scoring inputs are rendered beside the figure they
-  qualify, not in a header — so they survive being quoted into a ticket.
+  qualify, not in a header.
 * **Coverage gaps are not aggregated away.** Deferred, never dispatched,
   dispatched-and-silent, partial and failed are five different operational
-  problems with five different owners, and they are counted separately.
+  problems with five different owners, counted separately.
 * **Recovery is loud.** Every self-heal, sweep and drain records why it fired.
-* **Both backends agree.** 33 queries × 6 orderings are run through the
-  in-memory and PostgreSQL backends and compared row for row.
+* **Access is logged, including refusals.** A log of successful reads is blind
+  to somebody probing what they cannot see.
+* **Both backends agree.** 33 queries × 6 orderings compared row for row, plus
+  the supersession rules.
+* **A layout is measured, not assumed.** jsdom reports every rectangle as
+  zero, so geometry is checked in a real browser, on four views, with seven
+  deliberate breaks proving the guards can fail.
 
 ---
 
 ## 2. What is fake, stubbed, or unproven
 
+Materially shorter than it was. What remains is, with two exceptions,
+**unwired rather than unwritten**.
+
 | Thing | Status | Consequence |
 |---|---|---|
-| **The toolchain** (`go get`, `go mod tidy`, `go build`, `go test -race`) | **No real implementation.** `FakeToolchain` only. | Every remediation test proves the harness, not the build. This is the largest unbuilt piece in the repository. (D5) |
 | **The scanners** | Not installed. Adapters tested against captured output. | No finding in this build describes real code. (D5) |
-| **The sandbox** | Real `bwrap`/`sandbox-exec` implementation; **every test runs against the fake**, because this build is on macOS. | Isolation is unproven. **No API key should reach a machine where the Linux probe job has not passed.** (D2) |
-| **Process-tree containment** | Implemented; unprovable on macOS (`sh` execs `sleep` directly rather than forking). | Coverage debt tied to the same CI job. (D2) |
+| **The JavaScript toolchain** | **Not written.** The Go one is real; VM-AD §11.3 also specifies `npm ci` → upgrade → build → test. | A JavaScript repository cannot be remediated. Remediation declines it rather than getting it wrong. (Checklist 2.1) |
+| **The Linux sandbox proof** | The probe suite and CI job are written, and the macOS half **passes**. The Linux half has never run. | Process-tree containment (OQ-P10b-02) does not reproduce on macOS and is answered on Linux. **No API key should reach a machine where the Linux probe has not passed.** (D2) |
 | **The LLM agent** | Fake agent only. No API key was issued, requested or used anywhere in this build. | The agentic path has never run. (D1) |
-| **KEV / EPSS feeds** | Hostile fake only. | `kev_boost` and `epss_coefficient` are configured and can never fire. Every score says which inputs are missing. (D3) |
-| **GitHub** | Hostile fake only. No App installed, no credentials, no webhook endpoint reachable from outside the process. | The webhook path is code-complete and unreachable; the bounded reconciliation fallback carries everything. (D4) |
+| **KEV / EPSS** | Real clients, **not wired**, and the fixtures are hand-written to the published formats rather than captured from the live services. | `kev_boost` and `epss_coefficient` are configured and can never fire. If a publisher emits a field the samples do not contain, the client meets it first in production. (D3, checklist 1.3) |
+| **GitHub** | Real clients, **no App installed**, no credentials, no reachable webhook endpoint. | The webhook path is code-complete and unreachable; the bounded reconciliation fallback carries everything. (D4) |
+| **The triage model** | Real client, **no API key**. Every test runs against the fake. | No model has seen a real finding from this build. (D1) |
 | **Authentication** | `DemoAuth` (one fixed identity) and `HeaderAuth` (trusts a proxy). | Real data cannot be served safely until an identity provider is in front of it. (D6) |
-| **Access logging** | Not implemented (VM-UI-F-805). | No record of who looked at what. (D6) |
-| **Report supersession** | Field exists; **nothing writes it**. | A re-issued report cannot state what it replaces. (D10) |
-| **Per-finding tool versions** | Recorded per RUN, not per finding. | The finding detail says so rather than copying the run's values, which would create a fact that can disagree with itself. (OQ-AUDIT-03) |
-| **Enclosing symbol** (package / function) | No pinned tool reports it. | Code and secret findings are located to a FILE. A verification can therefore hide a same-file twin, and every such verification says so. (OQ-AUDIT-02) |
-| **Run comparison — changed states** | Appearing and disappearing are exact; `changed` is empty. | Reconstructing a finding's state as of a past run from its audit trail is unbuilt. (OQ-API-02) |
+| **Access log destination** | Implemented; writes to the process logger. | Retention and tamper-evidence are deployment decisions. (D6) |
+| **Report supersession in the demonstration** | The mechanism is real and tested; **the demonstration never issues a correction**, so the interface's lineage column reads "current" throughout. | Not a producer gap — `report.Record` writes it and both the API census and the store census exercise it. Nothing in the fabricated data warrants a correction, and inventing one would be inventing D10's policy. |
+| **Per-finding tool versions** | Recorded per RUN, not per finding. | The finding detail says so rather than copying the run's values. (OQ-AUDIT-03) |
+| **Enclosing symbol** | No pinned tool reports it. | Code and secret findings are located to a FILE. A verification can hide a same-file twin, and every such verification says so. (OQ-AUDIT-02) |
+| **Run comparison — changed states** | Appearing and disappearing are exact; `changed` is empty. | Blocked on an audit-trail completeness proof, not on code. (OQ-API-02, checklist 5.3) |
 | **Write paths in the API** | Only the webhook. No run trigger, no human reset, no report generation. | The interface is read-only, and deliberately offers no button that does nothing. (OQ-API-03) |
+| **Saved filters** | Not built. | VM-UI-OQ-05 asks whether they are per-user or shared. Ambiguous, so not guessed. (Checklist 5.4) |
 | **Alias search index** | Text search scans JSONB expressions. | Correct; the 2-second 95th-percentile requirement is unproven against a real corpus. (OQ-API-01) |
-| **Remediation scheduling** | `RemediationPass` is callable and tested; nothing runs it on a schedule. `cmd/fixworker` is an empty directory. | Remediation happens when something calls it. (OQ-AUDIT-07) |
+| **Remediation scheduling** | `cmd/fixworker` performs one pass and exits; nothing schedules it. | Cadence and paging are deployment decisions. (OQ-AUDIT-07) |
 | **Postgres demonstration data** | Not seeded. | `--postgres` starts empty, on purpose: seeding invented findings into a durable store is how invented findings get quoted as real. |
 
 ---
 
 ## 3. Human-action checklist
 
-In order. Each item is blocked by the ones above it.
+`GO-LIVE-CHECKLIST.md` carries this in full, with the precondition and the
+unblocking step for each item. The short form:
 
-### Before anything touches real code
-
-1. **Stand up the Linux CI job that proves the sandbox** (D2). Until it passes,
-   the agent's isolation is an assertion.
-   - each boundary probe RUNS and is DENIED under `bwrap`;
-   - a skipped probe never reads as a denial;
-   - the harness refuses to start when isolation cannot be established;
-   - process-group containment kills an orphaned child.
-2. **Issue a real API key — and only then.** Hold it where the harness reads
-   it and the agent cannot. **Not on any machine where step 1 has not passed.**
-3. **Build the real toolchain** (D5). Without it a "verified" fix means the
-   fake agreed with itself.
-4. **Pin the scanner image by digest** and decide who owns `config/tools.lock`.
-
-### The first real run
-
-5. **Run one supervised agent attempt** on a repository whose blast radius is
-   acceptable (D1). Read the diff before it is pushed. This is a milestone
-   with its own review, not a step in a deployment script.
-
-### Making the numbers mean what they say
-
-6. **Wire the live KEV and EPSS feeds** (D3), decide the caching and freshness
-   policy, and watch the caveats disappear from the scores.
-7. **Calibrate the SLA windows** (D7) with the teams they bind, then set
-   `sla.calibrated: true`. The provisional qualifier vanishes everywhere at
-   once — if it does not, it was decoration.
-8. **Run the shadow run and calibrate the static-analysis thresholds** (D8),
-   then set `static_analysis.calibrated: true`.
-9. **Decide whether blast radius should weight the score** (D9). The data has
-   been accumulating since the first sweep.
-
-### Making it reachable
-
-10. **Install the GitHub App**, hold its key and webhook secret, and expose the
-    webhook endpoint (D4). Until then the primary path for pull-request state
-    is unreachable and the fallback carries everything — bounded, budgeted and
-    loud about it, but a fallback.
-11. **Put an identity provider in front of the API** and map its groups to the
-    three privilege levels (D6). Add access logging.
-12. **Bind the publisher's identity** so reports can be delivered externally.
-    It refuses until then, on purpose.
-
-### Running it for real
-
-13. **Provision PostgreSQL**, apply the migrations, decide backup and retention.
-14. **Schedule the orchestrator** and decide how workers are dispatched.
-15. **Wire `RemediationPass` to a schedule** (OQ-AUDIT-07).
-16. **Decide who is paged** when a sweep fails, when coverage decays, and when
-    the recovery log shows the same repository self-healing every hour.
+0. **Prove the sandbox on Linux.** Nothing else starts until this passes.
+1. **Look without touching:** pin the scanners, install the App read-only,
+   capture real feed responses and wire the feeds, put an identity provider in
+   front of the API, provision PostgreSQL, run one sweep. Read the coverage
+   report before the findings report.
+2. **Write to repositories:** build the toolchain for every language you
+   actually have, widen the App's permissions, dry-run, then one watched
+   deterministic bump — twice — before anything is scheduled.
+3. **The agent:** issue the key only on a machine where step 0 passed, then
+   one supervised run on one source-level finding, reviewed by hand.
+4. **Make the numbers mean what they say:** calibrate the SLA windows and the
+   static-analysis thresholds, decide about blast radius, decide what
+   supersession means.
+5. **Operate it:** measure the query layer, decide who is paged, and establish
+   audit-trail completeness before building the `changed` set.
 
 ---
 
@@ -160,26 +141,36 @@ they are.
 **What the tests prove:** that the framework's logic is correct against
 adversarial fakes, that both storage backends agree, that every schema field
 has a real producer, that every honesty distinction survives from the scanner
-to the screen, and that each of those properties fails when deliberately
-broken.
+to the screen, that a real `go build` and `go test` behave as the harness
+expects against controlled fixtures, and that each of those properties fails
+when deliberately broken.
 
 **What the tests do not prove:**
 
-* that the sandbox actually isolates anything (it has never run on Linux here);
+* that the sandbox isolates anything **on Linux** — the macOS half now passes,
+  and the hazard that matters most for an agent that shells out does not
+  reproduce there;
 * that a real scanner's output normalises the way the captured fixture does
   after the tool's next release;
-* that a real `go build` in a real repository behaves like `FakeToolchain`;
+* that the real toolchain behaves against a repository with a workspace, a
+  vendor directory, replace directives or a private module proxy — none of
+  which the fixtures have;
+* that KEV and EPSS actually look like the samples the clients were written
+  against;
 * that a real language model, given a real repository and a real budget,
   produces a change worth reviewing;
-* that GitHub's rate limits, retries and webhook ordering behave like the fake
-  — the fake was written to be nastier than the real thing, which is the right
-  direction, but it is still a guess;
+* that GitHub's rate limits, retries and webhook ordering behave like the
+  recorded responses — which were written to be nastier than the real thing,
+  the right direction, but still a guess;
 * that the query layer meets its latency requirement against a fleet-sized
   corpus.
 
-**The honest summary.** Every external system is behind an interface with a
-deliberately hostile fake, every fake is tested, and every place a fake stands
-in for reality is listed above. That is the strongest position a build can
-reach without credentials — and it is a genuinely different thing from a system
-that has run against production. The distance between them is §3, in order,
-with a person at each step.
+**The honest summary.** Every external system is behind an interface, every
+one of them now has a real client as well as a hostile fake, and every place
+something still stands in for reality is listed above. The distance between
+this and a system that has run against production is `GO-LIVE-CHECKLIST.md`,
+in order, with a person at each step.
+
+The two sentences worth remembering: **no API key on a machine where the Linux
+sandbox probe has not passed**, and **a scanner that did not run is not a
+clean scan**.

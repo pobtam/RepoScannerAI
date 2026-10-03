@@ -38,6 +38,10 @@ real.
   between this and a production deployment. Read this before drawing any
   conclusion about what the system can do today.
 * `DECISIONS-NEEDED.md` — the decisions that are not the author's to make.
+* `GO-LIVE-CHECKLIST.md` — those decisions in the order they must be taken,
+  each with its precondition and what is already built for it.
+* `FINISH-PLAN.md` — how the remaining work was sorted into what could be
+  built offline and what could not.
 
 ---
 

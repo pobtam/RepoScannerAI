@@ -17,7 +17,10 @@ consumer READS and no real producer WRITES — invisible to any test that
 constructs the value, and indistinguishable downstream from a feature nobody
 has used yet. It occurred **eleven** times across the build. The
 Producer-Coverage Audit (`internal/audit`, and its counterparts in the API and
-the interface) exists to make that class detectable, and it guards itself.
+the interface) exists to make that class detectable, and it guards itself. The
+finishing pass found a **twelfth** — `Applied.Dropped`, the only one where both
+ends were missing — and closed the last one still open,
+`store.Report.Supersedes`.
 
 | Phase | Status | Gate |
 |---|---|---|
@@ -45,6 +48,7 @@ the interface) exists to make that class detectable, and it guards itself.
 | **OQ-AUDIT-01(b)** — the exploitation feeds get a producer | **Green** | passing (both backends) |
 | **API** — the HTTP server (VM-AD §7.4, VM-UI §6.2) | **Green** | passing (both backends) |
 | **U0–U10** — the interface, the demonstration, `setup.sh` / `run.sh` | **Green** | passing (67 interface tests) |
+| **Finishing pass** — B1–B9: the real toolchain, the live clients, supersession, access logging, the sandbox probe job | **Green** | passing (91 mutations, 23 survivors fixed) |
 
 ---
 
@@ -4542,3 +4546,198 @@ positions would have passed on the bug. The assertion has to be against the
   are blind to layout. The probe is general enough to point at another
   component; nothing has been done for them yet, and the same class of defect
   could be sitting in any of them.
+
+
+---
+
+## Finishing pass — the remaining spec gaps (2026-10-02)
+
+**Status: green.** 626 Go tests (1,191 runs with subtests) across 23 packages,
+632 with PostgreSQL present, 15 more in the build-tagged sandbox probe suite,
+and 94 interface tests. `go vet`, `gofmt`, `-race` and `tsc --noEmit` clean.
+Both backends, one conformance suite. The demonstration still runs offline via
+`./setup.sh && ./run.sh` with no credential and no network.
+
+`FINISH-PLAN.md` sorted every outstanding item into nine that could be built
+and proved offline, and nineteen that need a credential, infrastructure, real
+data or a decision. All nine are built. `GO-LIVE-CHECKLIST.md` sequences the
+nineteen.
+
+| Item | What it closes |
+|---|---|
+| **B1** `internal/remediate/gotool` | the real Go toolchain; D5's build half |
+| **B1a** `Applied.Dropped` | a twelfth instance of the recurring defect |
+| **B2** `feed.KEVSource`, `feed.EPSSSource` | D3's code half |
+| **B3** `gh.AppClient`, `gh.RESTOps` | D4's code half |
+| **B4** `triage.HTTPClient` | the inference client |
+| **B5** report supersession | instance ten, the last writer gap |
+| **B6** `cmd/fixworker` | OQ-AUDIT-07's "empty directory" |
+| **B7** the sandbox probe job | prepares D2 — and found a real defect |
+| **B8** access logging | VM-UI-F-805 |
+| **B9** layout guards on three more views | OQ-UI-04 |
+
+Ninety-one mutations across the ten items. Twenty-three survived their first
+run. What those twenty-three were is the only part of this entry worth
+keeping.
+
+### The eleven cases of one check masking another
+
+The rule that each independent check needs its OWN failing mutation came out
+of four cases earlier in this build. It found eleven more here, and the
+pattern is consistent enough to state: **a check is masked when the test that
+covers it would also fail for a different reason.** Every one of these passed
+its own test while being deleted.
+
+* Three validations in `report.checkSupersedes` covered for one another. With
+  the existence check disabled the superseded report reads as a zero value,
+  and the KIND check refuses it — for the wrong reason. A reader told
+  "different populations" about a report that is simply missing goes looking
+  in the wrong place. Each now asserts its own explanation.
+* Every "feed is down" case used a malformed body, so the JSON parse check
+  covered for the status check. A 503 carrying a perfectly valid catalogue is
+  what separates them, and it is also the realistic case: a publisher serving
+  a cached copy behind an error status.
+* The EPSS header check covered for the truncation check, because a stream cut
+  early enough loses its header. A real snapshot is megabytes, so a cut
+  arrives WITH the header and stops partway down — every identifier after it
+  reading as unscored.
+* The generic URL-redaction branch masked the specific one. Both keep the
+  token out; only one tells an operator it was the authenticated push URL.
+* `TestVerifyDoesNotModifyTheTree` starts from an already-tidy tree, where
+  `go mod tidy` and `go mod tidy -diff` are indistinguishable. The untidy case
+  is the one that matters and was untested.
+* The empty-URL and empty-date branches in the feed clients were each masked
+  by a later failure. Both kept, both now tested on their message, because
+  "unsupported protocol scheme" and "the publisher changed format" send an
+  operator to different places.
+* An unrelated 422 and a duplicate 422 were indistinguishable because the test
+  had no existing pull request for the lookup to find.
+* Intent-to-add in `ChangedFiles` was genuinely redundant —
+  `git status --untracked-files=all` already lists untracked files — and was
+  removed. It is load-bearing in `Diff`, where `git diff` shows nothing at all
+  for an untracked file.
+
+### Two checks that could not fail, and were replaced by something stronger
+
+* **`TestMain` excluded by name.** Redundant with the signature check, which
+  masked it — and also WRONG. Go runs `func TestMain(t *testing.T)` as an
+  ordinary test, so the name check dropped a real test from the inventory,
+  making its deletion invisible to the check whose only job is to notice. The
+  signature decides alone.
+* **A report superseding itself.** Unreachable, because `Supersedes`
+  participates in `IDFor`. Deleted and replaced by `checkIdentity`: a report
+  whose id is not derived from its query cannot be regenerated under the
+  identifier somebody cited. The self-reference is a special case of that.
+
+### Five defects the real implementations found
+
+These are the ones that justify the exercise. Each was invisible while only a
+fake existed.
+
+1. **The environment probe could never have passed against a real backend.**
+   `runProbes` appended the canary to the CHILD's environment, after `Command`
+   had already filtered it, with a comment explaining it was "injected outside
+   the allowlist on purpose". It was injected PAST the allowlist, into the
+   child's own environment — and no isolation backend strips environment
+   variables. Neither `bwrap` nor `sandbox-exec` does. So the probe could only
+   ever report an escape against anything real, and reported a denial against
+   the fake solely because the fake runs no process at all.
+
+   The environment boundary is enforced by `FilterEnv`, a framework control
+   rather than an OS one. Proving it means: the variable is in the parent,
+   absent from the allowlist, and must not arrive. A probe that cannot detect
+   a leak now reports that it did not run, rather than a denial it never
+   established. **With this and the symlink fix below, the real sandbox
+   verifies on this machine for the first time.**
+
+2. **The macOS seatbelt profile denied writes to the directory it was meant to
+   permit.** `/var` is a symlink to `/private/var` and a seatbelt subpath
+   matches the resolved path.
+
+3. **`json.Decoder` ignores trailing content.** A model answering with bare
+   JSON and then adding "Note: see [1] …" defeats bracket scanning: the array
+   is found, the stray bracket becomes the end, and the wrong bounds decode
+   cleanly. Now checked with `dec.More()`, and refused rather than salvaged —
+   the array may have been located by luck, and verdicts attributed to the
+   wrong findings are worse than none.
+
+4. **The access log was blind to the thing it was written for.** The
+   middleware read `principalFrom` on the OUTER request's context, and
+   `withPrincipal` forwards a new request carrying a new context — so every
+   request, including successful reads by a fully privileged caller, logged as
+   "privilege-undetermined". Precisely the blindness the comments above it
+   describe, produced by the code they are attached to.
+
+5. **`fixworker`'s dry run disagreed with its pass** on the first execution,
+   promising a claimable finding for a repository the pass then skipped for
+   having no test suite — the exact hazard the comment written minutes earlier
+   warned about.
+
+### Three tests that were passing for no reason
+
+* **The archived-repository test** walked the demonstration's repositories
+  asserting none in scope was archived. The demonstration has no archived
+  repository. It asserted nothing and passed against a deleted filter. It now
+  CREATES the condition.
+* **The filter-ordering guard** ran the same request eight times and compared,
+  which needs Go's map randomisation to differ across four keys. It passed
+  against an unsorted implementation. It asserts the sorted order directly
+  now. A guard that depends on randomness to fail is flaky, and a flaky guard
+  is worse than none.
+* **Two interface assertions were satisfied by my own prose** — "replaces"
+  appeared in the superseded-report warning, and "current" in the paragraph
+  explaining there is no current report.
+
+### One thing measured rather than reasoned
+
+Transplanting the findings-table defect verbatim onto the coverage history
+does NOT break it. The collapse works by the anonymous table-cell landing in
+column one, which needs a `<thead>` defining a narrow column one to land in.
+That table has no thead, so the cell takes the full width and the rows still
+span the table. It is structurally immune to that exact defect — and the check
+that does catch a thead-less table is the absolute one, a `<tr>` spanning its
+table, because a uniform collapse moves every row alike and leaves relative
+drift at zero.
+
+### Decisions recorded
+
+* **A7l — a re-issue carries its lineage in its QUERY.** A report's id derives
+  from its query, so a correction of the same query against the same run would
+  collide with the report it replaces. Putting `Supersedes` in the query gives
+  the replacement its own identifier, makes a regeneration reproduce the
+  relationship, and leaves one place it is stated rather than two that can
+  disagree.
+* **A7m — the toolchain's verification must not touch the tree.** The guard
+  inspects the working tree at step 6 and `Verify` runs at step 7, so anything
+  `Verify` changed would reach a pull request unexamined. Hence `-mod=readonly`
+  and `go mod tidy -diff` rather than the obvious `go mod tidy`.
+* **A7n — the test inventory parses rather than executing.** `go test -list`
+  needs the package to compile, so a broken tree would report an empty
+  inventory — and an empty inventory read against a populated one says every
+  test was deleted.
+* **A7o — probes are build-tagged, not skipped.** `go test ./...` prints a
+  skip as part of a passing run, and a skipped probe reading as a pass is the
+  exact lie `Verification.OK()` prevents one level down. Tagged, a file is
+  either RUN or ABSENT.
+* **A7p — feed fixtures live outside `testdata/fixtures/`.** That directory
+  means real captured scanner output governed by `config/tools.lock`. Samples
+  written by hand to a documented format placed beside it would claim a
+  provenance they do not have.
+
+### Open questions
+
+* **OQ-FIN-01.** The JavaScript toolchain is unwritten. The Go one is real;
+  VM-AD §11.3 also specifies `npm ci` → targeted upgrade → `npm run build` →
+  `npm test`. A JavaScript repository cannot be remediated, and remediation
+  declines it rather than getting it wrong.
+* **OQ-FIN-02.** The Go toolchain's fixtures are single-module repositories
+  with no workspace, no vendor directory, no replace directive and no private
+  proxy. A real fleet has all four. Recorded rather than assumed away.
+* **OQ-FIN-03.** The feed fixtures were written to the publishers' documented
+  formats and not captured from the live services, because this build has no
+  network. Capturing one real response from each and diffing it is a
+  precondition in `GO-LIVE-CHECKLIST.md` (1.3) rather than something to find
+  out in production.
+* **OQ-UI-04 is closed** for the three views it named. The probe is general
+  enough to point at more, and `scripts/layout-break-check.sh` is how the
+  guards get re-proved rather than trusted.
