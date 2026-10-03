@@ -32,7 +32,14 @@ export function findBrowser() {
   return CANDIDATES.find((p) => existsSync(p)) ?? null;
 }
 
-export function probeLayout() {
+/**
+ * probeLayout bundles one probe entry and measures it.
+ *
+ * The entry is a parameter because OQ-UI-04 asked for this to be pointed at
+ * the other views: the findings table was the only one with a geometry guard,
+ * and a defect of the same class could sit in any of them.
+ */
+export function probeLayout(entry = 'src/features/explorer/layout-probe.tsx') {
   const browser = findBrowser();
   if (!browser) return { skipped: 'no Chrome or Chromium found' };
 
@@ -42,7 +49,7 @@ export function probeLayout() {
   execFileSync(
     join(ROOT, 'node_modules/.bin/esbuild'),
     [
-      join(ROOT, 'src/features/explorer/layout-probe.tsx'),
+      join(ROOT, entry),
       '--bundle',
       '--format=iife',
       '--jsx=automatic',
@@ -94,5 +101,5 @@ export function probeLayout() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log(JSON.stringify(probeLayout(), null, 2));
+  console.log(JSON.stringify(probeLayout(process.argv[2]), null, 2));
 }
