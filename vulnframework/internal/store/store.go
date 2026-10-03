@@ -325,6 +325,19 @@ type Store interface {
 	GetReport(ctx context.Context, id string) (Report, error)
 	// ReportsForRun lists the reports anchored to a run.
 	ReportsForRun(ctx context.Context, runID string) ([]Report, error)
+	// SupersededBy returns the report that replaces id, if one has been
+	// issued (VM-UI-F-1108).
+	//
+	// Derived from the `supersedes` column rather than stored on the report
+	// being replaced. A stored back-pointer would mean UPDATING an issued
+	// report, which is a hole in immutability, and it would be a second copy
+	// of a fact that can disagree with the first.
+	//
+	// At most one: a report superseded twice is a fork in the lineage with no
+	// defined winner, and VM-UI-F-1108 requires the relationship to be
+	// STATED, which cannot be done when there are two of them. Both backends
+	// refuse the second.
+	SupersededBy(ctx context.Context, id string) (Report, bool, error)
 
 	// --- Tickets (VM-AD §13.2) ---
 	//

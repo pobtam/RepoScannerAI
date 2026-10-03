@@ -1273,8 +1273,38 @@ func (m *Memory) SaveReport(_ context.Context, r Report) error {
 		}
 		return nil
 	}
+	if r.Supersedes != "" {
+		if _, ok := m.reports[r.Supersedes]; !ok {
+			return fmt.Errorf("store: report %s claims to supersede %s, which does not exist. "+
+				"A lineage pointing at nothing is worse than none: the interface would show a "+
+				"relationship that cannot be followed (VM-UI-F-1108)", r.ID, r.Supersedes)
+		}
+		for _, existing := range m.reports {
+			if existing.Supersedes == r.Supersedes && existing.ID != r.ID {
+				return fmt.Errorf("store: report %s already supersedes %s. A second one would "+
+					"fork the lineage with no defined winner, and the relationship VM-UI-F-1108 "+
+					"requires to be stated could not be", existing.ID, r.Supersedes)
+			}
+		}
+	}
+
 	m.reports[r.ID] = r
 	return nil
+}
+
+// SupersededBy returns the report that replaces id.
+func (m *Memory) SupersededBy(_ context.Context, id string) (Report, bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if id == "" {
+		return Report{}, false, nil
+	}
+	for _, r := range m.reports {
+		if r.Supersedes == id {
+			return r, true, nil
+		}
+	}
+	return Report{}, false, nil
 }
 
 // GetReport returns an issued report.

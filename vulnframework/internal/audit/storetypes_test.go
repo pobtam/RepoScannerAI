@@ -327,8 +327,33 @@ func exerciseEveryStoreProducer(t *testing.T) storeRun {
 		// generator issued reports, the publisher delivered the artifacts, and
 		// nothing wrote the record — so store.Report had no producer outside
 		// tests at all (OQ-AUDIT-04).
-		if _, err := report.Record(ctx, s, issued, "orchestrator"); err != nil {
+		recorded, err := report.Record(ctx, s, issued, "orchestrator")
+		if err != nil {
 			t.Fatalf("report.Record: %v", err)
+		}
+
+		// And a re-issue that REPLACES it, so store.Report.Supersedes has a
+		// real producer in the census.
+		//
+		// It was instance ten of this build's recurring defect and the last
+		// one still open: the column existed, VM-UI-F-1108 required the
+		// relationship, and nothing wrote it. The exemption below used to
+		// record that gap. Filling the census with a report that supersedes
+		// another is what closes it — and it closes it the way the census
+		// demands, by running the producer rather than by constructing the
+		// value.
+		reissue := q
+		reissue.Supersedes = recorded.ID
+		corrected, err := gen.Generate(ctx, reissue)
+		if err != nil {
+			t.Fatalf("Generate the superseding %s report: %v", q.Kind, err)
+		}
+		correctedIssued, err := report.Issue(corrected)
+		if err != nil {
+			t.Fatalf("Issue the superseding report: %v", err)
+		}
+		if _, err := report.Record(ctx, s, correctedIssued, "orchestrator"); err != nil {
+			t.Fatalf("recording the superseding report: %v", err)
 		}
 	}
 
@@ -812,13 +837,6 @@ func storeCensuses(ctx context.Context) []storeCensus {
 				return out
 			},
 			exempt: map[audit.FieldPath]audit.Exemption{
-				"Supersedes": {
-					Producer: "nothing — an honest writer gap, recorded rather than guessed",
-					Why: "OQ-P7b-02: reports are immutable and content-hashed (VM-ADR-15), and a " +
-						"reissued report is expected to name the one it replaces. The column exists, " +
-						"no code writes it, and this exemption is the record of that. Filling it in " +
-						"with a plausible value would be worse than leaving it empty",
-				},
 				"Redacted": {
 					Producer: "internal/report.Redact via report.Generate",
 					Why:      "false for an unredacted report; a boolean whose zero is indistinguishable from unwritten",

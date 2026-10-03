@@ -238,6 +238,13 @@ ORDER BY p.opened_at DESC, p.branch`
 	qReportsForRun = `
 SELECT id, anchor_run_id, kind, repo, template, query, content_hash, content, issued_at, issued_by, supersedes, redacted, withheld_count
 FROM reports WHERE anchor_run_id = $1 ORDER BY id`
+
+	// qSupersededBy reads the lineage backwards, from the `supersedes` column
+	// rather than from a stored back-pointer. The unique partial index added
+	// by migration 0013 is what guarantees at most one row comes back.
+	qSupersededBy = `
+SELECT id, anchor_run_id, kind, repo, template, query, content_hash, content, issued_at, issued_by, supersedes, redacted, withheld_count
+FROM reports WHERE supersedes = $1`
 )
 
 // qSetSLA persists the derived SLA block into the finding document.

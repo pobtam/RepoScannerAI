@@ -97,9 +97,18 @@ func Issue(rep Report) (Issued, error) {
 	return Issued{Report: rep, JSON: sealed, Markdown: md, Hash: hash}, nil
 }
 
-// reportID derives a stable identifier from the anchor and query.
-func reportID(rep Report) string {
-	parts := []string{string(rep.Kind), rep.AnchorRun, rep.Repo, rep.Query.Template, string(rep.Query.Scope)}
+// IDFor derives a report's identifier from its anchor and its query.
+//
+// Exported because it is the report's identity RULE, not an implementation
+// detail: a caller preparing a re-issue has to be able to ask what identifier
+// a query will produce before issuing it, and the alternative is reproducing
+// this derivation somewhere it can drift.
+func IDFor(rep Report) string {
+	// Supersedes participates, so a re-issue of the same query against the
+	// same run gets its own identifier instead of colliding with the report
+	// it replaces.
+	parts := []string{string(rep.Kind), rep.AnchorRun, rep.Repo, rep.Query.Template,
+		string(rep.Query.Scope), rep.Query.Supersedes}
 	sum := sha256.Sum256([]byte(strings.Join(parts, "\x1f")))
 	return fmt.Sprintf("R-%s-%s", rep.AnchorRun, hex.EncodeToString(sum[:])[:8])
 }
@@ -205,9 +214,11 @@ func PublishRun(ctx context.Context, p Publisher, fleet Issued, repos []Issued) 
 // Narrow on purpose: recording a report must not be able to change a finding.
 type ReportStore interface {
 	SaveReport(ctx context.Context, r store.Report) error
+	GetReport(ctx context.Context, id string) (store.Report, error)
 }
 
-// Record persists an issued report so it can be cited later (VM-ADR-15).
+// Record persists an issued report so it can be cited later (VM-ADR-15),
+// including the lineage when it replaces an earlier one.
 //
 // This is the step that was missing (OQ-AUDIT-04). Generate produced a report,
 // Issue hashed it, PublishRun delivered the artifacts — and nothing wrote the
@@ -219,8 +230,33 @@ type ReportStore interface {
 // Immutability is the store's rule, not this function's: re-recording the same
 // report is idempotent, and the same identifier with different content is
 // refused there (it is the same rule for every caller, including the API).
+//
+// When Query.Supersedes is set, this is the writer store.Report.Supersedes
+// never had. The field and the requirement have both existed since Phase 7b;
+// the producer-coverage audit recorded the gap with an exemption rather than
+// filling it with a plausible value, and this closes it.
+//
+// What supersession MEANS operationally — a corrected figure, a re-issue after
+// a redaction change, a regeneration against a late-arriving scan — is not
+// decided here and is not this function's to decide (D10). What is decided
+// here is that the relationship, once asserted, is one a reader can follow:
+//
+//	the superseded report EXISTS, so the lineage does not point at nothing;
+//	it is not the report itself, so the chain cannot be its own ancestor;
+//	it is the same KIND and the same repository, because a fleet report does
+//	  not replace a repository one and saying it does would be a claim about
+//	  scope that nothing checks;
+//	it is not already superseded, so the lineage cannot fork — which the
+//	  store enforces as well, and which VM-UI-F-1108 depends on, since a
+//	  relationship cannot be "stated" when there are two of them.
+//
+// The superseded report is never deleted and never modified. VM-UI-F-1108 is
+// explicit about the first, and the second is what makes the archive worth
+// keeping: a corrected figure is only meaningful beside the figure it
+// corrected.
 func Record(ctx context.Context, s ReportStore, issued Issued, issuedBy string) (store.Report, error) {
 	rep := issued.Report
+	supersedes := rep.Query.Supersedes
 	if rep.ID == "" {
 		return store.Report{}, fmt.Errorf("report: refusing to record a report with no identifier; " +
 			"a record nothing can cite is not a record")
@@ -234,6 +270,15 @@ func Record(ctx context.Context, s ReportStore, issued Issued, issuedBy string) 
 		return store.Report{}, fmt.Errorf("report: encoding the query of %s: %w", rep.ID, err)
 	}
 
+	if err := checkIdentity(rep); err != nil {
+		return store.Report{}, err
+	}
+	if supersedes != "" {
+		if err := checkSupersedes(ctx, s, rep, supersedes); err != nil {
+			return store.Report{}, err
+		}
+	}
+
 	rec := store.Report{
 		ID:            rep.ID,
 		AnchorRunID:   rep.AnchorRun,
@@ -245,6 +290,7 @@ func Record(ctx context.Context, s ReportStore, issued Issued, issuedBy string) 
 		Content:       issued.JSON,
 		IssuedAt:      rep.IssuedAt,
 		IssuedBy:      issuedBy,
+		Supersedes:    supersedes,
 		Redacted:      rep.Redacted,
 		WithheldCount: rep.WithheldCount,
 	}
@@ -252,4 +298,63 @@ func Record(ctx context.Context, s ReportStore, issued Issued, issuedBy string) 
 		return store.Report{}, err
 	}
 	return rec, nil
+}
+
+// checkSupersedes refuses a lineage a reader could not follow.
+//
+// There is no "a report cannot supersede itself" check here, and its absence
+// is deliberate. Supersedes participates in IDFor, so a report whose query
+// names itself would have to have been given an identifier that its own query
+// does not produce — which checkIdentity refuses for a much better reason.
+// Mutating the self-check away changed nothing observable, which is how it was
+// found to be a special case of something stronger.
+func checkSupersedes(ctx context.Context, s ReportStore, rep Report, supersedes string) error {
+	previous, err := s.GetReport(ctx, supersedes)
+	if err != nil {
+		return fmt.Errorf("report: %s claims to supersede %s, which could not be read: %w. "+
+			"A lineage pointing at nothing is worse than none — the interface would state a "+
+			"relationship that cannot be followed (VM-UI-F-1108)", rep.ID, supersedes, err)
+	}
+
+	if previous.Kind != string(rep.Kind) {
+		return fmt.Errorf("report: %s is a %s report and %s is a %s report. A report of one kind "+
+			"replacing another is a claim about scope that nothing downstream checks, and a "+
+			"reader comparing the two would be comparing different populations",
+			rep.ID, rep.Kind, supersedes, previous.Kind)
+	}
+	if previous.Repo != rep.Repo {
+		return fmt.Errorf("report: %s covers %s and %s covers %s; one cannot replace the other",
+			rep.ID, dashIfEmpty(rep.Repo), supersedes, dashIfEmpty(previous.Repo))
+	}
+	return nil
+}
+
+func dashIfEmpty(s string) string {
+	if s == "" {
+		return "the whole fleet"
+	}
+	return s
+}
+
+// checkIdentity refuses a report whose identifier is not the one its query
+// produces.
+//
+// A report's id is derived from its query so that the pair is a closed loop:
+// the query is stored, regenerating it yields the same document, and the
+// document is reachable under the same identifier. An id that does not derive
+// from its query breaks every part of that at once — a regeneration lands
+// under a different identifier, and a citation points at a report that cannot
+// be reproduced.
+//
+// It also makes self-supersession unreachable. A report naming itself in
+// Supersedes would have an identifier its own query does not produce, because
+// Supersedes participates in the derivation.
+func checkIdentity(rep Report) error {
+	if want := IDFor(rep); rep.ID != want {
+		return fmt.Errorf("report: %s carries an identifier its own query does not produce "+
+			"(the query derives %s). The id, the query and the document are one loop: a report "+
+			"whose id is not derived from its query cannot be regenerated under the identifier "+
+			"somebody cited", rep.ID, want)
+	}
+	return nil
 }

@@ -325,4 +325,54 @@ describe('issued reports (U9)', () => {
       expect(document.body.textContent).toContain(r.anchor_run_id);
     }
   });
+
+  // VM-UI-F-1108. Both reports visible, the relationship stated on BOTH, and
+  // the superseded one not deleted.
+  it('states the supersession on both reports and keeps the superseded one', async () => {
+    stubApi([['/reports', reports]]);
+    renderApp(<Reports />);
+    await waitFor(() => expect(document.querySelector('.reports')).toBeTruthy());
+
+    const replacement = reports.find((r) => r.supersedes != null)!;
+    const superseded = reports.find((r) => r.superseded_by != null)!;
+    const text = document.body.textContent ?? '';
+
+    // The superseded report is still listed. VM-UI-F-1108 is explicit that it
+    // is never deleted: a corrected figure only means something beside the
+    // figure it corrected.
+    expect(text).toContain(superseded.id);
+    expect(text).toContain(superseded.content_hash.slice(0, 16));
+
+    // Stated in both directions. The backwards one matters most: somebody
+    // who arrives from a quoted identifier is holding the OLD one, and
+    // nothing else on the row would tell them the figure had moved.
+    expect(text).toContain('superseded by');
+    expect(text).toContain(replacement.id);
+    expect(text).toContain('replaces');
+    expect(text).toContain(superseded.id);
+  });
+
+  // Assert-the-negative: a report in no lineage must not claim one. A column
+  // that always says something is one a reader stops looking at.
+  it('says nothing about lineage for a report in none', async () => {
+    const plain = reports.filter((r) => r.supersedes == null && r.superseded_by == null);
+    expect(plain.length).toBeGreaterThan(0);
+
+    stubApi([['/reports', plain]]);
+    renderApp(<Reports />);
+    await waitFor(() => expect(document.querySelector('.reports')).toBeTruthy());
+
+    const text = document.body.textContent ?? '';
+    expect(text).not.toContain('superseded by');
+    expect(text).not.toContain('replaces ');
+
+    // And it says so positively, once per row. An empty cell would read as
+    // "we did not look", which is the distinction this whole interface is
+    // built on: a report in no lineage is a FACT, not a missing value.
+    //
+    // Asserted on the cell rather than on the page's text, because the
+    // paragraph above the table also contains the word "current" and would
+    // satisfy a text match whether or not anything was rendered.
+    expect(document.querySelectorAll('.lineage-current')).toHaveLength(plain.length);
+  });
 });

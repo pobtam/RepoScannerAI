@@ -343,8 +343,40 @@ func (h *harness) seed(t *testing.T, s *store.Memory, cal score.Calibration, pol
 	if err != nil {
 		t.Fatalf("Issue: %v", err)
 	}
-	if _, err := report.Record(ctx, s, issued, "orchestrator"); err != nil {
+	first, err := report.Record(ctx, s, issued, "orchestrator")
+	if err != nil {
 		t.Fatalf("report.Record: %v", err)
+	}
+
+	// A SECOND report for the same run, replacing the first.
+	//
+	// It is here so that the lineage has a real producer in the fixture the
+	// producer-coverage audit walks. Both ReportSummary.Supersedes and
+	// SupersededBy would otherwise be fields the interface reads and nothing
+	// writes — which is the defect class this build found eleven times, and
+	// the one store.Report.Supersedes itself was instance ten of.
+	//
+	// It is anchored to the same run, which is what a correction looks like:
+	// the same population, re-issued. Anchoring it elsewhere would be a
+	// different report, not a replacement.
+	superseding, err := gen.Generate(ctx, report.Query{
+		Kind: report.KindFleet, AnchorRun: stats.RunID, Scope: store.ScopeAll,
+		Template: "fleet.v1",
+		// The relationship travels on the query, which is what gives the
+		// replacement its own identifier: a report's id derives from its
+		// query, so without this the re-issue would collide with the report
+		// it replaces.
+		Supersedes: first.ID,
+	})
+	if err != nil {
+		t.Fatalf("Generate superseding: %v", err)
+	}
+	reissued, err := report.Issue(superseding)
+	if err != nil {
+		t.Fatalf("Issue superseding: %v", err)
+	}
+	if _, err := report.Record(ctx, s, reissued, "orchestrator"); err != nil {
+		t.Fatalf("recording the superseding report: %v", err)
 	}
 	_ = run2
 

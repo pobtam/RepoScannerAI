@@ -563,8 +563,20 @@ type ReportSummary struct {
 	IssuedAt    time.Time `json:"issued_at"`
 	IssuedBy    string    `json:"issued_by,omitempty"`
 	ContentHash string    `json:"content_hash"`
-	Supersedes  string    `json:"supersedes,omitempty"`
-	Redacted    bool      `json:"redacted,omitempty"`
+	// Supersedes names the report this one replaces, and SupersededBy the one
+	// that replaced this.
+	//
+	// Both directions, because VM-UI-F-1108 requires BOTH reports to remain
+	// visible with the relationship stated — and a reader arriving at the
+	// older one is the reader who most needs to be told. Someone quoting a
+	// figure from a report that has since been corrected will have the
+	// superseded identifier in their hand, not the replacement's.
+	//
+	// SupersededBy is derived from the lineage rather than stored, so it
+	// cannot disagree with Supersedes.
+	Supersedes   string `json:"supersedes,omitempty"`
+	SupersededBy string `json:"superseded_by,omitempty"`
+	Redacted     bool   `json:"redacted,omitempty"`
 	// WithheldCount is shown wherever a redacted report is (VM-UI-F-1109).
 	WithheldCount int `json:"withheld_count"`
 }

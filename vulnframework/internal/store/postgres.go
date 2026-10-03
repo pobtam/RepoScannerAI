@@ -1265,6 +1265,27 @@ func (p *Postgres) SaveReport(ctx context.Context, r Report) error {
 		return err
 	}
 
+	if r.Supersedes != "" {
+		if _, gerr := p.GetReport(ctx, r.Supersedes); gerr != nil {
+			if errors.Is(gerr, ErrNotFound) {
+				return fmt.Errorf("store: report %s claims to supersede %s, which does not exist. "+
+					"A lineage pointing at nothing is worse than none: the interface would show a "+
+					"relationship that cannot be followed (VM-UI-F-1108)", r.ID, r.Supersedes)
+			}
+			return gerr
+		}
+		// Checked here as well as by the unique index, so both backends refuse
+		// it with the same words. The index is the guarantee; this is the
+		// explanation.
+		if existing, found, serr := p.SupersededBy(ctx, r.Supersedes); serr != nil {
+			return serr
+		} else if found && existing.ID != r.ID {
+			return fmt.Errorf("store: report %s already supersedes %s. A second one would fork "+
+				"the lineage with no defined winner, and the relationship VM-UI-F-1108 requires "+
+				"to be stated could not be", existing.ID, r.Supersedes)
+		}
+	}
+
 	_, err = p.db.ExecContext(ctx, qInsertReport,
 		r.ID, r.AnchorRunID, r.Kind, nullString(r.Repo), r.Template,
 		[]byte(r.Query), r.ContentHash, []byte(r.Content),
@@ -1301,6 +1322,35 @@ func (p *Postgres) ReportsForRun(ctx context.Context, runID string) ([]Report, e
 	}
 	defer rows.Close()
 	return scanReports(rows)
+}
+
+// SupersededBy returns the report that replaces id.
+func (p *Postgres) SupersededBy(ctx context.Context, id string) (Report, bool, error) {
+	if id == "" {
+		return Report{}, false, nil
+	}
+	rows, err := p.db.QueryContext(ctx, qSupersededBy, id)
+	if err != nil {
+		return Report{}, false, fmt.Errorf("store: reading what supersedes %s: %w", id, err)
+	}
+	defer rows.Close()
+
+	out, err := scanReports(rows)
+	if err != nil {
+		return Report{}, false, err
+	}
+	if len(out) == 0 {
+		return Report{}, false, nil
+	}
+	if len(out) > 1 {
+		// The unique index makes this unreachable, and it is checked anyway:
+		// an invariant enforced in one place and assumed in another is an
+		// invariant that survives exactly until somebody drops the index.
+		return Report{}, false, fmt.Errorf(
+			"store: %d reports claim to supersede %s. The lineage has forked and the relationship "+
+				"VM-UI-F-1108 requires to be stated cannot be", len(out), id)
+	}
+	return out[0], true, nil
 }
 
 func scanReports(rows *sql.Rows) ([]Report, error) {

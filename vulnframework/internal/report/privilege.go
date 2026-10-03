@@ -167,6 +167,6 @@ func Redact(rep Report, level Level) (Report, error) {
 	// content must not share an identity, or a citation is ambiguous about
 	// which one it refers to (VM-ADR-15).
 	out.Query.Template = rep.Query.Template + "@" + level.String()
-	out.ID = reportID(out)
+	out.ID = IDFor(out)
 	return out, nil
 }

@@ -1392,6 +1392,7 @@ export interface components {
             kind: string;
             redacted?: boolean;
             repo?: string;
+            superseded_by?: string;
             supersedes?: string;
             template: string;
             withheld_count: number;

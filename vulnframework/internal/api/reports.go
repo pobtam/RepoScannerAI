@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sort"
@@ -35,11 +36,33 @@ func (s *Server) handleReports(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, rec := range recs {
-			out = append(out, reportSummary(rec))
+			summary, err := s.withLineage(ctx, rec)
+			if err != nil {
+				s.failStore(w, r, err)
+				return
+			}
+			out = append(out, summary)
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].IssuedAt.After(out[j].IssuedAt) })
 	s.write(w, r, http.StatusOK, out)
+}
+
+// withLineage fills in the replacement side of the relationship.
+//
+// A failure here is NOT absorbed into an empty field. "Nothing supersedes
+// this" and "the lookup failed" would then look identical, and the first is
+// the answer a reader acts on: they quote the figure.
+func (s *Server) withLineage(ctx context.Context, rec store.Report) (ReportSummary, error) {
+	summary := reportSummary(rec)
+	replacement, found, err := s.cfg.Store.SupersededBy(ctx, rec.ID)
+	if err != nil {
+		return ReportSummary{}, err
+	}
+	if found {
+		summary.SupersededBy = replacement.ID
+	}
+	return summary, nil
 }
 
 func reportSummary(rec store.Report) ReportSummary {
@@ -73,8 +96,17 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 		// the artifact that travels furthest.
 		s.writeText(w, r, md)
 	default:
+		// The lineage travels with the single report too, and especially
+		// here: this is the endpoint somebody lands on from a quoted
+		// identifier, which is exactly when being told the figure was
+		// superseded matters most.
+		summary, err := s.withLineage(r.Context(), rec)
+		if err != nil {
+			s.failStore(w, r, err)
+			return
+		}
 		s.write(w, r, http.StatusOK, map[string]any{
-			"summary": reportSummary(rec),
+			"summary": summary,
 			"report":  rec.Content,
 		})
 	}

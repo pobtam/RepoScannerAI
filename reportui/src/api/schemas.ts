@@ -499,6 +499,7 @@ export const reportSummary = z.object({
   issued_by: z.string().optional(),
   content_hash: z.string(),
   supersedes: z.string().optional(),
+  superseded_by: z.string().optional(),
   redacted: z.boolean().optional(),
   withheld_count: z.number(),
 });

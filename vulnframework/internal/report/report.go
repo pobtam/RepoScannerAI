@@ -45,6 +45,28 @@ type Query struct {
 	Repo      string      `json:"repo,omitempty"`
 	Scope     store.Scope `json:"scope"`
 	Template  string      `json:"template"`
+
+	// Supersedes names the report this generation replaces (VM-ADR-15's
+	// lineage, VM-UI-F-1108).
+	//
+	// It lives on the QUERY rather than being passed alongside it, and that
+	// placement is the substance of the design.
+	//
+	// A report's identifier is derived from its query, so without this a
+	// re-issue of the same query against the same run would collide with the
+	// report it replaces — the same identifier, different content, which the
+	// store correctly refuses. Supersession would be unexpressible.
+	//
+	// The query is also stored verbatim so a report can be regenerated rather
+	// than reconstructed from memory. Keeping the relationship here means a
+	// regeneration reproduces it, instead of producing a report that has
+	// forgotten what it was a correction to.
+	//
+	// And it means there is ONE place the relationship is stated. Taking it
+	// as a separate argument would allow a caller to pass an identifier that
+	// disagreed with the query the report carries, and nothing downstream
+	// could tell which was meant.
+	Supersedes string `json:"supersedes,omitempty"`
 }
 
 // Counts are the headline figures (VM-AD §14.2).
@@ -340,7 +362,7 @@ func (g *Generator) Generate(ctx context.Context, q Query) (Report, error) {
 		return Report{}, err
 	}
 
-	rep.ID = reportID(rep)
+	rep.ID = IDFor(rep)
 	return rep, nil
 }
 
