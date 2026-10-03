@@ -1,0 +1,132 @@
+# The Linux sandbox proof (D2, OQ-P10b-01, OQ-P10b-02).
+#
+# This job exists because of one rule, and the rule is the reason the agent
+# path is not enabled:
+#
+#   No real API key on any machine where this has not passed.
+#
+# Until it does, the agent's isolation is an ASSERTION. internal/sandbox is
+# implemented, and every test of it in the ordinary suite runs against
+# sandbox.Fake, because the development machine is macOS and the real
+# implementation needs Linux namespaces. Those green tests are evidence about
+# the harness — that a leaked boundary is noticed, that a skipped probe never
+# reads as a denial, that the harness refuses to start unconfined. They are
+# not evidence about isolation, and nothing in them could be.
+#
+# What this job proves, and what it does not
+#
+#   It proves that each boundary probe RUNS and is DENIED against real
+#   bubblewrap, that sandbox.Unisolated can never verify, that a machine with
+#   no backend refuses rather than degrading, and that an orphaned child is
+#   killed with the process group.
+#
+#   It does not prove that a real model, given a real repository and a real
+#   budget, produces a change worth reviewing. That is D1, it is supervised,
+#   and it comes after this.
+#
+# Why the probes are build-tagged rather than skipped
+#
+#   `go test ./...` prints a skip as part of a passing run. A skipped probe
+#   that reads as a pass is the exact lie sandbox.Verification.OK() exists to
+#   prevent one level down, and the rule has to hold for the test that calls
+#   it. With a tag the file is either RUN or ABSENT; there is no state in
+#   which it appears to have answered and did not.
+
+name: sandbox probe
+
+on:
+  push:
+    paths:
+      - 'vulnframework/internal/sandbox/**'
+      - 'vulnframework/internal/remediate/agent/**'
+      - '.github/workflows/sandbox-probe.yml'
+  pull_request:
+    paths:
+      - 'vulnframework/internal/sandbox/**'
+      - 'vulnframework/internal/remediate/agent/**'
+      - '.github/workflows/sandbox-probe.yml'
+  # Also on a schedule: the thing being tested is the HOST's behaviour, and a
+  # runner image upgrade can change it without a line of this repository
+  # changing. A proof that is only re-run when the code changes is a proof
+  # about the wrong thing.
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: real bubblewrap (Linux)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vulnframework
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: vulnframework/go.mod
+
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+          bwrap --version
+
+      # The probes have to be able to SUCCEED outside the sandbox, or their
+      # failure inside it proves nothing. Checked before the job trusts them.
+      - name: Confirm the probes can succeed unconfined
+        run: |
+          set -eux
+          # The network probe's target must be reachable from this runner.
+          curl --max-time 10 -sS -o /dev/null http://1.1.1.1/ \
+            || { echo "::error::the network probe cannot succeed unconfined on this runner, so its denial inside the sandbox would prove nothing"; exit 1; }
+          # The write probe's target must be writable.
+          t="${TMPDIR:-/tmp}/vf-preflight.$$"
+          echo ok > "$t" && rm -f "$t" \
+            || { echo "::error::the write probe cannot succeed unconfined, so its denial would prove nothing"; exit 1; }
+
+      - name: Probe the real sandbox
+        env:
+          # Present in the PARENT and absent from every policy allowlist, which
+          # is what makes the environment probe able to detect a leak. A canary
+          # that is unset would be absent inside the sandbox whether or not the
+          # boundary held.
+          VF_SANDBOX_CANARY_SECRET: canary-${{ github.run_id }}-${{ github.run_attempt }}
+        run: go test -tags sandboxprobe -count=1 -v -run 'TestTheReal|TestUnisolated|TestNoBackend|TestTheProcessGroup' ./internal/sandbox/
+
+      # Non-vacuity. If the probe suite would pass on a machine with no
+      # isolation at all, it is not testing isolation. Removing bubblewrap must
+      # turn the run red.
+      - name: Confirm the proof is not vacuous
+        run: |
+          set -eu
+          sudo rm -f "$(command -v bwrap)"
+          if go test -tags sandboxprobe -count=1 -run 'TestTheRealSandboxDeniesEveryBoundary' ./internal/sandbox/; then
+            echo "::error::the probe suite passed with no isolation backend present. It is not testing isolation."
+            exit 1
+          fi
+          echo "confirmed: with bubblewrap removed, the probe suite fails"
+
+  macos:
+    name: real seatbelt (macOS)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: vulnframework
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: vulnframework/go.mod
+
+      # The orphan-pipe test is absent here by build constraint, not skipped:
+      # `sh` execs `sleep` directly on macOS rather than forking, so there is
+      # no orphan to observe. That remains Linux's to answer (OQ-P10b-02).
+      - name: Probe the real sandbox
+        env:
+          VF_SANDBOX_CANARY_SECRET: canary-${{ github.run_id }}-${{ github.run_attempt }}
+        run: go test -tags sandboxprobe -count=1 -v ./internal/sandbox/

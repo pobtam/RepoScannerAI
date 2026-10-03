@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -105,13 +106,22 @@ func (s *isolated) wrap(name string, args []string) (string, []string) {
 
 // seatbeltProfile is the macOS equivalent: deny by default, permit the clone.
 func (s *isolated) seatbeltProfile() string {
+	// The RESOLVED path. On macOS /var is a symlink to /private/var, and a
+	// seatbelt subpath matches the real path rather than the one the caller
+	// used — so a profile written against the symlink denies writes to the
+	// very directory it is supposed to permit. Found by running the real
+	// backend; every test against the fake passed.
+	clone := s.policy.CloneDir
+	if resolved, err := filepath.EvalSymlinks(clone); err == nil {
+		clone = resolved
+	}
 	return fmt.Sprintf(`(version 1)
 (deny default)
 (allow process-exec process-fork)
 (allow file-read*)
 (deny file-write*)
 (allow file-write* (subpath %q))
-(deny network*)`, s.policy.CloneDir)
+(deny network*)`, clone)
 }
 
 func (s *isolated) Verify(ctx context.Context) (Verification, error) {
@@ -150,21 +160,45 @@ func (s *unisolated) Verify(context.Context) (Verification, error) {
 	return Verification{Backend: "none", Reason: err.Error()}, err
 }
 
+// CanaryVar is the environment variable the env probe looks for.
+const CanaryVar = "VF_SANDBOX_CANARY_SECRET"
+
 // runProbes executes every canary inside the sandbox.
+//
+// The environment probe deserves a note, because it was wrong for the whole of
+// this build and only running against a real backend showed it.
+//
+// It used to APPEND the canary to the child's environment, after Command had
+// already filtered it, with a comment explaining that it was "injected outside
+// the allowlist on purpose". It was injected past the allowlist, into the
+// child's own environment — and no isolation backend strips environment
+// variables. Neither bwrap nor sandbox-exec does; they pass through whatever
+// they are given. So the probe could never report anything but an escape
+// against a real sandbox, and reported a denial against the fake only because
+// the fake runs no process at all.
+//
+// The environment boundary is enforced by FilterEnv, which is a framework
+// control rather than an OS one. Proving it therefore means exactly this: the
+// variable exists in the PARENT, it is absent from the allowlist, and it must
+// not arrive in the child. If it is not in the parent, the probe cannot detect
+// anything — and says so by not running, rather than by reporting a denial it
+// did not establish.
 func runProbes(ctx context.Context, s Sandbox, backend, canary string) (Verification, error) {
 	v := Verification{Backend: backend}
 
 	for _, probe := range AllProbes {
+		if probe == ProbeEnv {
+			if result, ok := envProbePrecondition(s.Policy(), canary); !ok {
+				v.Probes = append(v.Probes, result)
+				continue
+			}
+		}
+
 		script := ProbeScript(probe, s.Policy())
 		cmd, err := s.Command(ctx, "sh", "-c", script)
 		if err != nil {
 			v.Probes = append(v.Probes, ProbeResult{Probe: probe, Ran: false, Detail: err.Error()})
 			continue
-		}
-		if probe == ProbeEnv && canary != "" {
-			// Injected OUTSIDE the allowlist on purpose: if the boundary holds
-			// it will not arrive, and if it does arrive the boundary is open.
-			cmd.Env = append(cmd.Env, "VF_SANDBOX_CANARY_SECRET="+canary)
 		}
 		out, err := cmd.CombinedOutput()
 		escaped := strings.Contains(string(out), ProbeEscaped)
@@ -188,6 +222,33 @@ func runProbes(ctx context.Context, s Sandbox, backend, canary string) (Verifica
 		return v, &ErrNotIsolated{Reason: v.Summary()}
 	}
 	return v, nil
+}
+
+// envProbePrecondition reports whether the environment probe can detect
+// anything at all.
+//
+// A probe that cannot succeed outside the sandbox proves nothing when it fails
+// inside one, and would turn the verification into a formality that always
+// passes. Both halves have to hold: the variable must be present in the
+// launching environment, and it must NOT be on the allowlist — because a
+// canary the policy permits is one the boundary is supposed to let through.
+func envProbePrecondition(p Policy, canary string) (ProbeResult, bool) {
+	if canary == "" {
+		return ProbeResult{Probe: ProbeEnv, Ran: false, Detail: "no canary secret is configured, " +
+			"so the probe has nothing to look for and could not detect a leak"}, false
+	}
+	if got, present := os.LookupEnv(CanaryVar); !present || got != canary {
+		return ProbeResult{Probe: ProbeEnv, Ran: false, Detail: CanaryVar + " is not set to the " +
+			"canary secret in this process, so the probe would find it absent in the child whether " +
+			"or not the boundary holds"}, false
+	}
+	for _, name := range p.AllowedEnv {
+		if strings.TrimSpace(name) == CanaryVar {
+			return ProbeResult{Probe: ProbeEnv, Ran: false, Detail: CanaryVar + " is on the " +
+				"policy's allowlist, so it is permitted through and its arrival would prove nothing"}, false
+		}
+	}
+	return ProbeResult{}, true
 }
 
 func errSuffix(err error) string {
