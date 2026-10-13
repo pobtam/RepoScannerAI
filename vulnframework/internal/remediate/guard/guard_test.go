@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/wanaware/vulnframework/internal/remediate/guard"
+	"github.com/wanaware/vulnframework/internal/testkeys"
 )
 
 // The guard is the only thing standing between an automated code change and the
@@ -229,7 +230,7 @@ func TestRemovedSuppressionIsNotAViolation(t *testing.T) {
 // definition the report and the tracker use.
 func TestReintroducedCredentialIsRejected(t *testing.T) {
 	g := testGuard(t)
-	diff := "--- a/config.yaml\n+++ b/config.yaml\n+aws_key: REDACTED-FAKE-AWS-KEY-ID\n"
+	diff := "--- a/config.yaml\n+++ b/config.yaml\n+aws_key: " + testkeys.AWSAccessKeyID() + "\n"
 	err := g.CheckDiff([]byte(diff))
 	if err == nil {
 		t.Fatal("the guard permitted a reintroduced credential")
@@ -240,7 +241,7 @@ func TestReintroducedCredentialIsRejected(t *testing.T) {
 	}
 	// The error must not quote the credential it found. A guard that reports a
 	// leak by repeating it has moved the leak into the log.
-	if strings.Contains(err.Error(), "REDACTED-FAKE-AWS-KEY-ID") {
+	if strings.Contains(err.Error(), testkeys.AWSAccessKeyID()) {
 		t.Error("the guard's own error message contains the credential (VM-F-263)")
 	}
 }

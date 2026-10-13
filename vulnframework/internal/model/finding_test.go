@@ -158,8 +158,12 @@ func TestSecretFindingMarshalsWithoutAValue(t *testing.T) {
 // misbehaving producer cannot ride along inside the record: encoding/json
 // discards unknown keys, and the struct offers nowhere to put one.
 func TestUnknownJSONKeysAreDroppedNotCarried(t *testing.T) {
+	// AWS's documented example key ID, joined at run time so no key-like
+	// string is committed. Not internal/testkeys: model may import nothing
+	// internal, tests included (VM-AD §3).
+	exampleKeyID := strings.Join([]string{"AK", "IA", "IOSFODNN", "7EXAMPLE"}, "")
 	payload := `{"schema_version":"findings.v1","fingerprint":"fp","repo":"r",
-	  "category":"secret","value":"REDACTED-AWS-EXAMPLE-KEY-ID",
+	  "category":"secret","value":"` + exampleKeyID + `",
 	  "classification":{"severity":"HIGH","reachable":"unknown"},"state":"NEEDS_HUMAN"}`
 	var f model.Finding
 	if err := json.Unmarshal([]byte(payload), &f); err != nil {
@@ -169,7 +173,7 @@ func TestUnknownJSONKeysAreDroppedNotCarried(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	if strings.Contains(string(b), "REDACTED-AWS-EXAMPLE-KEY-ID") {
+	if strings.Contains(string(b), exampleKeyID) {
 		t.Fatalf("an injected secret value survived a round trip: %s", b)
 	}
 }

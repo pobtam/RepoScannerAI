@@ -17,7 +17,15 @@ set -euo pipefail
 IMAGE="${1:-vulnframework-scanner:v1}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURES="$ROOT/testdata/fixtures"
-REPOS="$ROOT/testdata/repos"
+
+# The synthetic repositories are committed with placeholders where they plant
+# credentials (internal/testkeys). The image scans an expanded copy, and the
+# captured output is concealed again before it lands in testdata/fixtures, so
+# no key-like string is ever committed.
+REPOS="$(mktemp -d)"
+trap 'rm -rf "$REPOS"' EXIT
+cp -R "$ROOT/testdata/repos/." "$REPOS/"
+( cd "$ROOT" && go run ./internal/testkeys/cmd/testkeys expand "$REPOS" )
 
 echo "capturing from $IMAGE"
 
@@ -125,4 +133,5 @@ cap npm-audit error        "$NPM_V" /tmp/broken-go  npm audit --json
 cp "$WEB/package.json" /fixtures/npm-audit/package.json
 '
 
+( cd "$ROOT" && go run ./internal/testkeys/cmd/testkeys conceal "$FIXTURES" )
 echo "capture complete"

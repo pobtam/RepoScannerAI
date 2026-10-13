@@ -629,7 +629,7 @@ This is the entire point of the re-capture, and it is worth being concrete:
    §8.6 merge, which is precisely the severity govulncheck cannot supply. Added a
    CVSS-score fallback using the §9.4 thresholds.
 4. **gitleaks ignores the AWS documentation key.** The planted secret in the
-   synthetic repository was `REDACTED-AWS-EXAMPLE-KEY-ID`, which gitleaks allowlists, so
+   synthetic repository was AWS's documentation example key (`AKIA…EXAMPLE`), which gitleaks allowlists, so
    secret detection found nothing and the redaction test was vacuous. Replaced
    with fabricated credentials that match no real account.
 

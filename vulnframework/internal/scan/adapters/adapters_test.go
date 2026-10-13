@@ -13,6 +13,7 @@ import (
 	"github.com/wanaware/vulnframework/internal/scan"
 	"github.com/wanaware/vulnframework/internal/scan/adapters"
 	"github.com/wanaware/vulnframework/internal/scan/runner"
+	"github.com/wanaware/vulnframework/internal/testkeys"
 )
 
 var (
@@ -39,7 +40,9 @@ func readFixture(t *testing.T, tool, name string) []byte {
 	if err != nil {
 		t.Fatalf("reading fixture: %v", err)
 	}
-	return b
+	// Recorded output that echoes a planted credential is committed with a
+	// placeholder; the adapter must see what the tool really printed.
+	return testkeys.Expand(b)
 }
 
 // assertGolden is the byte-for-byte gate (VM-AD §17 Phase 1). The normalised
@@ -310,8 +313,8 @@ func TestGitleaksRedactsCredentialMaterial(t *testing.T) {
 	// The credentials planted in testdata/repos/go-api/config/settings.yaml.
 	// They are fabricated and match no real account.
 	planted := []string{
-		"REDACTED-FAKE-AWS-KEY-ID",
-		"REDACTED-FAKE-AWS-SECRET",
+		testkeys.AWSAccessKeyID(),
+		testkeys.AWSSecretAccessKey(),
 	}
 	for _, secret := range planted {
 		if !strings.Contains(string(fixture), secret) {

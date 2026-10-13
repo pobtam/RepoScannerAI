@@ -25,6 +25,7 @@ import (
 	"github.com/wanaware/vulnframework/internal/scan"
 	"github.com/wanaware/vulnframework/internal/score"
 	"github.com/wanaware/vulnframework/internal/store"
+	"github.com/wanaware/vulnframework/internal/testkeys"
 	"github.com/wanaware/vulnframework/internal/tracker"
 	"github.com/wanaware/vulnframework/internal/triage"
 )
@@ -46,7 +47,7 @@ var apiNow = time.Date(2026, 9, 18, 12, 0, 0, 0, time.UTC)
 // It is the string the disclosure tests look for. It matches
 // model.CredentialPatterns, which is the shared definition of "looks like a
 // secret" used by every other boundary.
-const theCredential = "REDACTED-AWS-EXAMPLE-KEY-ID"
+var theCredential = testkeys.AWSExampleKeyID()
 
 type harness struct {
 	Store  store.Store

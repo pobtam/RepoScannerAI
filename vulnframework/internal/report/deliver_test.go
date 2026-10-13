@@ -13,6 +13,7 @@ import (
 	"github.com/wanaware/vulnframework/internal/report"
 	"github.com/wanaware/vulnframework/internal/score"
 	"github.com/wanaware/vulnframework/internal/store"
+	"github.com/wanaware/vulnframework/internal/testkeys"
 	"github.com/wanaware/vulnframework/internal/triage"
 )
 
@@ -356,7 +357,7 @@ func TestSecretDetailIsWithheldBelowSecurityOwner(t *testing.T) {
 // TestSecretScanRunsAgainstTheLeastPrivilegedRendering covers the constraint
 // directly: the artifact that travels furthest is the one that is checked.
 func TestSecretScanRunsAgainstTheLeastPrivilegedRendering(t *testing.T) {
-	const planted = "REDACTED-FAKE-AWS-KEY-ID"
+	planted := testkeys.AWSAccessKeyID()
 
 	// A credential that exists ONLY in the least-privileged rendering: it rides
 	// in on a coverage field, which redaction keeps while dropping the findings
@@ -389,7 +390,7 @@ func TestSecretScanRunsAgainstTheLeastPrivilegedRendering(t *testing.T) {
 }
 
 func TestEveryRenderingLevelIsScanned(t *testing.T) {
-	const planted = "REDACTED-FAKE-GITHUB-TOKEN"
+	planted := testkeys.GitHubPAT()
 
 	for _, level := range report.AllLevels {
 		t.Run(level.String(), func(t *testing.T) {

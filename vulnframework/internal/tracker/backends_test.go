@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/wanaware/vulnframework/internal/testkeys"
 	"github.com/wanaware/vulnframework/internal/tracker"
 )
 
@@ -223,7 +224,7 @@ func TestFingerprintCarrierPerBackend(t *testing.T) {
 func TestBackendsNeverSendCredentialMaterial(t *testing.T) {
 	ctx := context.Background()
 	spec := demoSpec()
-	spec.Body = "REDACTED-AWS-EXAMPLE-KEY-ID"
+	spec.Body = testkeys.AWSExampleKeyID()
 
 	backends := map[string]func(*recorder) tracker.Tracker{
 		"github": func(r *recorder) tracker.Tracker {
@@ -242,7 +243,7 @@ func TestBackendsNeverSendCredentialMaterial(t *testing.T) {
 			if _, err := build(rec).Create(ctx, spec); err == nil {
 				t.Error("a spec carrying credential material was sent")
 			}
-			if strings.Contains(rec.all(), "REDACTED-AWS-EXAMPLE-KEY-ID") {
+			if strings.Contains(rec.all(), testkeys.AWSExampleKeyID()) {
 				t.Error("credential material reached the transport")
 			}
 		})

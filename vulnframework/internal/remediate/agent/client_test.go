@@ -13,6 +13,7 @@ import (
 	"github.com/wanaware/vulnframework/internal/remediate"
 	"github.com/wanaware/vulnframework/internal/remediate/agent"
 	"github.com/wanaware/vulnframework/internal/sandbox"
+	"github.com/wanaware/vulnframework/internal/testkeys"
 )
 
 // Phase 10b — the real headless client.
@@ -185,11 +186,11 @@ func TestThePromptCarriesNoCredentialMaterial(t *testing.T) {
 		Repo: repo, FixGroupID: "abc123",
 		Findings: []model.Finding{{
 			Fingerprint: "a3f9c21e8b7d4056", Repo: repo, Category: model.CategoryCode,
-			Annotations: map[string]string{"note": "found REDACTED-FAKE-AWS-KEY-ID nearby"},
+			Annotations: map[string]string{"note": "found " + testkeys.AWSAccessKeyID() + " nearby"},
 		}},
 	}
 	prompt := agent.BuildPrompt(order)
-	if strings.Contains(prompt, "REDACTED-FAKE-AWS-KEY-ID") {
+	if strings.Contains(prompt, testkeys.AWSAccessKeyID()) {
 		t.Error("credential material reached the prompt; the prompt leaves the process and reaches a " +
 			"third party, which is the furthest a secret can travel in this system")
 	}
@@ -228,7 +229,7 @@ func TestRealClientUnderInjectionIsStoppedStructurally(t *testing.T) {
 			p := clientPolicy(t)
 			// The environment the client is launched with holds a credential,
 			// as a real runner's would.
-			t.Setenv("AWS_SECRET_ACCESS_KEY", "REDACTED-FAKE-AWS-SECRET")
+			t.Setenv("AWS_SECRET_ACCESS_KEY", testkeys.AWSSecretAccessKey())
 
 			box := sandbox.NewFake(p)
 			c := &agent.Client{
@@ -246,7 +247,7 @@ func TestRealClientUnderInjectionIsStoppedStructurally(t *testing.T) {
 			last := c.LastCommand()
 			joined := strings.Join(last.Env, "\n")
 			if strings.Contains(joined, "AWS_SECRET_ACCESS_KEY") ||
-				strings.Contains(joined, "REDACTED-FAKE-AWS-SECRET") {
+				strings.Contains(joined, testkeys.AWSSecretAccessKey()) {
 				t.Error("the runner's credential reached the agent process; the exfiltration attempt " +
 					"would have had something to exfiltrate")
 			}

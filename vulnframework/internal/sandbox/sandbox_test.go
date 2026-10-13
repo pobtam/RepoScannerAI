@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/wanaware/vulnframework/internal/sandbox"
+	"github.com/wanaware/vulnframework/internal/testkeys"
 )
 
 // §15.2 isolation, and the other half of Phase 10a's capability-denial claim.
@@ -43,8 +44,8 @@ func policy(t *testing.T) sandbox.Policy {
 func TestOnlyAllowlistedEnvironmentReachesTheProcess(t *testing.T) {
 	p := policy(t)
 	// Things a real runner would have in scope.
-	t.Setenv("AWS_SECRET_ACCESS_KEY", "REDACTED-FAKE-AWS-SECRET")
-	t.Setenv("GITHUB_TOKEN", "REDACTED-FAKE-GITHUB-TOKEN")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", testkeys.AWSSecretAccessKey())
+	t.Setenv("GITHUB_TOKEN", testkeys.GitHubPATZeros())
 	t.Setenv("NPM_TOKEN", "npm_secret")
 	t.Setenv("PATH", "/usr/bin:/bin")
 
@@ -55,7 +56,7 @@ func TestOnlyAllowlistedEnvironmentReachesTheProcess(t *testing.T) {
 
 	joined := strings.Join(env, "\n")
 	for _, forbidden := range []string{"AWS_SECRET_ACCESS_KEY", "GITHUB_TOKEN", "NPM_TOKEN",
-		"REDACTED-FAKE-AWS-SECRET", "ghp_0000"} {
+		testkeys.AWSSecretAccessKey(), "ghp_0000"} {
 		if strings.Contains(joined, forbidden) {
 			t.Errorf("%q reached the agent's environment; an agent inherits a runner's credentials "+
 				"by default, and inheriting is the exfiltration", forbidden)

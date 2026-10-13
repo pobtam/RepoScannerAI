@@ -20,6 +20,7 @@ import (
 	"github.com/wanaware/vulnframework/internal/score"
 	"github.com/wanaware/vulnframework/internal/store"
 	"github.com/wanaware/vulnframework/internal/store/storetest"
+	"github.com/wanaware/vulnframework/internal/testkeys"
 )
 
 // Phase 7 gate:
@@ -517,7 +518,7 @@ func TestReportCountsMatchStoreGroundTruth(t *testing.T) {
 // right behaviour: a silent scrub would hide that credential material reached
 // the output boundary at all, which is the defect worth knowing about.
 func TestPlantedSecretNeverReachesAnyArtifact(t *testing.T) {
-	const planted = "REDACTED-FAKE-AWS-KEY-ID"
+	planted := testkeys.AWSAccessKeyID()
 
 	run(t, func(t *testing.T, s store.Store) {
 		ctx := context.Background()
@@ -576,11 +577,11 @@ func TestPlantedSecretNeverReachesAnyArtifact(t *testing.T) {
 // the fixture happens to exercise.
 func TestIssueRefusesCredentialMaterialInAnyField(t *testing.T) {
 	credentials := []string{
-		"REDACTED-FAKE-AWS-KEY-ID",
-		"REDACTED-FAKE-GITHUB-TOKEN",
-		"REDACTED-FAKE-GITLAB-TOKEN",
-		"REDACTED-FAKE-SLACK-TOKEN",
-		"-----BEGIN RSA PRIVATE KEY-----",
+		testkeys.AWSAccessKeyID(),
+		testkeys.GitHubPAT(),
+		testkeys.GitLabPAT(),
+		testkeys.SlackBotToken(),
+		testkeys.PrivateKeyHeader(),
 	}
 
 	fields := []struct {

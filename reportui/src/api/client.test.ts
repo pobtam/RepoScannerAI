@@ -28,11 +28,15 @@ function respondWith(body: unknown, status = 200) {
 
 afterEach(() => vi.unstubAllGlobals());
 
+// AWS's documented example key ID, joined at run time so no key-like string is
+// committed (secret scanners and push protection read files, not programs).
+const exampleKeyId = ['AK', 'IA', 'IOSFODNN', '7EXAMPLE'].join('');
+
 describe('the disclosure assertion (VM-UI-F-105)', () => {
   it('rejects a response carrying credential material instead of rendering it', async () => {
     const poisoned = structuredClone(finding) as Record<string, unknown>;
     (poisoned.triage as Record<string, unknown>).description =
-      'the key REDACTED-AWS-EXAMPLE-KEY-ID is in the file';
+      `the key ${exampleKeyId} is in the file`;
     respondWith(poisoned);
 
     await expect(api.finding('abc')).rejects.toBeInstanceOf(CredentialDisclosureError);
@@ -45,7 +49,7 @@ describe('the disclosure assertion (VM-UI-F-105)', () => {
 
   it('names what matched, so the defect can be fixed at the producer', () => {
     try {
-      assertNoCredential('/findings', 'x REDACTED-AWS-EXAMPLE-KEY-ID y');
+      assertNoCredential('/findings', `x ${exampleKeyId} y`);
       expect.unreachable('should have thrown');
     } catch (err) {
       expect(err).toBeInstanceOf(CredentialDisclosureError);

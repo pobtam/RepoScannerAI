@@ -10,6 +10,7 @@ import (
 
 	"github.com/wanaware/vulnframework/internal/api"
 	"github.com/wanaware/vulnframework/internal/report"
+	"github.com/wanaware/vulnframework/internal/testkeys"
 )
 
 // rejectingAuth is an authenticator that cannot identify the caller, as a
@@ -207,7 +208,7 @@ func TestTheLogRecordsFilterNamesAndNotTheirValues(t *testing.T) {
 	log := &api.MemoryAccessLog{}
 	srv := h.serverWithAccessLog(t, log, nil)
 
-	const pasted = "REDACTED-AWS-EXAMPLE-KEY-ID"
+	pasted := testkeys.AWSExampleKeyID()
 	req := httptest.NewRequest(http.MethodGet,
 		"/v1/findings?state=TRIAGED&q="+pasted, nil)
 	rec := httptest.NewRecorder()

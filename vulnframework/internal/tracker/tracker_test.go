@@ -13,6 +13,7 @@ import (
 	"github.com/wanaware/vulnframework/internal/scan"
 	"github.com/wanaware/vulnframework/internal/scan/adapters"
 	"github.com/wanaware/vulnframework/internal/store"
+	"github.com/wanaware/vulnframework/internal/testkeys"
 	"github.com/wanaware/vulnframework/internal/tracker"
 )
 
@@ -362,9 +363,11 @@ func TestSecretTicketNeverCarriesTheValue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading the gitleaks fixture: %v", err)
 	}
+	// The fixture is committed with placeholders; this is what the tool printed.
+	rawOutput = testkeys.Expand(rawOutput)
 	// The literal secrets the scanner reported. If the fixture ever stops
 	// containing a real-looking credential, this test is vacuous, so it checks.
-	secrets := []string{"REDACTED-FAKE-AWS-SECRET", "REDACTED-FAKE-AWS-KEY-ID"}
+	secrets := []string{testkeys.AWSSecretAccessKey(), testkeys.AWSAccessKeyID()}
 	for _, secret := range secrets {
 		if !strings.Contains(string(rawOutput), secret) {
 			t.Fatalf("the fixture no longer contains %q; this test would pass vacuously", secret)
@@ -436,7 +439,7 @@ func TestSecretTicketNeverCarriesTheValue(t *testing.T) {
 func TestSpecBuilderRefusesCredentialMaterial(t *testing.T) {
 	spec := tracker.Spec{
 		Fingerprint: "abc123", Title: "Leaked key",
-		Body:      "Found REDACTED-AWS-EXAMPLE-KEY-ID in config",
+		Body:      "Found " + testkeys.AWSExampleKeyID() + " in config",
 		Repo:      repo,
 		ReportURL: "https://reports.example/x",
 	}
