@@ -32,6 +32,13 @@ type CoverageState struct {
 	// repository that keeps losing the budget lottery climbs the order.
 	ConsecutiveDeferrals int `json:"consecutive_deferrals"`
 
+	// QualifyingHistory is the start time of every qualifying scan, newest
+	// first; its head is LastQualifyingAt. Planning reads it to break ties
+	// between repositories whose last qualifying scan was the same run —
+	// which, because a run's scans share its start time, is every repository
+	// that run covered.
+	QualifyingHistory []time.Time `json:"-"`
+
 	// LastCause is why the most recent run did not produce a qualifying scan.
 	// The cause is an attribute of the streak, never a separate streak: a
 	// repository alternating between a build failure and a budget deferral is
@@ -62,9 +69,18 @@ func (c CoverageState) Age(now time.Time) (time.Duration, bool) {
 // "never-scanned sort first" and the stated purpose of bounding worst-case
 // coverage age. Recorded as assumption A19.
 //
-// Tie-break is (timestamp asc, consecutive deferrals desc, repo asc), which
-// makes the order a total function of stored state — no wall clock, no map
-// iteration, no input order.
+// Tie-break is (timestamp asc, consecutive deferrals desc, qualifying history
+// least-recently-served first, repo asc), which makes the order a total
+// function of stored state — no wall clock, no map iteration, no input order.
+//
+// The history step is the fairness guard. Every repository a run scans shares
+// that run's start time, so ties on the last qualifying scan are the normal
+// case whenever the budget is short. Breaking them by name alone let the same
+// alphabetically-early repositories take the spare slots every round, so a
+// fleet that never starved anyone still scanned some repositories twice as
+// often as others. Comparing the scans before the last one, newest to oldest,
+// prefers whichever repository was served less recently — a repository whose
+// history runs out first has had fewer qualifying scans and goes first.
 func ByCoverageStaleness(states []CoverageState) []CoverageState {
 	out := make([]CoverageState, len(states))
 	copy(out, states)
@@ -88,9 +104,31 @@ func ByCoverageStaleness(states []CoverageState) []CoverageState {
 		if a.ConsecutiveDeferrals != b.ConsecutiveDeferrals {
 			return a.ConsecutiveDeferrals > b.ConsecutiveDeferrals
 		}
+		if less, decided := lessRecentlyServed(a.QualifyingHistory, b.QualifyingHistory); decided {
+			return less
+		}
 		return a.Repo < b.Repo
 	})
 	return out
+}
+
+// lessRecentlyServed compares two newest-first qualifying histories past their
+// shared head. A history that ends first — fewer qualifying scans — or reaches
+// an older scan first has been served less recently. decided is false when the
+// histories are identical.
+func lessRecentlyServed(a, b []time.Time) (less, decided bool) {
+	for k := 1; ; k++ {
+		switch {
+		case k >= len(a) && k >= len(b):
+			return false, false
+		case k >= len(a):
+			return true, true
+		case k >= len(b):
+			return false, true
+		case !a[k].Equal(b[k]):
+			return a[k].Before(b[k]), true
+		}
+	}
 }
 
 // StalenessReport is the coverage-age distribution across a scope.
@@ -220,8 +258,23 @@ func Escalations(states []CoverageState, threshold int) []Escalation {
 //
 // Shared by both backends so the streak cannot be counted one way in Postgres
 // and another in memory.
-func coverageFromHistory(repo string, newestFirst []RepoScanResult) CoverageState {
+//
+// startedAt resolves a run to its start time, which is what LastQualifyingAt
+// and QualifyingHistory record.
+func coverageFromHistory(repo string, newestFirst []RepoScanResult, startedAt func(runID string) (time.Time, bool)) CoverageState {
 	c := CoverageState{Repo: repo}
+
+	for _, r := range newestFirst {
+		if r.Outcome.Succeeded() {
+			if at, ok := startedAt(r.RunID); ok {
+				c.QualifyingHistory = append(c.QualifyingHistory, at)
+			}
+		}
+	}
+	if len(c.QualifyingHistory) > 0 {
+		at := c.QualifyingHistory[0]
+		c.LastQualifyingAt = &at
+	}
 
 	for _, r := range newestFirst {
 		if r.Outcome.Succeeded() {

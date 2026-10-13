@@ -465,3 +465,43 @@ func TestCoverageStreakIgnoresNonQualifyingScans(t *testing.T) {
 		}
 	})
 }
+
+// TestRotationIsEvenWhenTheBudgetDoesNotDivideTheFleet is the fairness clause
+// the starvation test cannot see.
+//
+// Twelve of twenty per sweep. Every repository a sweep scans shares that run's
+// start time, so planning ties are the normal case; breaking them by name let
+// the alphabetically-early repositories take the spare slots every sweep. The
+// fleet never starved — and still scanned some repositories every sweep and
+// others every other one. Ten sweeps is 120 scans: a fair rotation gives every
+// repository six.
+func TestRotationIsEvenWhenTheBudgetDoesNotDivideTheFleet(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		const (
+			fleetSize = 20
+			budget    = 12
+			sweeps    = 10
+		)
+		var names []string
+		for i := 0; i < fleetSize; i++ {
+			names = append(names, fmt.Sprintf("org/repo-%02d", i))
+		}
+		w := &sweeper{t: t, s: s, repos: fleet(t, s, names...), budget: budget,
+			now: time.Date(2026, 9, 2, 3, 0, 0, 0, time.UTC)}
+
+		scans := map[string]int{}
+		for i := 0; i < sweeps; i++ {
+			for _, repo := range w.sweep().PlanOrder[:budget] {
+				scans[repo]++
+			}
+		}
+		lo, hi := sweeps, 0
+		for _, name := range names {
+			lo, hi = min(lo, scans[name]), max(hi, scans[name])
+		}
+		if hi-lo > 1 {
+			t.Errorf("scan counts range from %d to %d over %d sweeps; a fair rotation differs by at most one: %v",
+				lo, hi, sweeps, scans)
+		}
+	})
+}

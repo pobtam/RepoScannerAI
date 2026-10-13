@@ -1210,13 +1210,10 @@ func (m *Memory) FleetCoverage(_ context.Context, kind RunKind, repos []string) 
 		}
 		sort.Slice(history, func(i, j int) bool { return order[history[i].RunID] < order[history[j].RunID] })
 
-		c := coverageFromHistory(repo, history)
-		if c.LastQualifyingRun != "" {
-			if run, ok := m.runs[c.LastQualifyingRun]; ok {
-				at := run.StartedAt
-				c.LastQualifyingAt = &at
-			}
-		}
+		c := coverageFromHistory(repo, history, func(id string) (time.Time, bool) {
+			run, ok := m.runs[id]
+			return run.StartedAt, ok
+		})
 		out = append(out, c)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Repo < out[j].Repo })

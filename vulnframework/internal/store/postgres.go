@@ -1170,11 +1170,10 @@ func (p *Postgres) FleetCoverage(ctx context.Context, kind RunKind, repos []stri
 			return nil, err
 		}
 
-		c := coverageFromHistory(repo, history)
-		if at, ok := startedAt[c.LastQualifyingRun]; ok && c.LastQualifyingRun != "" {
-			t := at
-			c.LastQualifyingAt = &t
-		}
+		c := coverageFromHistory(repo, history, func(id string) (time.Time, bool) {
+			at, ok := startedAt[id]
+			return at, ok
+		})
 		out = append(out, c)
 	}
 
