@@ -124,11 +124,14 @@ type ModuleDep struct {
 
 // Repo is a repository in the fleet registry.
 type Repo struct {
-	Name           string   `json:"name"`
-	Tier           int      `json:"tier"`
-	Languages      []string `json:"languages"`
-	Archived       bool     `json:"archived"`
-	HasTestSuite   bool     `json:"has_test_suite"`
+	Name         string   `json:"name"`
+	Tier         int      `json:"tier"`
+	Languages    []string `json:"languages"`
+	Archived     bool     `json:"archived"`
+	HasTestSuite bool     `json:"has_test_suite"`
+	// HasLockfile records a committed dependency lockfile (VM-F-241). It is
+	// what lets the sweep run npm audit, which refuses to run without one.
+	HasLockfile    bool     `json:"has_lockfile"`
 	ModuleTopology string   `json:"module_topology,omitempty"`
 	Codeowners     []string `json:"codeowners,omitempty"`
 }
@@ -480,6 +483,10 @@ type Store interface {
 	// no row are OMITTED, never zero-filled: the caller must be able to tell
 	// "not looked up" from "looked up and negligible".
 	IntelFor(ctx context.Context, ids []string) (map[string]Intel, error)
+	// IntelFreshness reports when each feed last answered for any identifier.
+	// It is what lets a deployment-wide statement — "KEV is unavailable" — be
+	// derived from what the store holds rather than asserted at startup.
+	IntelFreshness(ctx context.Context) (IntelFreshness, error)
 
 	// --- Webhook health (OQ-P12-01) ---
 

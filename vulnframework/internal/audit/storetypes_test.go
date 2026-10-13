@@ -820,6 +820,12 @@ func storeCensuses(ctx context.Context) []storeCensus {
 					Why: "set when the fleet source stops listing a repository (VM-F-104); " +
 						"nothing is archived in this run",
 				},
+				"HasLockfile": {
+					Producer: "cmd/vfctl repo add -lockfile",
+					Why: "false for every repository here: this fleet is all Go, and the flag " +
+						"describes a JavaScript lockfile; cmd/vfctl's TestWhatVfctlRegistersIsWhatTheSweepScans " +
+						"proves the write reaches the sweep's scan profile",
+				},
 			},
 		},
 		{

@@ -37,3 +37,10 @@ type Intel struct {
 
 // Known reports whether anything at all is known about the identifier.
 func (i Intel) Known() bool { return i.EPSSAvailable || i.KEVAvailable }
+
+// IntelFreshness is when each exploitation feed last answered, across the
+// whole store. A zero time means that feed has never answered here.
+type IntelFreshness struct {
+	KEV  time.Time `json:"kev"`
+	EPSS time.Time `json:"epss"`
+}

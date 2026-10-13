@@ -385,5 +385,25 @@ func DeclaredInputs() int { return declaredInputs }
 // so a report can carry the qualification without having to score something
 // first (OQ-AUDIT-01).
 func UnavailableInputs() []string {
-	return []string{"KEV (CISA known-exploited)", "EPSS (exploit prediction)"}
+	return []string{kevInput, epssInput}
+}
+
+const (
+	kevInput  = "KEV (CISA known-exploited)"
+	epssInput = "EPSS (exploit prediction)"
+)
+
+// UnavailableFrom names the declared inputs whose feed has never answered,
+// given when each last did (zero for never). It is UnavailableInputs derived
+// from evidence rather than asserted: the caveat clears once a feed has
+// answered, and returns if the store is emptied.
+func UnavailableFrom(kevLastAnswered, epssLastAnswered time.Time) []string {
+	var out []string
+	if kevLastAnswered.IsZero() {
+		out = append(out, kevInput)
+	}
+	if epssLastAnswered.IsZero() {
+		out = append(out, epssInput)
+	}
+	return out
 }

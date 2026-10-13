@@ -1097,6 +1097,21 @@ func (m *Memory) IntelFor(_ context.Context, ids []string) (map[string]Intel, er
 	return m.intelFor(ids), nil
 }
 
+func (m *Memory) IntelFreshness(_ context.Context) (IntelFreshness, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out IntelFreshness
+	for _, row := range m.intel {
+		if row.KEVAvailable && row.FetchedAt.After(out.KEV) {
+			out.KEV = row.FetchedAt
+		}
+		if row.EPSSAvailable && row.FetchedAt.After(out.EPSS) {
+			out.EPSS = row.FetchedAt
+		}
+	}
+	return out, nil
+}
+
 // intelFor is the unlocked read, so the projection can use it.
 func (m *Memory) intelFor(ids []string) map[string]Intel {
 	out := map[string]Intel{}

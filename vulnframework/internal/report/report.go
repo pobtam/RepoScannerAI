@@ -278,7 +278,12 @@ type Generator struct {
 	// wired. A caveat that never clears is decoration, and the next one
 	// nobody believes.
 	UnavailableScoringInputs []string
-	Clock                    func() time.Time
+	// ScoringInputs, when set, replaces UnavailableScoringInputs with a value
+	// derived at generation time — from the store's record of which feeds
+	// have answered — so a deployment cannot state a stale belief about its
+	// own feeds.
+	ScoringInputs func(ctx context.Context) ([]string, error)
+	Clock         func() time.Time
 }
 
 // NewGenerator builds a generator.
@@ -326,6 +331,13 @@ func (g *Generator) Generate(ctx context.Context, q Query) (Report, error) {
 		return Report{}, ErrLiveAnchor
 	}
 
+	unavailable := g.UnavailableScoringInputs
+	if g.ScoringInputs != nil {
+		if unavailable, err = g.ScoringInputs(ctx); err != nil {
+			return Report{}, fmt.Errorf("report: determining which scoring inputs are available: %w", err)
+		}
+	}
+
 	rep := Report{
 		Kind: q.Kind, Query: q, Repo: q.Repo,
 		AnchorRun: run.ID, AnchorStartedAt: run.StartedAt,
@@ -339,10 +351,10 @@ func (g *Generator) Generate(ctx context.Context, q Query) (Report, error) {
 			ThresholdsCalibrated:   g.Calibration.StaticAnalysis.Calibrated,
 			SLAWindowsCalibrated:   g.Calibration.SLA.Calibrated,
 			ScoringInputsDeclared:  score.DeclaredInputs(),
-			ScoringInputsAvailable: score.DeclaredInputs() - len(g.UnavailableScoringInputs),
+			ScoringInputsAvailable: score.DeclaredInputs() - len(unavailable),
 		},
 	}
-	rep.Provenance.Caveats = caveatsFor(g.Calibration, g.UnavailableScoringInputs)
+	rep.Provenance.Caveats = caveatsFor(g.Calibration, unavailable)
 
 	findings, err := g.Store.ListFindings(ctx, store.Query{
 		Scope: q.Scope, Repo: q.Repo, RunID: q.AnchorRun,

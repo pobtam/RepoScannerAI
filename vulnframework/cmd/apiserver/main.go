@@ -151,10 +151,11 @@ func run() error {
 		cfg.Auth = api.HeaderAuth{
 			UserHeader: *userHeader, LevelHeader: *levelHeader, ReposHeader: *reposHeader,
 		}
-		// Against a real deployment the feeds are NOT wired (OQ-AUDIT-01(b)),
-		// so every score says which inputs it is missing until someone wires
-		// them.
-		cfg.UnavailableScoringInputs = score.UnavailableInputs()
+		// Whether KEV and EPSS are available is what the orchestrator's
+		// post-sweep pass has stored, not something this process can know at
+		// startup. It used to be asserted here as "unavailable", which went
+		// stale the moment the feeds were wired.
+		cfg.ScoringInputsFromStore = true
 
 	default:
 		return errors.New("one of -demo or -dsn is required. " +

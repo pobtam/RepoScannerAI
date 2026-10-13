@@ -57,7 +57,7 @@ func (p *Postgres) SchemaVersion(ctx context.Context) (int, error) {
 func (p *Postgres) UpsertRepo(ctx context.Context, r Repo) error {
 	_, err := p.db.ExecContext(ctx, qUpsertRepo,
 		r.Name, r.Tier, pgTextArray(r.Languages), r.Archived, r.HasTestSuite,
-		nullString(r.ModuleTopology), pgTextArray(r.Codeowners))
+		nullString(r.ModuleTopology), pgTextArray(r.Codeowners), r.HasLockfile)
 	if err != nil {
 		return fmt.Errorf("store: upsert repo %q: %w", r.Name, err)
 	}
@@ -73,7 +73,7 @@ func (p *Postgres) GetRepo(ctx context.Context, name string) (Repo, error) {
 		testSuite sql.NullBool
 	)
 	err := p.db.QueryRowContext(ctx, qGetRepo, name).
-		Scan(&r.Name, &r.Tier, &langs, &r.Archived, &testSuite, &topology, &owners)
+		Scan(&r.Name, &r.Tier, &langs, &r.Archived, &testSuite, &topology, &owners, &r.HasLockfile)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Repo{}, fmt.Errorf("%w: repo %q", ErrNotFound, name)
 	}
@@ -1847,6 +1847,14 @@ func (p *Postgres) SaveIntel(ctx context.Context, rows []Intel) error {
 		}
 	}
 	return tx.Commit()
+}
+
+func (p *Postgres) IntelFreshness(ctx context.Context) (IntelFreshness, error) {
+	var kev, epss sql.NullTime
+	if err := p.db.QueryRowContext(ctx, qIntelFreshness).Scan(&kev, &epss); err != nil {
+		return IntelFreshness{}, fmt.Errorf("store: reading feed freshness: %w", err)
+	}
+	return IntelFreshness{KEV: kev.Time.UTC(), EPSS: epss.Time.UTC()}, nil
 }
 
 func (p *Postgres) IntelFor(ctx context.Context, ids []string) (map[string]Intel, error) {

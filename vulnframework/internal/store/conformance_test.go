@@ -838,3 +838,41 @@ func assertSameProjection(t *testing.T, want, got model.Finding) {
 		}
 	}
 }
+
+// IntelFreshness is the store's answer to "has this feed ever answered here",
+// which is what /v1/health derives its unavailable inputs from.
+func TestIntelFreshness(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		ctx := context.Background()
+		got, err := s.IntelFreshness(ctx)
+		if err != nil {
+			t.Fatalf("IntelFreshness on an empty store: %v", err)
+		}
+		if !got.KEV.IsZero() || !got.EPSS.IsZero() {
+			t.Fatalf("empty store reports %+v; a feed that never answered must read as zero", got)
+		}
+
+		asOf := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+		early := time.Date(2026, 9, 2, 0, 0, 0, 0, time.UTC)
+		late := time.Date(2026, 9, 3, 0, 0, 0, 0, time.UTC)
+		if err := s.SaveIntel(ctx, []store.Intel{
+			// KEV answered twice; the later fetch is what counts.
+			{ID: "CVE-2025-0001", KEVAvailable: true, KEVAsOf: &asOf, FetchedAt: early, Sources: []string{"kev"}},
+			{ID: "CVE-2025-0002", KEVAvailable: true, KEVAsOf: &asOf, FetchedAt: late, Sources: []string{"kev"}},
+			// A row where EPSS did not answer says nothing about EPSS.
+			{ID: "GO-2025-0003", KEVAvailable: true, KEVAsOf: &asOf, FetchedAt: early, Sources: []string{"kev", "epss"}},
+		}); err != nil {
+			t.Fatal(err)
+		}
+		got, err = s.IntelFreshness(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !got.KEV.Equal(late) {
+			t.Errorf("KEV last answered %v, want %v", got.KEV, late)
+		}
+		if !got.EPSS.IsZero() {
+			t.Errorf("EPSS reported as answered at %v; no row has an EPSS answer", got.EPSS)
+		}
+	})
+}

@@ -373,6 +373,7 @@ func (o *Orchestrator) dispatch(ctx context.Context, runID string, plan []store.
 				Profile: scan.RepoProfile{
 					Repo: entry.Repo, Tier: repo.Tier,
 					Languages: languagesOf(repo), HasTestSuite: repo.HasTestSuite,
+					HasLockfile: repo.HasLockfile,
 				},
 				Opts:       scan.RunOpts{Mode: scan.ModeFull, APICredits: o.Config.CreditsPerScan},
 				APICredits: o.Config.CreditsPerScan,

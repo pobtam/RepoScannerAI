@@ -108,6 +108,14 @@ type Triager struct {
 	Cache  Cache
 	Model  string
 	Clock  func() time.Time
+
+	// Unavailable, when set, says why no narrative can be produced — no
+	// credential, inference not enabled — and Run makes no inference call.
+	// Findings still advance: the run is never blocked on triage (VM-AD §9.3),
+	// so a finding is scored and routed with no narrative rather than held in
+	// DETECTED, and nothing is written in place of the narrative. The reason
+	// is carried in Stats.Unavailable so the run can say it.
+	Unavailable string
 }
 
 // Stats summarises a triage pass.
@@ -130,6 +138,10 @@ type Stats struct {
 	// Unresolved counts findings marked triaged with a null verdict after two
 	// failures — the run is never blocked on triage (VM-AD §9.3).
 	Unresolved []string
+	// Unavailable is Triager.Unavailable when it applied: every finding not
+	// already cached is Unresolved because no inference was attempted, not
+	// because inference failed.
+	Unavailable string `json:",omitempty"`
 }
 
 // Eligible reports whether a finding's state admits triage.
@@ -186,6 +198,18 @@ func (t *Triager) Run(ctx context.Context, profile RepoProfile, items []Item) (m
 			}
 		}
 		pending = append(pending, it)
+	}
+
+	if t.Unavailable != "" {
+		stats.Unavailable = t.Unavailable
+		for _, it := range pending {
+			stats.Unresolved = append(stats.Unresolved, it.Fingerprint)
+		}
+		sort.Strings(stats.Unresolved)
+		return out, stats, nil
+	}
+	if t.Client == nil {
+		return nil, stats, fmt.Errorf("triage: no client, and no reason given for its absence")
 	}
 	stats.Requested = len(pending)
 

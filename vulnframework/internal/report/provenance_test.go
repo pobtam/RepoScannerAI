@@ -9,6 +9,7 @@ import (
 
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/report"
+	"github.com/wanaware/vulnframework/internal/score"
 	"github.com/wanaware/vulnframework/internal/store"
 )
 
@@ -211,6 +212,33 @@ func TestAuditPackStatesTheProvenanceOfItsBreachFigure(t *testing.T) {
 		}
 		if !strings.Contains(strings.ToLower(pack.Attestation.Statement), "provisional") {
 			t.Errorf("the attestation states an SLA position with no provenance:\n%s", pack.Attestation.Statement)
+		}
+	})
+}
+
+// TestDerivedScoringInputsFollowTheStore: a generator given ScoringInputs uses
+// what it derives, not the static list, so the caveat states what the feeds
+// did rather than what the deployment was told at startup.
+func TestDerivedScoringInputsFollowTheStore(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		runID, _ := slaFixture(t, s, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), nil)
+		g := report.NewGenerator(s, calibration(t))
+		g.Clock = func() time.Time { return base }
+		derived := []string{"EPSS (exploit prediction)"}
+		g.ScoringInputs = func(context.Context) ([]string, error) { return derived, nil }
+
+		rep, err := g.Generate(context.Background(), report.Query{
+			Kind: report.KindFleet, AnchorRun: runID, Scope: store.ScopeAll, Template: "fleet.v1",
+		})
+		if err != nil {
+			t.Fatalf("Generate: %v", err)
+		}
+		if got, want := rep.Provenance.ScoringInputsAvailable, score.DeclaredInputs()-1; got != want {
+			t.Errorf("ScoringInputsAvailable = %d, want %d: the static list was used instead of the derived one", got, want)
+		}
+		joined := strings.Join(rep.Provenance.Caveats, "\n")
+		if !strings.Contains(joined, "EPSS (exploit prediction) unavailable") || strings.Contains(joined, "KEV (CISA") {
+			t.Errorf("caveats do not reflect the derived inputs:\n%s", joined)
 		}
 	})
 }

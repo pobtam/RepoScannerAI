@@ -7,18 +7,19 @@ package store
 
 const (
 	qUpsertRepo = `
-INSERT INTO repos (name, tier, languages, archived, has_test_suite, module_topology, codeowners)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO repos (name, tier, languages, archived, has_test_suite, module_topology, codeowners, has_lockfile)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 ON CONFLICT (name) DO UPDATE SET
   tier = EXCLUDED.tier,
   languages = EXCLUDED.languages,
   archived = EXCLUDED.archived,
   has_test_suite = EXCLUDED.has_test_suite,
   module_topology = EXCLUDED.module_topology,
-  codeowners = EXCLUDED.codeowners`
+  codeowners = EXCLUDED.codeowners,
+  has_lockfile = EXCLUDED.has_lockfile`
 
 	qGetRepo = `
-SELECT name, tier, languages::text, archived, has_test_suite, module_topology, codeowners::text
+SELECT name, tier, languages::text, archived, has_test_suite, module_topology, codeowners::text, has_lockfile
 FROM repos WHERE name = $1`
 
 	qInsertRun = `
@@ -454,3 +455,9 @@ FROM module_deps WHERE module = $1 ORDER BY repo, module`
 SELECT run_id, repo, module, version, direct, replaced
 FROM module_deps ORDER BY repo, module`
 )
+
+// qIntelFreshness is when each feed last answered for anything.
+const qIntelFreshness = `
+SELECT max(fetched_at) FILTER (WHERE kev_available),
+       max(fetched_at) FILTER (WHERE epss_available)
+FROM vuln_intel`

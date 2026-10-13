@@ -20,11 +20,16 @@ import (
 	// carries no driver dependency of its own.
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/wanaware/vulnframework/internal/feed"
+	"github.com/wanaware/vulnframework/internal/firstparty"
 	"github.com/wanaware/vulnframework/internal/orchestrator"
+	"github.com/wanaware/vulnframework/internal/policy"
 	"github.com/wanaware/vulnframework/internal/scan"
 	"github.com/wanaware/vulnframework/internal/scan/adapters"
 	"github.com/wanaware/vulnframework/internal/scan/runner"
+	"github.com/wanaware/vulnframework/internal/score"
 	"github.com/wanaware/vulnframework/internal/store"
+	"github.com/wanaware/vulnframework/internal/triage"
 )
 
 func main() {
@@ -47,6 +52,23 @@ func run() error {
 		leaseFor   = flag.Duration("lease", 30*time.Minute, "remediation lease duration (VM-AD §6.2)")
 		sweepEvery = flag.Duration("lease-sweep", time.Minute, "lease sweep interval")
 		migrate    = flag.Bool("migrate", false, "apply pending migrations and exit")
+
+		postPass   = flag.Bool("post-sweep", true, "after the sweep, enrich, triage, score and route each scanned repository")
+		calPath    = flag.String("calibration", "config/calibration.yaml", "path to calibration.yaml")
+		policyPath = flag.String("policy", "config/policy.yaml", "path to policy.yaml")
+		// No defaults, as in internal/feed: a deployment must not acquire a
+		// third-party dependency by omission. Unset, scores name KEV and EPSS
+		// as unavailable rather than scoring them as zero.
+		kevURL  = flag.String("kev-url", "", "CISA KEV catalogue URL; empty leaves KEV unavailable")
+		epssURL = flag.String("epss-url", "", "FIRST EPSS snapshot URL (.csv.gz); empty leaves EPSS unavailable")
+		// AI triage sends finding metadata to the Anthropic API, so it is off
+		// unless a model is named here AND ANTHROPIC_API_KEY is set.
+		triageModel  = flag.String("triage-model", "", "model for AI triage narratives; empty disables AI triage")
+		triageTokens = flag.Int("triage-max-tokens", 8192, "response token bound for AI triage")
+		// Which modules this organisation owns (VM-F-601). Without it no
+		// finding is first-party, so none is deferred to its owner and no
+		// wave forms.
+		fpPath = flag.String("firstparty", "", "path to the first-party module registry; empty means none")
 	)
 	flag.Parse()
 
@@ -86,6 +108,17 @@ func run() error {
 		return err
 	}
 
+	var owners *firstparty.Registry
+	if *fpPath != "" {
+		raw, err := os.ReadFile(*fpPath)
+		if err != nil {
+			return fmt.Errorf("reading %s: %w", *fpPath, err)
+		}
+		if owners, err = firstparty.ParseRegistry(raw); err != nil {
+			return fmt.Errorf("parsing %s: %w", *fpPath, err)
+		}
+	}
+
 	toolVersions := map[string]string{}
 	for _, name := range lock.Names() {
 		toolVersions[name] = lock.MustVersion(name)
@@ -107,6 +140,7 @@ func run() error {
 		ScannerImage:       lock.Image,
 		ToolVersions:       toolVersions,
 		LeaseDuration:      *leaseFor,
+		FirstParty:         owners,
 	})
 
 	// The lease sweeper runs alongside the sweep. It is the only thing
@@ -115,6 +149,40 @@ func run() error {
 	go o.RunLeaseSweeper(ctx, *sweepEvery, func(err error) {
 		log.Error("lease sweep", "error", err)
 	})
+
+	// Loaded before the sweep so a bad configuration fails before any
+	// scanning rather than after it.
+	var pass *postSweep
+	if *postPass {
+		cal, err := score.LoadCalibration(*calPath)
+		if err != nil {
+			return err
+		}
+		pol, err := policy.LoadConfig(*policyPath)
+		if err != nil {
+			return err
+		}
+		windows, err := cal.SLAWindows()
+		if err != nil {
+			return err
+		}
+		// The windows the interface reports are calibration.yaml's; SLA
+		// positions must be computed against the same ones.
+		o.Config.SLAWindows = windows
+		pass = &postSweep{
+			Orch: o, Feeds: feeds(*kevURL, *epssURL), Triager: triager(*triageModel, *triageTokens),
+			Scorer: score.New(cal), Policy: policy.New(pol),
+			View: storeView{ctx: ctx, st: st, registry: owners, log: log}, Log: log,
+		}
+		if pass.Triager.Unavailable != "" {
+			log.Warn("AI triage is off; findings are scored and routed without a narrative",
+				"reason", pass.Triager.Unavailable)
+		}
+		if len(pass.Feeds.Sources) < 2 {
+			log.Warn("exploitation feeds not fully configured; scores will name the missing inputs",
+				"kev", *kevURL != "", "epss", *epssURL != "")
+		}
+	}
 
 	repos, err := registry(ctx, st)
 	if err != nil {
@@ -129,7 +197,23 @@ func run() error {
 		return err
 	}
 
-	encoded, err := json.MarshalIndent(stats, "", "  ")
+	output := struct {
+		Sweep      orchestrator.RunStats        `json:"sweep"`
+		PostSweep  *PostSweepStats              `json:"post_sweep,omitempty"`
+		Recoveries []orchestrator.RecoveryEvent `json:"recoveries,omitempty"`
+	}{Sweep: stats}
+	if pass != nil {
+		post, err := pass.Run(ctx, stats.RunID, repos)
+		if err != nil {
+			return fmt.Errorf("post-sweep pass for %s: %w", stats.RunID, err)
+		}
+		output.PostSweep = &post
+	}
+	// Recovery must be loud: a feed outage during enrichment is recorded
+	// here, and a record nobody prints is a silent one.
+	output.Recoveries = o.Recovery.Events()
+
+	encoded, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -166,6 +250,41 @@ func registry(ctx context.Context, st *store.Postgres) ([]store.Repo, error) {
 		out = append(out, r)
 	}
 	return out, nil
+}
+
+// feeds builds the exploitation-intelligence sources that have a URL. One
+// client is shared so each catalogue is downloaded once per run.
+func feeds(kevURL, epssURL string) feed.Multi {
+	client := newFeedClient()
+	var m feed.Multi
+	if kevURL != "" {
+		m.Sources = append(m.Sources, &feed.KEVSource{URL: kevURL, HTTP: client})
+	}
+	if epssURL != "" {
+		m.Sources = append(m.Sources, &feed.EPSSSource{URL: epssURL, HTTP: client})
+	}
+	return m
+}
+
+// triager returns the live triager when AI triage is enabled and a key is
+// present, and otherwise one that says which of the two is missing. Either
+// way the pass scores and routes.
+func triager(model string, maxTokens int) *triage.Triager {
+	cache := triage.NewMemoryCache()
+	switch {
+	case model == "":
+		return &triage.Triager{Cache: cache, Unavailable: "AI triage is not enabled (-triage-model is not set)"}
+	case os.Getenv("ANTHROPIC_API_KEY") == "":
+		return &triage.Triager{Cache: cache, Unavailable: "AI triage is enabled but ANTHROPIC_API_KEY is not set"}
+	}
+	return &triage.Triager{
+		Cache: cache, Model: model,
+		Client: &triage.HTTPClient{
+			Model: model, MaxTokens: maxTokens,
+			// Read at request time, never stored in a field or logged.
+			Credential: func() (string, error) { return os.Getenv("ANTHROPIC_API_KEY"), nil },
+		},
+	}
 }
 
 func lastPath(repo string) string {

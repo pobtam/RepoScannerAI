@@ -137,6 +137,7 @@ func (o *Orchestrator) SyncFleet(ctx context.Context, app gh.App) (FleetSyncStat
 			Archived:     r.Archived,
 			Codeowners:   r.Codeowners,
 			HasTestSuite: existing.HasTestSuite,
+			HasLockfile:  existing.HasLockfile,
 			Tier:         existing.Tier,
 		}
 		if repo.Tier == 0 {

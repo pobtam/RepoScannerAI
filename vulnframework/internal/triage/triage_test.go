@@ -554,3 +554,35 @@ func TestSecretFindingSendsNoValue(t *testing.T) {
 		t.Errorf("file = %q, want %q — the location is what triage needs", it.File, file)
 	}
 }
+
+// An unavailable triager is how a deployment with no credential still scores
+// and routes: it calls nothing, invents nothing, and says why.
+func TestUnavailableTriagerCallsNothingAndSaysWhy(t *testing.T) {
+	cache := triage.NewMemoryCache()
+	cachedAt := time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)
+	cached := model.Triage{Description: "from an earlier run", TriagedAt: &cachedAt, Model: "m"}
+	if err := cache.Put(context.Background(), "fp0001", cached); err != nil {
+		t.Fatal(err)
+	}
+
+	tr := &triage.Triager{Cache: cache, Unavailable: "no ANTHROPIC_API_KEY"}
+	got, stats, err := tr.Run(context.Background(), profile(), items(3))
+	if err != nil {
+		t.Fatalf("an unavailable triager must not fail the run: %v", err)
+	}
+	if !reflect.DeepEqual(got, map[string]model.Triage{"fp0001": cached}) {
+		t.Errorf("verdicts = %+v; want only the cached one, and nothing fabricated", got)
+	}
+	if stats.Unavailable != "no ANTHROPIC_API_KEY" || stats.Requested != 0 || stats.Batches != 0 {
+		t.Errorf("stats = %+v; want the reason, and no request made", stats)
+	}
+	if !reflect.DeepEqual(stats.Unresolved, []string{"fp0000", "fp0002"}) {
+		t.Errorf("unresolved = %v, want the two uncached findings", stats.Unresolved)
+	}
+}
+
+func TestTriagerWithNoClientAndNoReasonIsRefused(t *testing.T) {
+	if _, _, err := (&triage.Triager{}).Run(context.Background(), profile(), items(1)); err == nil {
+		t.Error("a triager with no client and no stated reason ran; it must refuse rather than guess")
+	}
+}

@@ -50,6 +50,12 @@ type Config struct {
 	// CLEARS when the feeds are wired.
 	UnavailableScoringInputs []string
 
+	// ScoringInputsFromStore derives the unavailable inputs from the store on
+	// each request instead of taking UnavailableScoringInputs as given. A
+	// real deployment sets it: whether the feeds answer is a fact about what
+	// the orchestrator has done, which the server cannot know at startup.
+	ScoringInputsFromStore bool
+
 	// Demo marks a server serving seeded demonstration data. Surfaced in
 	// /v1/health so a reader can never mistake the demo for a fleet.
 	Demo bool
@@ -96,6 +102,15 @@ func New(cfg Config) (*Server, error) {
 
 	gen := report.NewGenerator(cfg.Store, cfg.Calibration)
 	gen.UnavailableScoringInputs = cfg.UnavailableScoringInputs
+	if cfg.ScoringInputsFromStore {
+		gen.ScoringInputs = func(ctx context.Context) ([]string, error) {
+			f, err := cfg.Store.IntelFreshness(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return score.UnavailableFrom(f.KEV, f.EPSS), nil
+		}
+	}
 	gen.Clock = cfg.Clock
 
 	s := &Server{
@@ -343,7 +358,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	// exploitation feeds scores every finding from three of five inputs, and
 	// the interface has to be able to say so at the top of the page rather
 	// than leaving the reader to infer it from an absent field.
-	h.Degraded = append(h.Degraded, s.cfg.UnavailableScoringInputs...)
+	h.Degraded = append(h.Degraded, s.scoringDegradation(r.Context())...)
 	if !s.cfg.Calibration.StaticAnalysis.Calibrated {
 		h.Degraded = append(h.Degraded, "static-analysis thresholds are uncalibrated (VM-OQ-06)")
 	}
@@ -351,6 +366,34 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		h.Degraded = append(h.Degraded, "SLA windows are provisional (VM-OQ-02)")
 	}
 	s.write(w, r, http.StatusOK, h)
+}
+
+// staleFeedAfter is when a feed's last answer is old enough to name. Longer
+// than a weekly sweep's gap, so a healthy weekly deployment is not flagged.
+const staleFeedAfter = 8 * 24 * time.Hour
+
+// scoringDegradation names the scoring inputs the deployment lacks.
+func (s *Server) scoringDegradation(ctx context.Context) []string {
+	if !s.cfg.ScoringInputsFromStore {
+		return s.cfg.UnavailableScoringInputs
+	}
+	f, err := s.cfg.Store.IntelFreshness(ctx)
+	if err != nil {
+		// Unknown is reported as unavailable, never as fine.
+		s.cfg.Logger.Error("reading feed freshness", "error", err)
+		return append(score.UnavailableInputs(), "feed state could not be read from the store")
+	}
+	out := score.UnavailableFrom(f.KEV, f.EPSS)
+	now := s.now()
+	for _, feed := range []struct {
+		name string
+		at   time.Time
+	}{{"KEV (CISA known-exploited)", f.KEV}, {"EPSS (exploit prediction)", f.EPSS}} {
+		if !feed.at.IsZero() && now.Sub(feed.at) > staleFeedAfter {
+			out = append(out, fmt.Sprintf("%s last answered %d days ago", feed.name, int(now.Sub(feed.at).Hours()/24)))
+		}
+	}
+	return out
 }
 
 func backendName(s store.Store) string {
