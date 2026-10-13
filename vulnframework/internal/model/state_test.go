@@ -80,6 +80,24 @@ var legalTransitions = []struct {
 	// mechanism can ever move the finding again. It is the only edge out of
 	// PR_OPEN that does not depend on the pull request being identifiable.
 	{model.PROpen, model.Triaged, model.ActorOrchestrator},
+
+	// Amendment, 2026-10-13 — secrets a repository allowlists, and secrets
+	// that leave the files (decisions on the real-repos branch; not yet
+	// written into VM-AD §6.1).
+	//
+	// An allowlisted secret is a suppression PROPOSAL awaiting a human, not a
+	// verification: nothing was fixed. It returns when the allowlist stops
+	// hiding it, and escalates again if nobody reviews it in time (the
+	// orchestrator's second authorisation on FPCandidate -> NeedsHuman is
+	// tested separately). A secret that left the files verifies only when a
+	// human attests rotation — removal is not remediation (VM-F-856).
+	{model.Detected, model.FPCandidate, model.ActorScanWorker},
+	{model.NeedsHuman, model.FPCandidate, model.ActorScanWorker},
+	{model.Regressed, model.FPCandidate, model.ActorScanWorker},
+	{model.FPCandidate, model.NeedsHuman, model.ActorScanWorker},
+	{model.Suppressed, model.NeedsHuman, model.ActorScanWorker},
+	{model.NeedsHuman, model.Suppressed, model.ActorHuman},
+	{model.FPCandidate, model.Verified, model.ActorHuman},
 }
 
 func TestEveryNormativeTransitionIsAccepted(t *testing.T) {
@@ -583,5 +601,44 @@ func TestTheLeaseBoundStateHasExactlyOneWayIn(t *testing.T) {
 	}
 	if want, ok := model.ActorFor(model.Triaged, model.AutoRemediating); !ok || want != model.ActorOrchestrator {
 		t.Errorf("the dispatch edge's actor = %q, want orchestrator", want)
+	}
+}
+
+// The second authorisations, and the human rotation attestation, are what the
+// amendment above adds beyond edges.
+func TestAllowlistAndRotationAuthorisations(t *testing.T) {
+	// Triage nominates; the scanner proposes from an allowlist. Both may.
+	for _, a := range []model.Actor{model.ActorTriage, model.ActorScanWorker} {
+		if err := model.ValidateTransition(model.Triaged, model.FPCandidate, ctx(a)); err != nil {
+			t.Errorf("TRIAGED -> FALSE_POSITIVE_CANDIDATE by %s: %v", a, err)
+		}
+	}
+	// The orchestrator escalates an overdue proposal; the scanner withdraws one.
+	for _, a := range []model.Actor{model.ActorOrchestrator, model.ActorScanWorker} {
+		if err := model.ValidateTransition(model.FPCandidate, model.NeedsHuman, ctx(a)); err != nil {
+			t.Errorf("FALSE_POSITIVE_CANDIDATE -> NEEDS_HUMAN by %s: %v", a, err)
+		}
+	}
+	// Nobody else.
+	if err := model.ValidateTransition(model.Triaged, model.FPCandidate, ctx(model.ActorWorker)); err == nil {
+		t.Error("a remediation worker proposed a suppression")
+	}
+
+	// Rotation: a human attestation is evidence for VERIFIED without a scan…
+	human := ctx(model.ActorHuman)
+	human.RotationConfirmedBy = "pat"
+	for _, from := range []model.State{model.NeedsHuman, model.FPCandidate, model.Triaged} {
+		if err := model.ValidateTransition(from, model.Verified, human); err != nil {
+			t.Errorf("%s -> VERIFIED on attested rotation: %v", from, err)
+		}
+	}
+	// …and only a human's, and only when it is stated.
+	machine := ctx(model.ActorScanWorker)
+	machine.RotationConfirmedBy = "pat"
+	if err := model.ValidateTransition(model.NeedsHuman, model.Verified, machine); err == nil {
+		t.Error("a scanner verified a secret by claiming a rotation")
+	}
+	if err := model.ValidateTransition(model.NeedsHuman, model.Verified, ctx(model.ActorHuman)); err == nil {
+		t.Error("a human verified with neither a scan nor an attested rotation")
 	}
 }

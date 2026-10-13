@@ -343,6 +343,10 @@ func (p *Postgres) UpsertObservations(ctx context.Context, runID, repo string, r
 		if _, err := tx.ExecContext(ctx, qTouchFinding, now, runID, fp); err != nil {
 			return stats, fmt.Errorf("store: touch finding %s: %w", fp, err)
 		}
+		// Seen again: whatever removal was recorded is no longer true.
+		if _, err := tx.ExecContext(ctx, qClearRemoval, fp); err != nil {
+			return stats, fmt.Errorf("store: clearing removal for %s: %w", fp, err)
+		}
 
 		source := SourceOf(fp, runID, now, raw)
 		encoded, err := json.Marshal(source)
@@ -439,6 +443,12 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 			}
 			stats.Verified++
 			continue
+		}
+		if a.SecretRemoved {
+			if _, err := tx.ExecContext(ctx, qRecordRemoval, a.Fingerprint, runID, now); err != nil {
+				return stats, fmt.Errorf("store: recording removal of %s: %w", a.Fingerprint, err)
+			}
+			stats.SecretsRemoved++
 		}
 		if _, err := tx.ExecContext(ctx, qMarkNotReobserved,
 			a.NotReobserved, nullString(a.GapRunID), a.Fingerprint); err != nil {
@@ -608,6 +618,14 @@ func (p *Postgres) queryFindings(ctx context.Context, query string, args ...any)
 		}
 		for i := range out {
 			ApplyIntelToFinding(&out[i], intel)
+		}
+	}
+
+	// Proposals and removals, joined in the same way: they live outside the
+	// document, which every scan rebuilds.
+	if len(out) > 0 {
+		if err := p.applySecretReviews(ctx, out); err != nil {
+			return nil, err
 		}
 	}
 
@@ -2085,4 +2103,297 @@ func (p *Postgres) scanDeps(ctx context.Context, query string, args ...any) ([]M
 		out = append(out, d)
 	}
 	return out, rows.Err()
+}
+
+// applySecretReviews joins suppression proposals and secret removals onto a
+// page of findings.
+func (p *Postgres) applySecretReviews(ctx context.Context, out []model.Finding) error {
+	fps := make([]string, 0, len(out))
+	index := map[string]int{}
+	for i := range out {
+		if out[i].Category == model.CategorySecret {
+			fps = append(fps, out[i].Fingerprint)
+			index[out[i].Fingerprint] = i
+		}
+	}
+	if len(fps) == 0 {
+		return nil
+	}
+	proposals, err := proposalsFor(ctx, p.db, fps)
+	if err != nil {
+		return err
+	}
+	for fp, prop := range proposals {
+		prop := prop
+		out[index[fp]].SuppressionProposal = &prop
+	}
+	rows, err := p.db.QueryContext(ctx, qRemovalsFor, pgTextArray(fps))
+	if err != nil {
+		return fmt.Errorf("store: reading secret removals: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var fp string
+		var r model.SecretRemoval
+		if err := rows.Scan(&fp, &r.Run, &r.At); err != nil {
+			return err
+		}
+		r.At = r.At.UTC()
+		out[index[fp]].RemovedUnrotated = &r
+	}
+	return rows.Err()
+}
+
+type querier interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+func proposalsFor(ctx context.Context, q querier, fps []string) (map[string]model.SuppressionProposal, error) {
+	rows, err := q.QueryContext(ctx, qProposalsFor, pgTextArray(fps))
+	if err != nil {
+		return nil, fmt.Errorf("store: reading suppression proposals: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]model.SuppressionProposal{}
+	for rows.Next() {
+		var (
+			fp                                string
+			pr                                model.SuppressionProposal
+			mech, status                      string
+			sha, desc, decidedBy, withdrawnRn sql.NullString
+			escalated, decided, withdrawn     sql.NullTime
+		)
+		if err := rows.Scan(&fp, &mech, &pr.Path, &sha, &desc, &status, &pr.ProposedRun, &pr.ProposedAt,
+			&escalated, &decidedBy, &decided, &withdrawnRn, &withdrawn); err != nil {
+			return nil, err
+		}
+		pr.Mechanism, pr.Status = model.AllowlistMechanism(mech), model.ProposalStatus(status)
+		pr.ConfigSHA256, pr.Description = sha.String, desc.String
+		pr.ProposedAt = pr.ProposedAt.UTC()
+		pr.EscalatedAt = utcPtr(escalated)
+		pr.DecidedBy, pr.DecidedAt = decidedBy.String, utcPtr(decided)
+		pr.WithdrawnRun, pr.WithdrawnAt = withdrawnRn.String, utcPtr(withdrawn)
+		out[fp] = pr
+	}
+	return out, rows.Err()
+}
+
+func utcPtr(t sql.NullTime) *time.Time {
+	if !t.Valid {
+		return nil
+	}
+	u := t.Time.UTC()
+	return &u
+}
+
+// ApplyAllowlist records one run's allowlist evidence (see Store).
+func (p *Postgres) ApplyAllowlist(ctx context.Context, runID, repo string, allowlisted map[string]model.Allowlist, observed []string) (AllowlistStats, error) {
+	var stats AllowlistStats
+	seen := map[string]bool{}
+	fps := make([]string, 0, len(allowlisted)+len(observed))
+	for _, fp := range observed {
+		seen[fp] = true
+		fps = append(fps, fp)
+	}
+	for fp := range allowlisted {
+		fps = append(fps, fp)
+	}
+	if len(fps) == 0 {
+		return stats, nil
+	}
+
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return stats, fmt.Errorf("store: begin allowlist: %w", err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, qSecretStates, repo, pgTextArray(fps))
+	if err != nil {
+		return stats, fmt.Errorf("store: reading secret states: %w", err)
+	}
+	states := map[string]model.State{}
+	for rows.Next() {
+		var fp, state string
+		if err := rows.Scan(&fp, &state); err != nil {
+			rows.Close()
+			return stats, err
+		}
+		states[fp] = model.State(state)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return stats, err
+	}
+	proposals, err := proposalsFor(ctx, tx, fps)
+	if err != nil {
+		return stats, err
+	}
+
+	var in []AllowlistInput
+	for fp, state := range states {
+		i := AllowlistInput{Fingerprint: fp, State: state, Observed: seen[fp]}
+		if a, ok := allowlisted[fp]; ok {
+			i.Allowlisted = &a
+		}
+		if pr, ok := proposals[fp]; ok {
+			i.Proposal = &pr
+		}
+		in = append(in, i)
+	}
+	sort.Slice(in, func(i, j int) bool { return in[i].Fingerprint < in[j].Fingerprint })
+
+	now := p.clock()
+	for _, a := range PlanAllowlist(in) {
+		switch {
+		case a.Propose != nil:
+			if a.To != "" {
+				if err := transitionTx(ctx, tx, a.Fingerprint, states[a.Fingerprint], a.To, model.TransitionContext{
+					Actor: model.ActorScanWorker, Cause: ProposalCause(*a.Propose, runID), At: now,
+				}); err != nil {
+					return stats, err
+				}
+			}
+			if _, err := tx.ExecContext(ctx, qUpsertProposal, a.Fingerprint, string(a.Propose.Mechanism),
+				a.Propose.Path, nullString(a.Propose.ConfigSHA256), nullString(a.Propose.Description),
+				runID, now); err != nil {
+				return stats, fmt.Errorf("store: recording proposal for %s: %w", a.Fingerprint, err)
+			}
+			stats.Proposed++
+		case a.Withdraw:
+			if a.To != "" {
+				if err := transitionTx(ctx, tx, a.Fingerprint, states[a.Fingerprint], a.To, model.TransitionContext{
+					Actor: model.ActorScanWorker, Cause: WithdrawalCause(proposals[a.Fingerprint], runID), At: now,
+				}); err != nil {
+					return stats, err
+				}
+				if _, err := tx.ExecContext(ctx, qClearResolved, a.Fingerprint); err != nil {
+					return stats, err
+				}
+			}
+			if _, err := tx.ExecContext(ctx, qWithdrawProposal, a.Fingerprint, runID, now); err != nil {
+				return stats, err
+			}
+			stats.Withdrawn++
+		}
+	}
+	return stats, tx.Commit()
+}
+
+// lockedProposal reads a finding's state and proposal inside a transaction.
+func lockedProposal(ctx context.Context, tx *sql.Tx, fp string) (model.State, model.Category, *model.SuppressionProposal, error) {
+	var state, category string
+	err := tx.QueryRowContext(ctx, `SELECT state, category FROM findings WHERE fingerprint = $1 FOR UPDATE`, fp).Scan(&state, &category)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", "", nil, fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	if err != nil {
+		return "", "", nil, err
+	}
+	proposals, err := proposalsFor(ctx, tx, []string{fp})
+	if err != nil {
+		return "", "", nil, err
+	}
+	if pr, ok := proposals[fp]; ok {
+		return model.State(state), model.Category(category), &pr, nil
+	}
+	return model.State(state), model.Category(category), nil, nil
+}
+
+// EscalateProposal marks an unreviewed proposal overdue (see Store).
+func (p *Postgres) EscalateProposal(ctx context.Context, fp string, at time.Time, cause string) error {
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	state, _, pr, err := lockedProposal(ctx, tx, fp)
+	if err != nil {
+		return err
+	}
+	if pr == nil || pr.Status != model.ProposalPending {
+		return fmt.Errorf("%w: no pending suppression proposal for %q", ErrNotFound, fp)
+	}
+	if err := transitionTx(ctx, tx, fp, state, model.NeedsHuman, model.TransitionContext{
+		Actor: model.ActorOrchestrator, Cause: cause, At: at,
+	}); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, qEscalateProposal, fp, at); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// DecideSuppression records a human's decision on an open proposal (see Store).
+func (p *Postgres) DecideSuppression(ctx context.Context, fp string, confirm bool, by string, at time.Time) error {
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	state, _, pr, err := lockedProposal(ctx, tx, fp)
+	if err != nil {
+		return err
+	}
+	var current model.SuppressionProposal
+	if pr != nil {
+		current = *pr
+	}
+	if err := decidable(fp, current, pr != nil, by); err != nil {
+		return err
+	}
+	to, cause := decisionTransition(state, current, confirm, by)
+	if to != "" {
+		if err := transitionTx(ctx, tx, fp, state, to, model.TransitionContext{Actor: model.ActorHuman, Cause: cause, At: at}); err != nil {
+			return err
+		}
+		if to == model.Suppressed {
+			if _, err := tx.ExecContext(ctx, `UPDATE findings SET resolved_at = $1 WHERE fingerprint = $2`, at, fp); err != nil {
+				return err
+			}
+		}
+	}
+	status := model.ProposalRejected
+	if confirm {
+		status = model.ProposalConfirmed
+	}
+	if _, err := tx.ExecContext(ctx, qDecideProposal, fp, string(status), by, at); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// ConfirmRotation verifies a removed secret on a human's attestation (see Store).
+func (p *Postgres) ConfirmRotation(ctx context.Context, fp, by string, at time.Time) error {
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	state, category, _, err := lockedProposal(ctx, tx, fp)
+	if err != nil {
+		return err
+	}
+	var r model.SecretRemoval
+	err = tx.QueryRowContext(ctx, `SELECT run_id, removed_at FROM secret_removals WHERE fingerprint = $1`, fp).Scan(&r.Run, &r.At)
+	removed := err == nil
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	if err := rotatable(fp, category, state, removed, by); err != nil {
+		return err
+	}
+	if err := transitionTx(ctx, tx, fp, state, model.Verified, model.TransitionContext{
+		Actor: model.ActorHuman, Cause: RotationCause(by, r), At: at, RotationConfirmedBy: by,
+	}); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, qMarkVerified, at, string(model.VerifiedRotationConfirmed), fp, false, ""); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, qClearRemoval, fp); err != nil {
+		return err
+	}
+	return tx.Commit()
 }

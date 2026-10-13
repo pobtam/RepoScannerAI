@@ -1,0 +1,12 @@
+{
+  "tool": "gitleaks",
+  "tool_version": "v8.30.1",
+  "image": "vulnframework-scanner:v1",
+  "captured_from": "go-api, plus allowlisted.aux/gitleaks.toml as .gitleaks.toml, allowlisted.aux/gitleaksignore as .gitleaksignore, and deploy/bootstrap.env holding a fabricated key behind an inline gitleaks:allow",
+  "aux": {
+    "unfiltered.json": "--config <useDefault only> --ignore-gitleaks-allow",
+    "config-bypass.json": "--config <useDefault only>",
+    "ignore-check.json": "--source <clone>/config/settings.yaml --config <useDefault only> --ignore-gitleaks-allow"
+  },
+  "redacted": true
+}

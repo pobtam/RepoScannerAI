@@ -982,6 +982,23 @@ func TestARotatedSecretFreesItsFile(t *testing.T) {
 		t.Fatalf("reconcile: %v", err)
 	}
 
+	// Gone from the files is not rotated (VM-F-856): the finding stays open
+	// and the file stays off limits until a human says the credential is dead.
+	removed, err := s.GetFinding(ctx, secretFP)
+	if err != nil {
+		t.Fatalf("get finding: %v", err)
+	}
+	if model.PartitionOf(removed.State) == model.PartitionResolved || removed.RemovedUnrotated == nil {
+		t.Fatalf("a secret that merely left the files is %s (removed=%v); it must stay open until rotation is confirmed",
+			removed.State, removed.RemovedUnrotated)
+	}
+	if paths, err := s.SecretPaths(ctx, repo); err != nil || len(paths) != 1 {
+		t.Fatalf("SecretPaths = %v (%v); an unrotated secret's file must stay off limits", paths, err)
+	}
+	if err := s.ConfirmRotation(ctx, secretFP, "pat", time.Now().UTC()); err != nil {
+		t.Fatalf("confirm rotation: %v", err)
+	}
+
 	resolved, err := s.GetFinding(ctx, secretFP)
 	if err != nil {
 		t.Fatalf("get finding: %v", err)

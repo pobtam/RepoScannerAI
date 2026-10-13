@@ -183,6 +183,34 @@ export function RunOverview({ data }: { data: OverviewData }) {
       </Panel>
 
       <Panel
+        title="Secrets awaiting a human"
+        subtitle="none of these is closed until a person decides; decide with ./vfctl.sh finding pending"
+      >
+        <div className="figures">
+          <Figure
+            label="Suppression proposals"
+            value={counts.suppression_proposals_pending}
+            to={`/findings?scope=open&category=secret&state=FALSE_POSITIVE_CANDIDATE`}
+            tone={counts.suppression_proposals_pending > 0 ? 'warn' : undefined}
+            hint="secrets still in the files that a repository allowlist hides. An allowlist anyone with commit access can write is a proposal, not a suppression"
+          />
+          <Figure
+            label="Proposals overdue"
+            value={counts.suppression_proposals_overdue}
+            to={`/findings?scope=open&category=secret&state=NEEDS_HUMAN`}
+            tone={counts.suppression_proposals_overdue > 0 ? 'warn' : undefined}
+            hint="unreviewed past the secret SLA window, and escalated again"
+          />
+          <Figure
+            label="Removed, rotation unconfirmed"
+            value={counts.secrets_removed_rotation_unconfirmed}
+            tone={counts.secrets_removed_rotation_unconfirmed > 0 ? 'warn' : undefined}
+            hint="gone from the files but still in history, and live until rotated. Removal is not remediation (VM-F-856)"
+          />
+        </div>
+      </Panel>
+
+      <Panel
         title="Not fixed, by reason"
         subtitle="'tried and failed' and 'nothing to do' are different states of the world (VM-F-704)"
       >

@@ -2,8 +2,8 @@
   "run": {
     "id": "S-000001",
     "kind": "sweep",
-    "started_at": "2026-08-14T09:00:00Z",
-    "finished_at": "2026-08-14T09:00:00Z",
+    "started_at": "2026-09-08T22:00:00Z",
+    "finished_at": "2026-09-08T22:00:00Z",
     "trigger": "cron",
     "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
     "repos_planned": 6,
@@ -12,8 +12,8 @@
     "partial": false
   },
   "live": false,
-  "snapshot_id": "R-S-000001-23c51c14",
-  "content_hash": "a3fa052a175decb8bf2a92fd385fd1ad7dfd374f5f37fc3ba109ca8ebc04f4b6",
+  "snapshot_id": "R-S-000001-2011a101",
+  "content_hash": "2b56c106326c5a3ccae6b016526198f084053feafe0624aeb54135ad6ce6820d",
   "counts": {
     "total": 16,
     "unresolved": 16,
@@ -45,6 +45,9 @@
       "MAJOR_BUMP_POLICY": 1
     },
     "not_fixed_unexplained": 12,
+    "suppression_proposals_pending": 0,
+    "suppression_proposals_overdue": 0,
+    "secrets_removed_rotation_unconfirmed": 0,
     "sla_not_computed": 0
   },
   "delta": {

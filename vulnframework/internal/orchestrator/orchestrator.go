@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/wanaware/vulnframework/internal/fingerprint"
 	"github.com/wanaware/vulnframework/internal/firstparty"
 	"github.com/wanaware/vulnframework/internal/gh"
 	"github.com/wanaware/vulnframework/internal/model"
@@ -440,6 +441,14 @@ func (o *Orchestrator) record(ctx context.Context, res scan.Result) error {
 		return fmt.Errorf("recording findings for %s: %w", res.Repo, err)
 	}
 
+	// Secrets the repository's own allowlist hid. They were observed — they
+	// are in the files — and the allowlist is a proposal for a human, never a
+	// fix. Recorded after the observations so a new finding exists to
+	// propose against.
+	if err := o.ApplyAllowlist(ctx, res.RunID, res.Repo, findings); err != nil {
+		return fmt.Errorf("recording allowlist evidence for %s: %w", res.Repo, err)
+	}
+
 	scanResult := store.RepoScanResult{
 		RunID: res.RunID, Repo: res.Repo, Outcome: res.Outcome,
 		ToolsOK: res.ToolsOK, ToolsFailed: res.ToolsFailed,
@@ -452,6 +461,73 @@ func (o *Orchestrator) record(ctx context.Context, res scan.Result) error {
 		scanResult.FailureOwner = string(g.Owner)
 	}
 	return o.Store.RecordScanResult(ctx, scanResult)
+}
+
+// ApplyAllowlist splits a scan's secrets into those the ordinary scan reported
+// and those only an allowlist hid, and hands both to the store. Called for
+// every recorded scan result; exported so a caller recording observations
+// itself applies the same step.
+//
+// A secret reported by the ordinary scan is not allowlisted, whatever else
+// says so: the allowlist demonstrably did not hide it.
+func (o *Orchestrator) ApplyAllowlist(ctx context.Context, runID, repo string, findings []model.RawFinding) error {
+	allowlisted := map[string]model.Allowlist{}
+	seen := map[string]bool{}
+	var observed []string
+	for _, f := range findings {
+		if f.Category != model.CategorySecret {
+			continue
+		}
+		fp := fingerprint.Compute(f)
+		if f.Allowlisted != nil {
+			allowlisted[fp] = *f.Allowlisted
+			continue
+		}
+		if !seen[fp] {
+			seen[fp] = true
+			observed = append(observed, fp)
+		}
+	}
+	for fp := range seen {
+		delete(allowlisted, fp)
+	}
+	if len(allowlisted) == 0 && len(observed) == 0 {
+		return nil
+	}
+	_, err := o.Store.ApplyAllowlist(ctx, runID, repo, allowlisted, observed)
+	return err
+}
+
+// EscalateOverdueProposals escalates suppression proposals nobody reviewed
+// within the secret SLA window: back to NEEDS_HUMAN, still decidable, marked
+// overdue. A proposal is a secret someone wants to stop hearing about; one
+// that sits unread is a secret nobody is looking at.
+//
+// The window is the P0 window for the repository's tier — secrets take
+// maximum priority (VM-F-851) — measured from when the proposal was made.
+func (o *Orchestrator) EscalateOverdueProposals(ctx context.Context, repo store.Repo) (int, error) {
+	open, err := o.Store.ListFindings(ctx, store.Query{
+		Scope: store.ScopeOpen, Repo: repo.Name, States: []model.State{model.FPCandidate},
+	})
+	if err != nil {
+		return 0, err
+	}
+	now := o.clock()
+	window := o.SLAWindows().Window(repo.Tier, model.P0)
+	n := 0
+	for _, f := range open {
+		p := f.SuppressionProposal
+		if p == nil || p.Status != model.ProposalPending || now.Sub(p.ProposedAt) <= window {
+			continue
+		}
+		cause := fmt.Sprintf("suppression proposal (allowlisted by %s) unreviewed for %s, past the %s secret SLA window: escalated again",
+			p.Path, now.Sub(p.ProposedAt).Round(time.Hour), window)
+		if err := o.Store.EscalateProposal(ctx, f.Fingerprint, now, cause); err != nil {
+			return n, err
+		}
+		n++
+	}
+	return n, nil
 }
 
 // SweepLeases reverts findings whose remediation claim has lapsed

@@ -5,7 +5,7 @@
  * Editing this file by hand re-creates the drift the generation exists to
  * prevent (UI-ADR-05, VM-UI-F-107).
  *
- * Source: http://127.0.0.1:8099/v1/schema/openapi.json
+ * Source: http://127.0.0.1:8151/v1/schema/openapi.json
  */
 export interface paths {
     "/v1/coverage": {
@@ -1199,9 +1199,12 @@ export interface components {
                 not_reobserved: number;
                 pending_verification: number;
                 resolved: number;
+                secrets_removed_rotation_unconfirmed: number;
                 sla_breached: number;
                 sla_not_computed: number;
                 sla_paused: number;
+                suppression_proposals_overdue: number;
+                suppression_proposals_pending: number;
                 total: number;
                 unresolved: number;
             };

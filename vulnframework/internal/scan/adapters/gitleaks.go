@@ -41,16 +41,36 @@ func (a *Gitleaks) Supports(scan.RepoProfile) bool { return true }
 //
 // History scanning runs on a separate, less frequent schedule (VM-F-262) and is
 // not this invocation.
+//
+// Gitleaks honours the repository's own allowlists — .gitleaks.toml,
+// .gitleaksignore and inline gitleaks:allow comments — and an allowlisted
+// secret simply stops being reported, exactly as a deleted one does. The two
+// must not be confused: one is still in the files, the other is gone, and
+// neither has been rotated. So after the ordinary run, Run looks past the
+// allowlists (see collectAllowlistEvidence) and hands what it finds to
+// Normalize through Aux. If that second look fails, the whole run fails: a
+// secret that read as "removed" when it was only allowlisted would be wrong
+// in the direction that hides it.
 func (a *Gitleaks) Run(ctx context.Context, dir string, opts scan.RunOpts) (scan.RawOutput, error) {
-	res, err := a.Runner.Run(ctx, dir, "gitleaks", "detect",
-		"--no-git", "--report-format", "json", "--report-path", "/dev/stdout", "--redact")
+	res, err := a.Runner.Run(ctx, dir, "gitleaks", gitleaksArgs()...)
 	if err != nil {
 		return scan.RawOutput{}, fmt.Errorf("gitleaks: %w", err)
+	}
+	aux, err := a.collectAllowlistEvidence(ctx, dir)
+	if err != nil {
+		return scan.RawOutput{}, fmt.Errorf("gitleaks: looking past the repository's allowlists: %w", err)
 	}
 	return scan.RawOutput{
 		Tool: a.Name(), ToolVersion: a.Version(), Dir: dir,
 		ExitCode: res.ExitCode, Stdout: res.Stdout, Stderr: res.Stderr,
+		Aux: aux,
 	}, nil
+}
+
+// gitleaksArgs is the ordinary invocation plus any extra flags.
+func gitleaksArgs(extra ...string) []string {
+	return append([]string{"detect",
+		"--no-git", "--report-format", "json", "--report-path", "/dev/stdout", "--redact"}, extra...)
 }
 
 // gitleaksHit mirrors gitleaks' report entry.
@@ -88,13 +108,30 @@ type redactedHit struct {
 	Redacted    bool    `json:"redacted"`
 }
 
-// Normalize converts a gitleaks report into redacted secret findings.
+// Normalize converts a gitleaks report into redacted secret findings, plus a
+// finding marked Allowlisted for each secret only the look past the
+// repository's allowlists found.
 func (a *Gitleaks) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 	var hits []gitleaksHit
 	if err := json.Unmarshal(out.Stdout, &hits); err != nil {
 		return nil, fmt.Errorf("gitleaks: parsing report: %w", err)
 	}
 
+	raw := a.secretFindings(out, hits, nil)
+	allowlisted, err := a.allowlistedFindings(out, hits)
+	if err != nil {
+		return nil, err
+	}
+	raw = append(raw, allowlisted...)
+
+	raw = dedupe(raw)
+	sortFindings(raw)
+	return raw, nil
+}
+
+// secretFindings builds redacted findings from gitleaks hits, each carrying
+// evidence when evidence is non-nil.
+func (a *Gitleaks) secretFindings(out scan.RawOutput, hits []gitleaksHit, evidence func(gitleaksHit, string) *model.Allowlist) []model.RawFinding {
 	var raw []model.RawFinding
 	for _, hit := range hits {
 		file := relPath(hit.File, out.Dir)
@@ -134,9 +171,9 @@ func (a *Gitleaks) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 			ToolVersion: a.Version(),
 			Raw:         mustRaw(safe),
 		})
+		if evidence != nil {
+			raw[len(raw)-1].Allowlisted = evidence(hit, file)
+		}
 	}
-
-	raw = dedupe(raw)
-	sortFindings(raw)
-	return raw, nil
+	return raw
 }

@@ -73,6 +73,12 @@ func pipelineOutput(t *testing.T) []model.Finding {
 	if _, err := s.UpsertObservations(ctx, run.ID, repo.Name, raws); err != nil {
 		t.Fatalf("upsert: %v", err)
 	}
+	// The allowlist step the orchestrator applies to every recorded scan: the
+	// captured fixture has a secret only an inline gitleaks:allow hid.
+	recorder := orchestrator.New(s, orchestrator.NewFakeDispatcher(), orchestrator.NewRateBudget(1), orchestrator.Config{})
+	if err := recorder.ApplyAllowlist(ctx, run.ID, repo.Name, raws); err != nil {
+		t.Fatalf("ApplyAllowlist: %v", err)
+	}
 	if err := s.RecordScanResult(ctx, store.RepoScanResult{
 		RunID: run.ID, Repo: repo.Name, Outcome: model.ScanComplete,
 		ToolsOK: []string{"govulncheck", "gosec", "gitleaks"},
@@ -153,6 +159,8 @@ func pipelineOutput(t *testing.T) []model.Finding {
 		}
 	}
 
+	secretReviewLifecycle(t, s, o, repo, raws)
+
 	all, err := s.ListFindings(ctx, store.Query{Scope: store.ScopeAll})
 	if err != nil {
 		t.Fatalf("ListFindings: %v", err)
@@ -161,6 +169,79 @@ func pipelineOutput(t *testing.T) []model.Finding {
 		t.Fatal("the pipeline produced no findings; the audit would trivially pass")
 	}
 	return all
+}
+
+// secretReviewLifecycle drives the allowlisted secret through every producer
+// of SuppressionProposal and RemovedUnrotated: escalated as overdue by the
+// orchestrator, confirmed by a human, then withdrawn by a second scan that
+// reports it without the allowlist — and that second scan no longer sees a
+// different secret, which is recorded as removed, not verified.
+func secretReviewLifecycle(t *testing.T, s *store.Memory, o *orchestrator.Orchestrator, repo store.Repo, raws []model.RawFinding) {
+	t.Helper()
+	ctx := context.Background()
+
+	var allowlisted *model.RawFinding
+	for i := range raws {
+		if raws[i].Allowlisted != nil && raws[i].Allowlisted.Mechanism == model.AllowlistInline {
+			allowlisted = &raws[i]
+		}
+	}
+	if allowlisted == nil {
+		t.Fatal("the fixtures carry no inline-allowlisted secret; the lifecycle cannot be exercised")
+	}
+	fp := fingerprint.Compute(*allowlisted)
+
+	// Two days on: past the tier-1 secret window, so the proposal escalates.
+	later := runAt.Add(48 * time.Hour)
+	o.Clock = func() time.Time { return later }
+	if n, err := o.EscalateOverdueProposals(ctx, repo); err != nil || n != 1 {
+		t.Fatalf("EscalateOverdueProposals = %d, %v; want the one proposal escalated", n, err)
+	}
+	if err := s.DecideSuppression(ctx, fp, true, "audit-reviewer", later); err != nil {
+		t.Fatalf("DecideSuppression: %v", err)
+	}
+
+	// The second scan: the inline comment is gone, so the secret is reported
+	// normally; one settings.yaml secret has left the files; the other is now
+	// hidden by a .gitleaksignore entry, so it becomes a proposal of its own.
+	run, err := s.CreateRun(ctx, store.KindSweep, "cron", "img@sha256:abc", map[string]string{"gitleaks": "v8.30.1"})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	if err := s.RecordPlan(ctx, []store.PlanEntry{{RunID: run.ID, Repo: repo.Name, State: store.DispatchPlanned}}); err != nil {
+		t.Fatalf("record plan: %v", err)
+	}
+	var second []model.RawFinding
+	for _, r := range raws {
+		switch {
+		case r.Allowlisted != nil && r.File == allowlisted.File:
+			r.Allowlisted = nil
+		case r.Allowlisted != nil && r.Allowlisted.Mechanism == model.AllowlistIgnoreFile:
+			// kept: the ignore entry now hides it
+		case r.Allowlisted != nil:
+			continue
+		case r.Category == model.CategorySecret && r.DetectorRuleID == "generic-api-key":
+			continue
+		case r.Category == model.CategorySecret && r.File == "config/settings.yaml":
+			continue
+		}
+		second = append(second, r)
+	}
+	if _, err := s.UpsertObservations(ctx, run.ID, repo.Name, second); err != nil {
+		t.Fatalf("second upsert: %v", err)
+	}
+	if err := o.ApplyAllowlist(ctx, run.ID, repo.Name, second); err != nil {
+		t.Fatalf("second ApplyAllowlist: %v", err)
+	}
+	if err := s.RecordScanResult(ctx, store.RepoScanResult{
+		RunID: run.ID, Repo: repo.Name, Outcome: model.ScanComplete,
+		ToolsOK: []string{"govulncheck", "gosec", "gitleaks"},
+	}); err != nil {
+		t.Fatalf("second scan result: %v", err)
+	}
+	if _, err := s.Reconcile(ctx, run.ID, repo.Name); err != nil {
+		t.Fatalf("second reconcile: %v", err)
+	}
 }
 
 type auditView struct{}
@@ -189,10 +270,6 @@ var findingExemptions = map[audit.FieldPath]audit.Exemption{
 	"Derived.GapRepoScan": {
 		Producer: "internal/store.Reconcile",
 		Why:      "written only when a scan did not complete; this run completed",
-	},
-	"Derived.NotReobserved": {
-		Producer: "internal/store.Reconcile",
-		Why:      "boolean, written false on a complete scan",
 	},
 	"Derived.SLABreachDays": {
 		Producer: "internal/score.SLA via orchestrator.TriageAndRoute",

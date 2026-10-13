@@ -163,6 +163,9 @@ type ReconcileStats struct {
 	// RetainedUnverified counts findings that would have verified had the scan
 	// succeeded. This is the number VM-F-216 requires reported alongside a gap.
 	RetainedUnverified int
+	// SecretsRemoved counts secrets a complete scan no longer saw, held open
+	// for a human to confirm rotation rather than verified (VM-F-856).
+	SecretsRemoved int
 }
 
 // Query selects findings.
@@ -483,6 +486,24 @@ type Store interface {
 	// no row are OMITTED, never zero-filled: the caller must be able to tell
 	// "not looked up" from "looked up and negligible".
 	IntelFor(ctx context.Context, ids []string) (map[string]Intel, error)
+	// --- Secret reviews: allowlist proposals and removals (VM-F-856) ---
+
+	// ApplyAllowlist records one run's allowlist evidence for a repository's
+	// secrets: allowlisted maps a fingerprint to the evidence that only an
+	// allowlist hid it, and observed lists the secret fingerprints the
+	// ordinary scan reported. Decisions are PlanAllowlist's.
+	ApplyAllowlist(ctx context.Context, runID, repo string, allowlisted map[string]model.Allowlist, observed []string) (AllowlistStats, error)
+	// EscalateProposal moves an unreviewed proposal back to NEEDS_HUMAN and
+	// marks it overdue. It stays decidable.
+	EscalateProposal(ctx context.Context, fp string, at time.Time, cause string) error
+	// DecideSuppression records a human's decision on an open proposal:
+	// confirm suppresses the finding; reject keeps it open and stops the same
+	// allowlist re-proposing it.
+	DecideSuppression(ctx context.Context, fp string, confirm bool, by string, at time.Time) error
+	// ConfirmRotation records a human's attestation that a removed secret was
+	// rotated, and verifies the finding on that evidence.
+	ConfirmRotation(ctx context.Context, fp, by string, at time.Time) error
+
 	// IntelFreshness reports when each feed last answered for any identifier.
 	// It is what lets a deployment-wide statement — "KEV is unavailable" — be
 	// derived from what the store holds rather than asserted at startup.

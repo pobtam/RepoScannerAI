@@ -39,6 +39,8 @@ type Memory struct {
 	remediationPRs map[string]RemediationPR
 	webhook        WebhookHealth
 	intel          map[string]Intel
+	proposals      map[string]model.SuppressionProposal
+	removals       map[string]model.SecretRemoval
 	runTickets     map[string]RunTicket
 	deps           map[string]map[string]ModuleDep
 	ticketOps      []TicketOp
@@ -93,6 +95,8 @@ func NewMemory() *Memory {
 		plan:         map[string]map[string]PlanEntry{},
 		reports:      map[string]Report{},
 		intel:        map[string]Intel{},
+		proposals:    map[string]model.SuppressionProposal{},
+		removals:     map[string]model.SecretRemoval{},
 	}
 }
 
@@ -293,6 +297,8 @@ func (m *Memory) UpsertObservations(_ context.Context, runID, repo string, raws 
 		}
 
 		f := m.findings[fp]
+		// Seen again: whatever removal was recorded is no longer true.
+		delete(m.removals, fp)
 		f.LastSeenAt = now
 		f.LastSeenRun = runID
 		// Observation clears the derived absence flag: the finding is present.
@@ -379,6 +385,12 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 			f.ResidualPossible = a.ResidualDetail != ""
 			stats.Verified++
 			continue
+		}
+		if a.SecretRemoved {
+			if _, ok := m.removals[a.Fingerprint]; !ok {
+				m.removals[a.Fingerprint] = model.SecretRemoval{Run: runID, At: now}
+			}
+			stats.SecretsRemoved++
 		}
 		f.NotReobserved = a.NotReobserved
 		f.GapRunID = a.GapRunID
@@ -817,6 +829,12 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 	// reprojected the finding — so a refresh during an incident would reach
 	// the repositories being scanned and no others.
 	ApplyIntelToFinding(&out, m.intelFor(IntelIDs(out)))
+	if p, ok := m.proposals[f.Fingerprint]; ok {
+		out.SuppressionProposal = &p
+	}
+	if r, ok := m.removals[f.Fingerprint]; ok {
+		out.RemovedUnrotated = &r
+	}
 	return out
 }
 
@@ -1831,4 +1849,145 @@ func sortDeps(in []ModuleDep) {
 		}
 		return in[a].Module < in[b].Module
 	})
+}
+
+// ApplyAllowlist records one run's allowlist evidence (see Store).
+func (m *Memory) ApplyAllowlist(_ context.Context, runID, repo string, allowlisted map[string]model.Allowlist, observed []string) (AllowlistStats, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	seen := map[string]bool{}
+	for _, fp := range observed {
+		seen[fp] = true
+	}
+	var in []AllowlistInput
+	for fp, f := range m.findings {
+		if f.Repo != repo || f.Category != model.CategorySecret {
+			continue
+		}
+		a, isAllowlisted := allowlisted[fp]
+		if !isAllowlisted && !seen[fp] {
+			continue
+		}
+		i := AllowlistInput{Fingerprint: fp, State: f.State, Observed: seen[fp]}
+		if isAllowlisted {
+			i.Allowlisted = &a
+		}
+		if p, ok := m.proposals[fp]; ok {
+			i.Proposal = &p
+		}
+		in = append(in, i)
+	}
+	sort.Slice(in, func(i, j int) bool { return in[i].Fingerprint < in[j].Fingerprint })
+
+	now := m.clock()
+	var stats AllowlistStats
+	for _, a := range PlanAllowlist(in) {
+		f := m.findings[a.Fingerprint]
+		switch {
+		case a.Propose != nil:
+			if a.To != "" {
+				if err := m.transitionLocked(a.Fingerprint, a.To, model.TransitionContext{
+					Actor: model.ActorScanWorker, Cause: ProposalCause(*a.Propose, runID), At: now,
+				}); err != nil {
+					return stats, err
+				}
+			}
+			m.proposals[a.Fingerprint] = model.SuppressionProposal{
+				Allowlist: *a.Propose, Status: model.ProposalPending, ProposedRun: runID, ProposedAt: now,
+			}
+			stats.Proposed++
+		case a.Withdraw:
+			p := m.proposals[a.Fingerprint]
+			if a.To != "" {
+				if err := m.transitionLocked(a.Fingerprint, a.To, model.TransitionContext{
+					Actor: model.ActorScanWorker, Cause: WithdrawalCause(p, runID), At: now,
+				}); err != nil {
+					return stats, err
+				}
+				f.ResolvedAt = nil
+			}
+			at := now
+			p.Status, p.WithdrawnRun, p.WithdrawnAt = model.ProposalWithdrawn, runID, &at
+			m.proposals[a.Fingerprint] = p
+			stats.Withdrawn++
+		}
+	}
+	return stats, nil
+}
+
+// EscalateProposal marks an unreviewed proposal overdue (see Store).
+func (m *Memory) EscalateProposal(_ context.Context, fp string, at time.Time, cause string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p, ok := m.proposals[fp]
+	if !ok || p.Status != model.ProposalPending {
+		return fmt.Errorf("%w: no pending suppression proposal for %q", ErrNotFound, fp)
+	}
+	if err := m.transitionLocked(fp, model.NeedsHuman, model.TransitionContext{
+		Actor: model.ActorOrchestrator, Cause: cause, At: at,
+	}); err != nil {
+		return err
+	}
+	escalated := at
+	p.Status, p.EscalatedAt = model.ProposalOverdue, &escalated
+	m.proposals[fp] = p
+	return nil
+}
+
+// DecideSuppression records a human's decision on an open proposal (see Store).
+func (m *Memory) DecideSuppression(_ context.Context, fp string, confirm bool, by string, at time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, ok := m.findings[fp]
+	if !ok {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	p, ok := m.proposals[fp]
+	if err := decidable(fp, p, ok, by); err != nil {
+		return err
+	}
+	to, cause := decisionTransition(f.State, p, confirm, by)
+	if to != "" {
+		if err := m.transitionLocked(fp, to, model.TransitionContext{Actor: model.ActorHuman, Cause: cause, At: at}); err != nil {
+			return err
+		}
+		if to == model.Suppressed {
+			resolved := at
+			f.ResolvedAt = &resolved
+		}
+	}
+	decided := at
+	p.DecidedBy, p.DecidedAt = by, &decided
+	p.Status = model.ProposalRejected
+	if confirm {
+		p.Status = model.ProposalConfirmed
+	}
+	m.proposals[fp] = p
+	return nil
+}
+
+// ConfirmRotation verifies a removed secret on a human's attestation (see Store).
+func (m *Memory) ConfirmRotation(_ context.Context, fp, by string, at time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f, ok := m.findings[fp]
+	if !ok {
+		return fmt.Errorf("%w: finding %q", ErrNotFound, fp)
+	}
+	r, removed := m.removals[fp]
+	if err := rotatable(fp, f.Category, f.State, removed, by); err != nil {
+		return err
+	}
+	if err := m.transitionLocked(fp, model.Verified, model.TransitionContext{
+		Actor: model.ActorHuman, Cause: RotationCause(by, r), At: at, RotationConfirmedBy: by,
+	}); err != nil {
+		return err
+	}
+	resolved := at
+	f.ResolvedAt = &resolved
+	f.VerifiedReason = model.VerifiedRotationConfirmed
+	f.NotReobserved, f.GapRunID = false, ""
+	delete(m.removals, fp)
+	return nil
 }

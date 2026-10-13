@@ -66,7 +66,7 @@ func realAdapterOutput(t *testing.T) []model.RawFinding {
 			}
 			raws, err := c.norm(scan.RawOutput{
 				Tool: c.tool, ToolVersion: c.version, Repo: "org/wanaware-api",
-				Dir: "/work/repo", Stdout: body,
+				Dir: "/tmp/scan-7f21a/clone", Stdout: body, Aux: fixtureAux(t, c.tool, path),
 			})
 			if err != nil {
 				// A parse failure here is itself a finding worth surfacing,
@@ -271,4 +271,27 @@ func TestTheSchemaEnumerationReachesNestedFields(t *testing.T) {
 				strings.TrimSpace(mustNot))
 		}
 	}
+}
+
+// fixtureAux replays a capture's extra outputs where it recorded any: the
+// gitleaks looks past a repository's allowlists, which are the only producer
+// of RawFinding.Allowlisted.
+func fixtureAux(t *testing.T, tool, path string) map[string][]byte {
+	t.Helper()
+	dir := strings.TrimSuffix(path, ".json") + ".aux"
+	if tool != "gitleaks" {
+		return nil
+	}
+	if _, err := os.Stat(dir); err != nil {
+		return nil
+	}
+	read := func(name string) []byte {
+		b, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		return b
+	}
+	return adapters.GitleaksFixtureAux(read("unfiltered.json"), read("config-bypass.json"),
+		read("ignore-check.json"), read("gitleaks.toml"), read("gitleaksignore"))
 }

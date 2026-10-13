@@ -205,6 +205,13 @@ func (o *Orchestrator) applyDecision(ctx context.Context, f model.Finding, d pol
 		// TRIAGED, never saw the work routed to it at all.
 		return o.recordReason(ctx, f, d)
 	case policy.OpenTicket, policy.EscalateP0:
+		if f.State == model.FPCandidate {
+			// A candidate awaits a human: a suppression proposal, or a triage
+			// nomination. Routing must not undo it every pass — only a human,
+			// a withdrawn allowlist or an overdue escalation moves it. The
+			// decision is still recorded.
+			return o.recordReason(ctx, f, d)
+		}
 		to = model.NeedsHuman
 	case policy.DeferUpstream:
 		to = model.BlockedUpstream

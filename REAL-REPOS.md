@@ -122,7 +122,8 @@ acts on the routing:
 - One routed to `auto_remediate` stays **TRIAGED**, with the reason recorded.
 
 **Every secret finding is routed to `escalate_p0`.** No configuration can change
-this; see section 9 for known-fake test credentials.
+this. Secrets are also never closed by disappearing. Section 9 covers known-fake
+test credentials, allowlists, and secrets removed from the files.
 
 **AI triage narratives are off by default.** Findings are still scored and
 routed. The sweep record and each finding's Triage panel say a narrative is
@@ -244,13 +245,16 @@ Never add it to a shell profile. When it is on, the interface prints a
 | AI triage narratives | **off** unless you opt in (section 4). |
 | Issuing and recording immutable per-run reports | **not done** on this path. The interface generates report views on demand. |
 
-## 9. Known-fake secrets in test fixtures
+## 9. Secrets: known fakes, allowlists, and removed secrets
 
-Secrets always escalate to P0. Unlike other findings, that cannot be relaxed by
-configuration. So a repository whose tests contain fabricated credentials is
-reported every sweep. The framework has no "mark as false positive" command
-yet, so silence them **in the repository**, with gitleaks' own config. Commit a
-`.gitleaks.toml` at the repository root:
+Secrets always escalate to P0, and no configuration can relax that. Nothing
+closes a secret finding automatically: only a human, using the commands below.
+
+### Known-fake secrets: allowlist them, then confirm
+
+A repository whose tests contain fabricated credentials is reported every
+sweep. Tell gitleaks about them **in the repository**, with its own
+configuration. Commit a `.gitleaks.toml` at the repository root:
 
 ```toml
 # Fabricated credentials used by tests. Real ones anywhere else are still reported.
@@ -265,17 +269,67 @@ paths = [
 ]
 ```
 
-This was checked against the scanner image. On this project's own code it
-removed all 145 fixture hits, and a credential planted outside those paths
-was still reported. Keep the paths narrow: anything allowlisted is invisible,
-including a real key that someone later pastes into a test.
+A `.gitleaksignore` file of finding fingerprints and an inline
+`gitleaks:allow` comment work too.
 
-For individual findings rather than whole paths, gitleaks also reads a
-`.gitleaksignore` file of finding fingerprints at the repository root.
+**An allowlist is a proposal, not a fix.** Anyone with commit access can write
+one, so allowlisting a secret does not close it. Each sweep also looks past
+your allowlists and records which secrets are still in the files but hidden.
+It never stores the secrets themselves. Each one becomes a **suppression
+proposal**, in state FALSE_POSITIVE_CANDIDATE, recording:
 
-After the change is in your clone, the next **complete** scan of that
-repository no longer observes those findings and moves them to VERIFIED. They
-are resolved, not deleted, so their history stays visible.
+- which mechanism hid it (`.gitleaks.toml`, `.gitleaksignore` or inline);
+- which file holds that decision, and a hash of that file's content;
+- the allowlist's description, if it has one;
+- the run that first saw it.
+
+Proposals are counted on the overview (**Secrets awaiting a human**) and in
+every report, never only in the finding list. Review them with:
+
+```sh
+./vfctl.sh finding pending                              # everything waiting on a human
+./vfctl.sh finding confirm-suppression <fingerprint>    # agree: the finding becomes SUPPRESSED
+./vfctl.sh finding reject-suppression <fingerprint>     # disagree: it stays open
+```
+
+Each decision is recorded against your login, or against `-as NAME`. The
+finding's timeline shows every step with its cause: proposed, escalated,
+decided, withdrawn.
+
+What happens next:
+
+- **Nobody reviews it in time:** once a proposal is older than the secret
+  window (the P0 SLA window for the repository's tier, from
+  `config/calibration.yaml`), the next sweep moves it back to NEEDS_HUMAN as
+  **overdue**. It can still be confirmed or rejected.
+- **The allowlist entry is removed, or stops matching:** the secret comes back
+  to NEEDS_HUMAN. That applies to confirmed suppressions too.
+- **The same secret appears in a file the allowlist doesn't cover:** that file
+  is reported as a new finding.
+- **You reject a proposal:** it isn't proposed again while the allowlist
+  configuration is unchanged. Changing the configuration makes a new proposal.
+
+This was checked against the scanner image, with all three mechanisms. On this
+project's own code, the `.gitleaks.toml` above hid all 145 fixture hits from
+the ordinary scan, and a credential planted outside those paths was still
+reported. Keep the paths narrow: anything allowlisted is invisible to the
+ordinary scan, including a real key that someone later pastes into a test.
+
+### Removed secrets stay open until you confirm rotation
+
+If a complete scan no longer finds a secret and no allowlist explains it, the
+finding stays open, marked **removed, rotation unconfirmed**. The sweep scans
+only the current files, not git history, so a deleted secret is still in your
+history and, until rotated, still valid. Removal is not remediation (VM-F-856).
+These are counted on the overview and in reports too. Once the credential has
+really been rotated:
+
+```sh
+./vfctl.sh finding confirm-rotation <fingerprint>
+```
+
+That closes the finding as VERIFIED (`rotation_confirmed`), recorded against
+you. If the secret reappears before that, the "removed" mark is cleared.
 
 ## 10. Cleaning up
 

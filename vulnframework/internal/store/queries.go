@@ -461,3 +461,38 @@ const qIntelFreshness = `
 SELECT max(fetched_at) FILTER (WHERE kev_available),
        max(fetched_at) FILTER (WHERE epss_available)
 FROM vuln_intel`
+
+// Secret reviews (0015).
+const (
+	qClearRemoval  = `DELETE FROM secret_removals WHERE fingerprint = $1`
+	qRecordRemoval = `
+INSERT INTO secret_removals (fingerprint, run_id, removed_at) VALUES ($1, $2, $3)
+ON CONFLICT (fingerprint) DO NOTHING`
+	qRemovalsFor  = `SELECT fingerprint, run_id, removed_at FROM secret_removals WHERE fingerprint = ANY($1)`
+	qProposalsFor = `
+SELECT fingerprint, mechanism, path, config_sha256, description, status, proposed_run, proposed_at,
+       escalated_at, decided_by, decided_at, withdrawn_run, withdrawn_at
+FROM suppression_proposals WHERE fingerprint = ANY($1)`
+	qSecretStates = `
+SELECT fingerprint, state FROM findings
+WHERE repo = $1 AND category = 'secret' AND fingerprint = ANY($2)`
+	// A new proposal replaces the previous record: its decision and
+	// withdrawal belong to the old proposal, whose history is in
+	// state_transitions.
+	qUpsertProposal = `
+INSERT INTO suppression_proposals (fingerprint, mechanism, path, config_sha256, description, status, proposed_run, proposed_at)
+VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7)
+ON CONFLICT (fingerprint) DO UPDATE SET
+  mechanism = EXCLUDED.mechanism, path = EXCLUDED.path, config_sha256 = EXCLUDED.config_sha256,
+  description = EXCLUDED.description, status = 'pending', proposed_run = EXCLUDED.proposed_run,
+  proposed_at = EXCLUDED.proposed_at, escalated_at = NULL, decided_by = NULL, decided_at = NULL,
+  withdrawn_run = NULL, withdrawn_at = NULL`
+	qWithdrawProposal = `
+UPDATE suppression_proposals SET status = 'withdrawn', withdrawn_run = $2, withdrawn_at = $3
+WHERE fingerprint = $1`
+	qEscalateProposal = `
+UPDATE suppression_proposals SET status = 'overdue', escalated_at = $2 WHERE fingerprint = $1`
+	qDecideProposal = `
+UPDATE suppression_proposals SET status = $2, decided_by = $3, decided_at = $4 WHERE fingerprint = $1`
+	qClearResolved = `UPDATE findings SET resolved_at = NULL WHERE fingerprint = $1`
+)

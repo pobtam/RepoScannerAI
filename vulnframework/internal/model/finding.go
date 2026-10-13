@@ -289,6 +289,89 @@ type Finding struct {
 	// Classification. Promoting an annotation to a determiner must be an
 	// explicit, tested widening, never a quiet one.
 	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// SuppressionProposal is the record of the repository's own scanner
+	// configuration proposing to suppress this secret: which mechanism, which
+	// file, when, and what a human decided. Kept after a decision, so the
+	// audit trail outlives the proposal.
+	SuppressionProposal *SuppressionProposal `json:"suppression_proposal,omitempty"`
+
+	// RemovedUnrotated is set while a secret has left the scanned files and no
+	// human has confirmed the credential was rotated. The finding stays open:
+	// the secret is still in the repository's history and, until rotated,
+	// still valid (VM-F-856). It records when, never what.
+	RemovedUnrotated *SecretRemoval `json:"removed_unrotated,omitempty"`
+}
+
+// AllowlistMechanism names how a repository told its secret scanner to ignore
+// something.
+type AllowlistMechanism string
+
+const (
+	// AllowlistConfig — an allowlist in the repository's .gitleaks.toml.
+	AllowlistConfig AllowlistMechanism = "gitleaks_toml"
+	// AllowlistIgnoreFile — an entry in the repository's .gitleaksignore.
+	AllowlistIgnoreFile AllowlistMechanism = "gitleaksignore"
+	// AllowlistInline — a gitleaks:allow comment on the line itself.
+	AllowlistInline AllowlistMechanism = "inline_allow"
+)
+
+// Allowlist is the evidence that a repository's scanner configuration, not a
+// fix, is why a secret went unreported. It records where the decision lives,
+// never anything about the credential.
+type Allowlist struct {
+	Mechanism AllowlistMechanism `json:"mechanism"`
+	// Path is the file holding the decision, repository-relative: the config
+	// file, or for an inline comment the file the secret is in.
+	Path string `json:"path"`
+	// ConfigSHA256 identifies the version of the config file that made the
+	// decision. A hash of the configuration — never of a secret (VM-F-263).
+	ConfigSHA256 string `json:"config_sha256,omitempty"`
+	// Description is what the allowlist says about itself, where it says
+	// anything: the allowlist's description, or the ignore-file entry.
+	Description string `json:"description,omitempty"`
+}
+
+// ProposalStatus is where a suppression proposal stands.
+type ProposalStatus string
+
+const (
+	// ProposalPending — awaiting a human.
+	ProposalPending ProposalStatus = "pending"
+	// ProposalOverdue — unreviewed past the secret SLA window, and escalated.
+	// Still decidable.
+	ProposalOverdue ProposalStatus = "overdue"
+	// ProposalConfirmed — a human agreed; the finding is SUPPRESSED.
+	ProposalConfirmed ProposalStatus = "confirmed"
+	// ProposalRejected — a human disagreed. Not proposed again while the
+	// allowlist configuration is unchanged.
+	ProposalRejected ProposalStatus = "rejected"
+	// ProposalWithdrawn — the allowlist stopped hiding the secret.
+	ProposalWithdrawn ProposalStatus = "withdrawn"
+)
+
+// Open reports whether the proposal still awaits a decision.
+func (s ProposalStatus) Open() bool { return s == ProposalPending || s == ProposalOverdue }
+
+// SuppressionProposal is the audit record of one allowlist proposal.
+type SuppressionProposal struct {
+	Allowlist
+	Status      ProposalStatus `json:"status"`
+	ProposedRun string         `json:"proposed_run"`
+	ProposedAt  time.Time      `json:"proposed_at"`
+	EscalatedAt *time.Time     `json:"escalated_at,omitempty"`
+	DecidedBy   string         `json:"decided_by,omitempty"`
+	DecidedAt   *time.Time     `json:"decided_at,omitempty"`
+	// WithdrawnRun is the run that saw the secret again without the allowlist
+	// hiding it.
+	WithdrawnRun string     `json:"withdrawn_run,omitempty"`
+	WithdrawnAt  *time.Time `json:"withdrawn_at,omitempty"`
+}
+
+// SecretRemoval records the complete scan that first no longer saw a secret.
+type SecretRemoval struct {
+	Run string    `json:"run"`
+	At  time.Time `json:"at"`
 }
 
 // Validate checks the finding against the closed enumerations and the schema
@@ -390,6 +473,12 @@ type RawFinding struct {
 	// (VM-F-109). For secret findings the adapter must redact before populating
 	// this field.
 	Raw json.RawMessage
+
+	// Allowlisted is set on a secret the scanner found only by looking past
+	// the repository's own allowlist: present in the files, hidden by
+	// configuration. Its presence is an observation; the allowlist is a
+	// suppression proposal for a human (see Finding.SuppressionProposal).
+	Allowlisted *Allowlist `json:",omitempty"`
 }
 
 // ResidualWarning describes the imprecision a verification at this category's

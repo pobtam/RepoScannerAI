@@ -103,6 +103,14 @@ func Render(rep Report) []byte {
 	b.WriteString("## Outstanding risk\n\n")
 	fmt.Fprintf(&b, "- **Not re-observed:** %d unresolved findings this run did not see. "+
 		"They are retained, not resolved — absence is not resolution (VM-ADR-12).\n", rep.Counts.NotReobserved)
+	// Secrets waiting on a human, always stated — zero included — because a
+	// proposal or an unconfirmed rotation that appears only in the finding
+	// list is one nobody reviews.
+	fmt.Fprintf(&b, "- **Secret suppressions awaiting review:** %d pending, %d overdue and escalated. "+
+		"Each is a secret still in the files that a repository allowlist hides; none is suppressed until a human confirms it.\n",
+		rep.Counts.SuppressionProposalsPending, rep.Counts.SuppressionProposalsOverdue)
+	fmt.Fprintf(&b, "- **Secrets removed, rotation unconfirmed:** %d. Removal from the files is not remediation: "+
+		"each is still in history and live until rotated (VM-F-856).\n", rep.Counts.SecretsRemovedRotationUnconfirmed)
 	// "0 breached" and "nobody computed it" are different claims, and a reader
 	// cannot tell them apart from a zero. Where any SLA is uncomputed the
 	// report says so instead of offering a reassuring number (OQ-P7-03).

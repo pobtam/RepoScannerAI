@@ -60,12 +60,30 @@ type PostSweepStats struct {
 	// left alone: nothing new was observed in them, and the sweep's own
 	// coverage accounting already names them.
 	NotScanned []string `json:"not_scanned,omitempty"`
+	// OverdueProposals counts, per repository, suppression proposals nobody
+	// reviewed inside the secret SLA window, escalated again this pass.
+	OverdueProposals map[string]int `json:"overdue_proposals,omitempty"`
 }
 
 // Run applies the pass to every repository the run scanned.
 func (p *postSweep) Run(ctx context.Context, runID string, repos []store.Repo) (PostSweepStats, error) {
 	out := PostSweepStats{RunID: runID}
 	for _, repo := range repos {
+		// Overdue review is a matter of time, not of this run's scan: a
+		// proposal ages whether or not its repository was reached.
+		n, err := p.Orch.EscalateOverdueProposals(ctx, repo)
+		if err != nil {
+			return out, fmt.Errorf("escalating overdue proposals in %s: %w", repo.Name, err)
+		}
+		if n > 0 {
+			if out.OverdueProposals == nil {
+				out.OverdueProposals = map[string]int{}
+			}
+			out.OverdueProposals[repo.Name] = n
+			p.Log.Warn("suppression proposals unreviewed past the secret SLA window were escalated",
+				"repo", repo.Name, "count", n)
+		}
+
 		scanned, err := scannedIn(ctx, p.Orch.Store, repo.Name, runID)
 		if err != nil {
 			return out, err

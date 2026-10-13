@@ -1,0 +1,7 @@
+# Fixture: the synthetic configuration's credentials are fabricated.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "synthetic scanner fixtures"
+paths = ['''^config/settings\.yaml$''']

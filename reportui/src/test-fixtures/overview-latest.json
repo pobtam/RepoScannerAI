@@ -2,8 +2,8 @@
   "run": {
     "id": "S-000006",
     "kind": "sweep",
-    "started_at": "2026-09-18T09:00:00Z",
-    "finished_at": "2026-09-18T09:00:00Z",
+    "started_at": "2026-10-13T22:00:00Z",
+    "finished_at": "2026-10-13T22:00:00Z",
     "trigger": "cron",
     "scanner_image": "demo-scanner@sha256:2f8c1b9e4a7d6c5b3e2a1f0d9c8b7a6e5d4c3b2a1908f7e6d5c4b3a291807f6e",
     "repos_planned": 6,
@@ -13,8 +13,8 @@
     "partial_note": "1 of 6 repositories produced no qualifying scan in this run, so its counts are lower than the fleet's actual position rather than better"
   },
   "live": false,
-  "snapshot_id": "R-S-000006-969aaceb",
-  "content_hash": "b160fa785f83f2a1e7f4c27d511c1381d57b58aa51968764051fe3620618bebf",
+  "snapshot_id": "R-S-000006-0591387f",
+  "content_hash": "3d52e6a9b1d0a42c770b8fd904ce8ac410b9fcf9c3b75c9e1841dd4dda0a8531",
   "counts": {
     "total": 18,
     "unresolved": 12,
@@ -49,6 +49,9 @@
       "MAJOR_BUMP_POLICY": 1
     },
     "not_fixed_unexplained": 13,
+    "suppression_proposals_pending": 0,
+    "suppression_proposals_overdue": 0,
+    "secrets_removed_rotation_unconfirmed": 0,
     "sla_not_computed": 0
   },
   "delta": {
@@ -87,7 +90,7 @@
         "sweeps_since_qualifying": 2,
         "cause": "worker_produced_no_result",
         "last_qualifying_run": "S-000004",
-        "last_qualifying_at": "2026-09-04T09:00:00Z"
+        "last_qualifying_at": "2026-09-29T22:00:00Z"
       }
     ],
     "unscanned_repos": [

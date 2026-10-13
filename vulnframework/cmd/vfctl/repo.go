@@ -24,7 +24,16 @@ const usage = `commands:
   repo list
       List every registered repository, archived ones included.
   repo remove NAME
-      Archive a repository so sweeps no longer plan it. Its history is kept.`
+      Archive a repository so sweeps no longer plan it. Its history is kept.
+  finding pending
+      List secrets awaiting a human: suppression proposals from a repository
+      allowlist, and secrets removed from the files with rotation unconfirmed.
+  finding confirm-suppression FINGERPRINT [-as NAME]
+  finding reject-suppression FINGERPRINT [-as NAME]
+      Decide a suppression proposal. Recorded as NAME (default: your login).
+  finding confirm-rotation FINGERPRINT [-as NAME]
+      Record that a secret removed from the files has been rotated, which
+      closes it. Removal alone never does.`
 
 // knownLanguages are the languages the scanner registry selects adapters for.
 // A language outside this set would register cleanly and then match no
@@ -38,6 +47,9 @@ var knownLanguages = map[string]bool{
 // Exec runs one vfctl command against st. It is separate from main so the
 // commands are tested against the in-memory store.
 func Exec(ctx context.Context, st store.Store, args []string, out io.Writer) error {
+	if len(args) > 0 && args[0] == "finding" {
+		return findingCommand(ctx, st, args[1:], out)
+	}
 	if len(args) == 0 || args[0] != "repo" {
 		return fmt.Errorf("unknown command %q\n%s", strings.Join(args, " "), usage)
 	}

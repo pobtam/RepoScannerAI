@@ -292,6 +292,9 @@ export const counts = z
     not_fixed_by_reason: openMap.optional(),
     not_fixed_unexplained: z.number(),
     sla_not_computed: z.number(),
+    suppression_proposals_pending: z.number(),
+    suppression_proposals_overdue: z.number(),
+    secrets_removed_rotation_unconfirmed: z.number(),
   })
   .passthrough();
 

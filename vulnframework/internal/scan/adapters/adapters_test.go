@@ -125,6 +125,7 @@ func fixtureCases(t *testing.T, lock scan.ToolsLock) []fixtureCase {
 		{"osv-scanner", "error.json", goAPIRepo, goAPIDir, os_(), nil},
 		{"gitleaks", "go-api.json", goAPIRepo, goAPIDir, gl(), nil},
 		{"gitleaks", "empty.json", goAPIRepo, goAPIDir, gl(), nil},
+		{"gitleaks", "allowlisted.json", goAPIRepo, goAPIDir, gl(), gitleaksAllowlistAux(t)},
 		{"trivy", "go-api.json", goAPIRepo, goAPIDir, tv(), nil},
 		{"trivy", "empty.json", goAPIRepo, goAPIDir, tv(), nil},
 		{"semgrep", "payments-web.json", webRepo, webDir, sg(), nil},
@@ -749,4 +750,13 @@ func TestActionsPinFlagsMutableTags(t *testing.T) {
 			t.Errorf("SHA-pinned action %s was flagged", sha)
 		}
 	}
+}
+
+// gitleaksAllowlistAux replays the captured looks past the allowlists for the
+// allowlisted fixture (see allowlisted.meta.json).
+func gitleaksAllowlistAux(t *testing.T) map[string][]byte {
+	t.Helper()
+	read := func(name string) []byte { return readFixture(t, "gitleaks", "allowlisted.aux/"+name) }
+	return adapters.GitleaksFixtureAux(read("unfiltered.json"), read("config-bypass.json"),
+		read("ignore-check.json"), read("gitleaks.toml"), read("gitleaksignore"))
 }

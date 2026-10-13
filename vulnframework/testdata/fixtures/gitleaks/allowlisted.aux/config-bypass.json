@@ -1,0 +1,22 @@
+[
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 8,
+  "EndLine": 8,
+  "StartColumn": 2,
+  "EndColumn": 64,
+  "Match": "aws_secret_access_key: REDACTED",
+  "Secret": "REDACTED",
+  "File": "config/settings.yaml",
+  "SymlinkFile": "",
+  "Commit": "",
+  "Entropy": 5.321928,
+  "Author": "",
+  "Email": "",
+  "Date": "",
+  "Message": "",
+  "Tags": [],
+  "Fingerprint": "config/settings.yaml:generic-api-key:8"
+ }
+]

@@ -105,6 +105,18 @@ type Counts struct {
 	// at all. Reported rather than folded in, because a bucket of unexplained
 	// findings is a gap in the pipeline, not a category of risk.
 	NotFixedUnexplained int `json:"not_fixed_unexplained"`
+
+	// SuppressionProposalsPending and SuppressionProposalsOverdue count open
+	// secrets a repository's own allowlist proposes to suppress, awaiting a
+	// human — overdue ones were unreviewed past the secret SLA window and have
+	// been escalated again. Reported as figures, never left to the finding
+	// list: a proposal nobody sees is a suppression nobody approved.
+	SuppressionProposalsPending int `json:"suppression_proposals_pending"`
+	SuppressionProposalsOverdue int `json:"suppression_proposals_overdue"`
+	// SecretsRemovedRotationUnconfirmed counts open secrets that have left the
+	// scanned files with no human confirming the credential was rotated. Still
+	// in history, still live until rotated (VM-F-856).
+	SecretsRemovedRotationUnconfirmed int `json:"secrets_removed_rotation_unconfirmed"`
 	// SLANotComputed counts findings whose SLA was never computed.
 	//
 	// It exists so a report can never present "0 breached" as assurance when
@@ -454,6 +466,19 @@ func countOf(findings []model.Finding) Counts {
 			c.SLAPaused++
 		case "":
 			c.SLANotComputed++
+		}
+		if model.PartitionOf(f.State) != model.PartitionResolved {
+			if p := f.SuppressionProposal; p != nil {
+				switch p.Status {
+				case model.ProposalPending:
+					c.SuppressionProposalsPending++
+				case model.ProposalOverdue:
+					c.SuppressionProposalsOverdue++
+				}
+			}
+			if f.RemovedUnrotated != nil {
+				c.SecretsRemovedRotationUnconfirmed++
+			}
 		}
 	}
 	return c

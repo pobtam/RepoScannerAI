@@ -175,6 +175,24 @@ const (
 	// TriggerQualifyingScanAbsent is the universal verification trigger
 	// (VM-AD §6.1.1): a qualifying scan no longer observes the finding.
 	TriggerQualifyingScanAbsent Trigger = "qualifying_scan_absent"
+
+	// TriggerAllowlisted — a secret is still in the scanned files, but the
+	// repository's own scanner configuration (.gitleaks.toml, .gitleaksignore
+	// or an inline gitleaks:allow) hides it. That is a PROPOSAL to suppress,
+	// not a suppression: anyone with commit access can write an allowlist, so
+	// it waits for a human (VM-F-307's rule — machines nominate, humans
+	// suppress — applied to a nomination the repository made).
+	TriggerAllowlisted Trigger = "scanner_allowlisted"
+	// TriggerAllowlistWithdrawn — the allowlist no longer hides the secret:
+	// the entry was removed, or no longer matches. The finding comes back.
+	TriggerAllowlistWithdrawn Trigger = "allowlist_withdrawn"
+	// TriggerSuppressionReviewOverdue — a suppression proposal sat unreviewed
+	// past the secret SLA window, so it is escalated again rather than left.
+	TriggerSuppressionReviewOverdue Trigger = "suppression_review_overdue"
+	// TriggerRotationConfirmed — a human recorded that a secret no longer in
+	// the files has been rotated. Removal from source is not remediation
+	// (VM-F-856); rotation is, and only a human can attest to it.
+	TriggerRotationConfirmed Trigger = "human_rotation_confirmed"
 )
 
 // VerificationReason records how a finding came to be verified (VM-AD §6.1.1).
@@ -193,11 +211,15 @@ const (
 	// VerifiedExternal — disappeared without the framework merging anything.
 	// Someone else fixed it, or the code carrying it was deleted.
 	VerifiedExternal VerificationReason = "external"
+	// VerifiedRotationConfirmed — a secret a human attested was rotated. A
+	// secret is never verified by disappearing: deleting it from the files
+	// leaves it in history and leaves the credential live (VM-F-856).
+	VerifiedRotationConfirmed VerificationReason = "rotation_confirmed"
 )
 
 // AllVerificationReasons is the closed enumeration.
 var AllVerificationReasons = []VerificationReason{
-	VerifiedByFrameworkMerge, VerifiedByUpstream, VerifiedExternal,
+	VerifiedByFrameworkMerge, VerifiedByUpstream, VerifiedExternal, VerifiedRotationConfirmed,
 }
 
 // Valid reports whether r is a member of the closed enumeration.
@@ -241,7 +263,8 @@ var transitions = map[State]map[State]edge{
 		Detected: {TriggerFirstObservation, ActorScanWorker},
 	},
 	Detected: {
-		Triaged: {TriggerTriageComplete, ActorTriage},
+		Triaged:     {TriggerTriageComplete, ActorTriage},
+		FPCandidate: {TriggerAllowlisted, ActorScanWorker},
 		// Disappearance is universal (VM-AD §6.1.3). A finding can be fixed
 		// out of band between the scan that first saw it and the triage pass
 		// that would have routed it — a dependency bot, an unrelated
@@ -294,13 +317,27 @@ var transitions = map[State]map[State]edge{
 	FPCandidate: {
 		Suppressed: {TriggerHumanApproval, ActorHuman},
 		Triaged:    {TriggerHumanRejection, ActorHuman},
+		// The allowlist stopped hiding the secret. A second authorised actor —
+		// the orchestrator, escalating an overdue proposal — is listed in
+		// additionalActors.
+		NeedsHuman: {TriggerAllowlistWithdrawn, ActorScanWorker},
+		// A proposed secret that has also left the files, attested rotated.
+		Verified: {TriggerRotationConfirmed, ActorHuman},
+	},
+	Suppressed: {
+		// Only for a suppression that came from a repository allowlist: the
+		// allowlist was withdrawn, so the judgement it carried no longer
+		// applies. A human suppression is never undone by a scanner; the
+		// store enforces which kind this is.
+		NeedsHuman: {TriggerAllowlistWithdrawn, ActorScanWorker},
 	},
 	Verified: {
 		Regressed: {TriggerObservedAgain, ActorScanWorker},
 	},
 	Regressed: {
-		Triaged:  {TriggerReentry, ActorOrchestrator},
-		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
+		Triaged:     {TriggerReentry, ActorOrchestrator},
+		Verified:    {TriggerQualifyingScanAbsent, ActorScanWorker},
+		FPCandidate: {TriggerAllowlisted, ActorScanWorker},
 	},
 	NeedsHuman: {
 		// A human reset returns the finding to the queue, exactly as it does
@@ -308,6 +345,10 @@ var transitions = map[State]map[State]edge{
 		// hand the finding a lease nobody holds (OQ-AUDIT-05).
 		Triaged:  {TriggerHumanReset, ActorHuman},
 		Verified: {TriggerQualifyingScanAbsent, ActorScanWorker},
+		// A secret the repository allowlisted after it was escalated.
+		FPCandidate: {TriggerAllowlisted, ActorScanWorker},
+		// A suppression proposal escalated as overdue can still be confirmed.
+		Suppressed: {TriggerHumanApproval, ActorHuman},
 	},
 	Declined: {
 		// Human reset only for *remediation* (VM-F-154). No automated path
@@ -384,6 +425,11 @@ type TransitionContext struct {
 	// the run driving the transition. It is required for any transition into
 	// VERIFIED (VM-ADR-12) and ignored otherwise.
 	ScanOutcome ScanOutcome
+
+	// RotationConfirmedBy names the human attesting that a secret was rotated.
+	// It replaces ScanOutcome as the evidence for VERIFIED, and only for a
+	// human actor.
+	RotationConfirmedBy string
 }
 
 // IllegalTransitionError reports a transition absent from the normative table.
@@ -425,6 +471,19 @@ func (e *UnverifiedAbsenceError) Error() string {
 	return fmt.Sprintf(
 		"refusing %s -> VERIFIED: verification requires a successful scan of the repository, got outcome %s (VM-ADR-12: absence is not resolution)",
 		e.From, got)
+}
+
+// additionalActors authorises a second actor for an edge the table already
+// gives to someone else, each with its own trigger. Kept beside the table
+// rather than inside it so that every edge still has one primary owner, and a
+// shared edge is visible as the exception it is.
+var additionalActors = map[[2]State][]edge{
+	// The scanner proposes a suppression of a secret the repository has
+	// allowlisted; triage nominates on its own judgement. Same destination,
+	// two different reasons to be there.
+	{Triaged, FPCandidate}: {{TriggerAllowlisted, ActorScanWorker}},
+	// A proposal nobody reviewed inside the secret SLA window escalates again.
+	{FPCandidate, NeedsHuman}: {{TriggerSuppressionReviewOverdue, ActorOrchestrator}},
 }
 
 // CanTransition reports whether from -> to appears in the normative transition
@@ -476,6 +535,17 @@ func (e *ErrWrongActor) Error() string {
 		e.From, e.To, e.Want, e.Actor, e.Actor, e.Cause)
 }
 
+// additionallyAuthorised reports whether actor holds a second authorisation for
+// from -> to.
+func additionallyAuthorised(from, to State, actor Actor) bool {
+	for _, e := range additionalActors[[2]State{from, to}] {
+		if e.Actor == actor {
+			return true
+		}
+	}
+	return false
+}
+
 // ActorFor returns the actor the table authorises for a transition.
 func ActorFor(from, to State) (Actor, bool) {
 	edges, ok := transitions[from]
@@ -509,8 +579,15 @@ func ValidateTransition(from, to State, ctx TransitionContext) error {
 	// transition — a person with access to the system can always correct it,
 	// and pretending otherwise would just move the override somewhere less
 	// visible — but no automated actor may take another's.
-	if want, ok := ActorFor(from, to); ok && ctx.Actor != want && ctx.Actor != ActorHuman {
+	if want, ok := ActorFor(from, to); ok && ctx.Actor != want && ctx.Actor != ActorHuman &&
+		!additionallyAuthorised(from, to, ctx.Actor) {
 		return &ErrWrongActor{From: from, To: to, Actor: ctx.Actor, Want: want, Cause: ctx.Cause}
+	}
+	// A human's attestation that a secret was rotated is the one route to
+	// VERIFIED that is not a scan's absence: for a secret, absence is never
+	// resolution (VM-F-856), so it cannot be the evidence.
+	if to == Verified && ctx.Actor == ActorHuman && ctx.RotationConfirmedBy != "" {
+		return nil
 	}
 	// Guard: absence is not resolution (VM-ADR-12, VM-F-160). A finding reaches
 	// VERIFIED only where the scan that failed to observe it completed
