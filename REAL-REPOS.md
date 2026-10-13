@@ -262,12 +262,21 @@ configuration. Commit a `.gitleaks.toml` at the repository root:
 useDefault = true
 
 [allowlist]
-description = "test fixtures"
+description = "fabricated credentials in two named test fixtures"
 paths = [
-  '''_test\.go$''',
-  '''^testdata/''',
+  '''^internal/auth/testdata/fake_credentials\.json$''',
+  '''^config/settings_test\.yaml$''',
 ]
 ```
+
+> **Allowlist exact files, never patterns.** Each path above is anchored with
+> `^` and `$` and names one file. Do not allowlist a folder (`^testdata/`) or
+> a pattern (`_test\.go$`): every file it matches becomes invisible to the
+> ordinary scan, including a real key someone pastes into a test next year.
+> The sweep would still record it as a proposal, but only a person reading
+> proposals would notice. Better still, build fake credentials in test code
+> at run time from parts, so no file contains a complete key and nothing
+> needs allowlisting at all.
 
 A `.gitleaksignore` file of finding fingerprints and an inline
 `gitleaks:allow` comment work too.
@@ -312,8 +321,8 @@ What happens next:
 This was checked against the scanner image, with all three mechanisms. On this
 project's own code, the `.gitleaks.toml` above hid all 145 fixture hits from
 the ordinary scan, and a credential planted outside those paths was still
-reported. Keep the paths narrow: anything allowlisted is invisible to the
-ordinary scan, including a real key that someone later pastes into a test.
+reported. That check used a folder and a pattern to show the mechanism works;
+for your own repositories, follow the warning above and name exact files.
 
 ### Removed secrets stay open until you confirm rotation
 
