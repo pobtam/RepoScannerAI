@@ -1,0 +1,199 @@
+{
+  "connections": [
+    {
+      "account": "demo-user",
+      "kind": "fine_grained",
+      "scopes": [],
+      "expires_at": "2026-11-06T00:00:00Z",
+      "expires_in_days": 22,
+      "read_only": "fine-grained token: GitHub does not report its permissions, so grant only Contents and Metadata read-only; every request is also limited to GET by the client",
+      "checked_at": "2026-10-13T22:00:00Z",
+      "checked_by": "demo"
+    }
+  ],
+  "discovered": [
+    {
+      "name": "a-friend/side-project",
+      "account": "demo-user",
+      "affiliation": "collaborator",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "included": false,
+      "reason": "collaborator",
+      "detail": "the account is only a collaborator; opt in with -include-collaborator",
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-org/batch-jobs",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "language": "Go",
+      "included": true,
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-org/checkout-web",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "language": "Javascript",
+      "included": true,
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-org/edge-proxy",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "language": "Go",
+      "included": true,
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-org/legacy-reporting",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "language": "Go",
+      "included": true,
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-org/ml-datasets",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 9437184,
+      "default_branch": "main",
+      "included": false,
+      "reason": "too_large",
+      "detail": "about 9216 MB, over the 1024 MB limit; raise it with -max-size-mb",
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-org/new-service",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 0,
+      "default_branch": "main",
+      "included": false,
+      "reason": "empty",
+      "detail": "empty: GitHub reports no content",
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-org/payments-api",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "language": "Go",
+      "included": true,
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-org/platform-common",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "language": "Go",
+      "included": true,
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-org/website-2019",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": true,
+      "fork": false,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "included": false,
+      "reason": "archived",
+      "detail": "archived on GitHub; nothing new can land in it",
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "demo-user/dotfiles",
+      "account": "demo-user",
+      "affiliation": "owner",
+      "private": false,
+      "archived": false,
+      "fork": true,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "included": false,
+      "reason": "fork",
+      "detail": "a fork; opt in with -include-forks",
+      "discovered_at": "2026-10-13T22:00:00Z"
+    },
+    {
+      "name": "partner-co/shared-sdk",
+      "account": "demo-user",
+      "affiliation": "organization",
+      "private": true,
+      "archived": false,
+      "fork": false,
+      "size_kb": 2048,
+      "default_branch": "main",
+      "included": false,
+      "reason": "excluded",
+      "detail": "excluded by a person: vendor code we do not own",
+      "discovered_at": "2026-10-13T22:00:00Z"
+    }
+  ],
+  "exclusions": [
+    {
+      "name": "partner-co/shared-sdk",
+      "reason": "vendor code we do not own",
+      "excluded_by": "demo",
+      "excluded_at": "2026-10-11T00:00:00Z"
+    }
+  ],
+  "summary": {
+    "seen": 12,
+    "included": 6,
+    "skipped": {
+      "archived": 1,
+      "collaborator": 1,
+      "empty": 1,
+      "excluded": 1,
+      "fork": 1,
+      "too_large": 1
+    },
+    "last_discovered_at": "2026-10-13T22:00:00Z"
+  }
+}

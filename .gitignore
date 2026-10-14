@@ -15,3 +15,9 @@ dist/
 
 # Scanner capture scratch
 /vulnframework/testdata/repos/*/node_modules/
+# Binaries from "go build ./cmd/<name>" run inside vulnframework/
+/vulnframework/apiserver
+/vulnframework/orchestrator
+/vulnframework/vfctl
+/vulnframework/fixworker
+/vulnframework/scanworker

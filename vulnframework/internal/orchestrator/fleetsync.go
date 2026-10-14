@@ -51,7 +51,7 @@ func (r FleetDriftReport) Summary() string {
 // Read-only on purpose. The drift has to be observable before it is corrected,
 // because a sync that silently fixed it would leave nobody any way to notice
 // that a repository had been invisible for a week.
-func (o *Orchestrator) FleetDrift(ctx context.Context, app gh.App) (FleetDriftReport, error) {
+func (o *Orchestrator) FleetDrift(ctx context.Context, app gh.Lister) (FleetDriftReport, error) {
 	var report FleetDriftReport
 
 	remote, err := app.Repositories(ctx)
@@ -101,7 +101,7 @@ type FleetSyncStats struct {
 // Deleting it would make historical coverage unreadable — every run that
 // scanned it would reference a repository nobody can look up — while archiving
 // takes it out of the denominator and keeps the record.
-func (o *Orchestrator) SyncFleet(ctx context.Context, app gh.App) (FleetSyncStats, error) {
+func (o *Orchestrator) SyncFleet(ctx context.Context, app gh.Lister) (FleetSyncStats, error) {
 	var stats FleetSyncStats
 
 	remote, err := app.Repositories(ctx)

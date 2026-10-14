@@ -161,6 +161,8 @@ func (s *Server) routes() {
 
 	s.mux.HandleFunc("GET /v1/reports", s.handleReports)
 	s.mux.HandleFunc("GET /v1/reports/{id}", s.handleReport)
+
+	s.mux.HandleFunc("GET /v1/github", s.handleGitHub)
 }
 
 // --- middleware --------------------------------------------------------------

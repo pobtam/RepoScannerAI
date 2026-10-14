@@ -5,7 +5,7 @@
  * Editing this file by hand re-creates the drift the generation exists to
  * prevent (UI-ADR-05, VM-UI-F-107).
  *
- * Source: http://127.0.0.1:8151/v1/schema/openapi.json
+ * Source: http://127.0.0.1:18082/v1/schema/openapi.json
  */
 export interface paths {
     "/v1/coverage": {
@@ -102,6 +102,23 @@ export interface paths {
         };
         /** State transitions and observation history */
         get: operations["timeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/github": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The connected GitHub account and every repository discovery saw, with whether it is scanned */
+        get: operations["github"];
         put?: never;
         post?: never;
         delete?: never;
@@ -833,10 +850,42 @@ export interface components {
             replaced: boolean;
             version: string;
         };
+        DiscoveredRepo: {
+            account: string;
+            affiliation: string;
+            archived: boolean;
+            default_branch: string;
+            detail?: string;
+            /** Format: date-time */
+            discovered_at: string;
+            fork: boolean;
+            included: boolean;
+            language?: string;
+            name: string;
+            private: boolean;
+            reason?: string;
+            size_kb: number;
+        };
+        DiscoverySummary: {
+            included: number;
+            /** Format: date-time */
+            last_discovered_at?: string;
+            seen: number;
+            skipped: {
+                [key: string]: number;
+            };
+        };
         Error: {
             detail?: string;
             error: string;
             remedy?: string;
+        };
+        ExcludedRepo: {
+            /** Format: date-time */
+            excluded_at: string;
+            excluded_by: string;
+            name: string;
+            reason: string;
         };
         FacetOption: {
             count: number;
@@ -1144,6 +1193,64 @@ export interface components {
             restricted_count: number;
             sort: string;
             total: number;
+        };
+        GitHubAccount: {
+            account: string;
+            /** Format: date-time */
+            checked_at: string;
+            checked_by: string;
+            /** Format: date-time */
+            expires_at?: string;
+            expires_in_days?: number;
+            kind: string;
+            read_only: string;
+            scopes: string[];
+        };
+        GitHubView: {
+            connections: {
+                account: string;
+                /** Format: date-time */
+                checked_at: string;
+                checked_by: string;
+                /** Format: date-time */
+                expires_at?: string;
+                expires_in_days?: number;
+                kind: string;
+                read_only: string;
+                scopes: string[];
+            }[];
+            discovered: {
+                account: string;
+                affiliation: string;
+                archived: boolean;
+                default_branch: string;
+                detail?: string;
+                /** Format: date-time */
+                discovered_at: string;
+                fork: boolean;
+                included: boolean;
+                language?: string;
+                name: string;
+                private: boolean;
+                reason?: string;
+                size_kb: number;
+            }[];
+            exclusions: {
+                /** Format: date-time */
+                excluded_at: string;
+                excluded_by: string;
+                name: string;
+                reason: string;
+            }[];
+            summary: {
+                included: number;
+                /** Format: date-time */
+                last_discovered_at?: string;
+                seen: number;
+                skipped: {
+                    [key: string]: number;
+                };
+            };
         };
         Health: {
             backend: string;
@@ -1826,6 +1933,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Timeline"];
+                };
+            };
+        };
+    };
+    github: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the account view */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GitHubView"];
                 };
             };
         };

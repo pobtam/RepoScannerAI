@@ -20,6 +20,7 @@ import { Coverage } from './features/coverage/Coverage';
 import { RepoDetail, RepoIndex } from './features/repos/Repos';
 import { Waves } from './features/waves/Waves';
 import { Reports } from './features/reports/Reports';
+import { GitHubPage } from './features/github/GitHub';
 import { Link, RouterProvider, match, useRouter } from './lib/router';
 import { icons } from './components/icons';
 
@@ -70,6 +71,10 @@ const NAV: { heading: string; items: { to: string; label: string; icon: ReactNod
       { to: '/runs', label: 'Run history', icon: icons.history, active: (p) => p.startsWith('/runs') },
       { to: '/reports', label: 'Reports', icon: icons.reports, active: (p) => p === '/reports' },
     ],
+  },
+  {
+    heading: 'Sources',
+    items: [{ to: '/github', label: 'GitHub', icon: icons.github, active: (p) => p === '/github' }],
   },
 ];
 
@@ -166,6 +171,7 @@ function Routes() {
   if (path === '/coverage') return <Coverage />;
   if (path === '/waves') return <Waves />;
   if (path === '/reports') return <Reports />;
+  if (path === '/github') return <GitHubPage />;
 
   if (path === '/repos') return <RepoIndex />;
   const repo = match(path, '/repos/:repo*');

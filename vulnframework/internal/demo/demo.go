@@ -16,6 +16,7 @@ package demo
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/feed"
@@ -77,6 +78,10 @@ func Seed(ctx context.Context, s *store.Memory, opts Options) (Result, error) {
 		if err := s.UpsertRepo(ctx, r); err != nil {
 			return Result{}, fmt.Errorf("demo: registering %s: %w", r.Name, err)
 		}
+	}
+
+	if err := seedGitHub(ctx, s, repos, opts.Now); err != nil {
+		return Result{}, err
 	}
 
 	out := Result{Repos: len(repos), Registry: registry}
@@ -490,3 +495,62 @@ func (demoView) IsFirstPartyOwner(string, string) bool { return false }
 
 var _ policy.StoreView = demoView{}
 var _ = scan.ModuleDep{}
+
+// seedGitHub records a fabricated account connection and discovery, so the
+// GitHub page has something to show: every demo repository as discovered and
+// included, plus one of each skip reason. The decisions come from the real
+// classifier, not from a hand-written list of outcomes.
+func seedGitHub(ctx context.Context, s *store.Memory, repos []store.Repo, now time.Time) error {
+	const account = "demo-user"
+	expires := now.Add(23 * 24 * time.Hour)
+	if err := s.SaveGitHubConnection(ctx, store.GitHubConnection{
+		Account: account, Kind: "fine_grained", ExpiresAt: &expires,
+		ReadOnly:  "fine-grained token: GitHub does not report its permissions, so grant only Contents and Metadata read-only; every request is also limited to GET by the client",
+		CheckedAt: now.Add(-2 * time.Hour), CheckedBy: "demo",
+	}); err != nil {
+		return fmt.Errorf("demo: github connection: %w", err)
+	}
+
+	listed := func(name, ownerType string, mut func(*gh.AccountRepo)) gh.AccountRepo {
+		r := gh.AccountRepo{FullName: name, DefaultBranch: "main", SizeKB: 2048, Private: true}
+		r.Owner.Login, _, _ = strings.Cut(name, "/")
+		r.Owner.Type = ownerType
+		if mut != nil {
+			mut(&r)
+		}
+		return r
+	}
+	var all []gh.AccountRepo
+	for _, r := range repos {
+		lang := ""
+		if len(r.Languages) > 0 {
+			lang = strings.ToUpper(r.Languages[0][:1]) + r.Languages[0][1:]
+		}
+		all = append(all, listed(r.Name, "Organization", func(a *gh.AccountRepo) { a.Language = lang }))
+	}
+	all = append(all,
+		listed("demo-org/website-2019", "Organization", func(a *gh.AccountRepo) { a.Archived = true }),
+		listed("demo-user/dotfiles", "User", func(a *gh.AccountRepo) { a.Fork = true; a.Private = false }),
+		listed("demo-org/new-service", "Organization", func(a *gh.AccountRepo) { a.SizeKB = 0 }),
+		listed("demo-org/ml-datasets", "Organization", func(a *gh.AccountRepo) { a.SizeKB = 9 << 20 }),
+		listed("partner-co/shared-sdk", "Organization", nil),
+		listed("a-friend/side-project", "User", nil),
+	)
+	excluded := map[string]string{"partner-co/shared-sdk": "vendor code we do not own"}
+	if err := s.SetExclusion(ctx, store.RepoExclusion{
+		Name: "partner-co/shared-sdk", Reason: excluded["partner-co/shared-sdk"], ExcludedBy: "demo", ExcludedAt: now.Add(-72 * time.Hour),
+	}); err != nil {
+		return err
+	}
+
+	var rows []store.DiscoveredRepo
+	for _, d := range gh.Classify(account, all, gh.DiscoverOptions{Excluded: excluded}) {
+		rows = append(rows, store.DiscoveredRepo{
+			Name: d.Repo.FullName, Account: account, Affiliation: string(d.Affiliation),
+			Private: d.Repo.Private, Archived: d.Repo.Archived, Fork: d.Repo.Fork, SizeKB: d.Repo.SizeKB,
+			DefaultBranch: d.Repo.DefaultBranch, Language: d.Repo.Language,
+			Included: d.Included, Reason: d.Reason, Detail: d.Detail, DiscoveredAt: now.Add(-2 * time.Hour),
+		})
+	}
+	return s.ReplaceDiscovery(ctx, account, rows)
+}

@@ -33,7 +33,8 @@ const usage = `commands:
       Decide a suppression proposal. Recorded as NAME (default: your login).
   finding confirm-rotation FINGERPRINT [-as NAME]
       Record that a secret removed from the files has been rotated, which
-      closes it. Removal alone never does.`
+      closes it. Removal alone never does.
+` + githubUsage
 
 // knownLanguages are the languages the scanner registry selects adapters for.
 // A language outside this set would register cleanly and then match no
@@ -49,6 +50,9 @@ var knownLanguages = map[string]bool{
 func Exec(ctx context.Context, st store.Store, args []string, out io.Writer) error {
 	if len(args) > 0 && args[0] == "finding" {
 		return findingCommand(ctx, st, args[1:], out)
+	}
+	if len(args) > 0 && args[0] == "github" {
+		return githubCommand(ctx, st, args[1:], out)
 	}
 	if len(args) == 0 || args[0] != "repo" {
 		return fmt.Errorf("unknown command %q\n%s", strings.Join(args, " "), usage)
@@ -66,6 +70,10 @@ func Exec(ctx context.Context, st store.Store, args []string, out io.Writer) err
 		return repoList(ctx, st, out)
 	case "remove":
 		return repoRemove(ctx, st, args[2:], out)
+	case "exclude":
+		return repoExclude(ctx, st, args[2:], out)
+	case "include":
+		return repoInclude(ctx, st, args[2:], out)
 	default:
 		return fmt.Errorf("unknown repo subcommand %q\n%s", args[1], usage)
 	}

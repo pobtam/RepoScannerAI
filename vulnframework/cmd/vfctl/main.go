@@ -10,9 +10,12 @@
 //	vfctl repo add org/web -languages javascript -lockfile
 //	vfctl repo list
 //	vfctl repo remove org/web
+//	vfctl github connect      # token from $VULNFRAMEWORK_GITHUB_TOKEN or a hidden prompt
+//	vfctl github discover
 //
-// vfctl writes only to the findings store. It holds no GitHub credential and
-// contacts nothing else.
+// vfctl writes only to the findings store. The github commands read from
+// GitHub with the token in the environment, using GET requests only; the
+// token is never stored.
 package main
 
 import (
@@ -42,7 +45,7 @@ func run() error {
 	fs := flag.NewFlagSet("vfctl", flag.ContinueOnError)
 	dsn := fs.String("dsn", os.Getenv("VULNFRAMEWORK_DSN"), "Postgres connection string")
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "usage: vfctl [-dsn DSN] repo add|list|remove ...\n\n%s\n", usage)
+		fmt.Fprintf(fs.Output(), "usage: vfctl [-dsn DSN] repo|finding|github ...\n\n%s\n", usage)
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(os.Args[1:]); err != nil {

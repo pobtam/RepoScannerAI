@@ -77,6 +77,15 @@ export const icons = {
       <path d="M9 13h6M9 17h4" />
     </Svg>
   ),
+  github: (
+    <Svg>
+      <circle cx="6" cy="6" r="2.5" />
+      <circle cx="6" cy="18" r="2.5" />
+      <circle cx="18" cy="9" r="2.5" />
+      <path d="M6 8.5v7" />
+      <path d="M18 11.5c0 3-3 3.5-6 3.5H8.3" />
+    </Svg>
+  ),
   shield: (
     <Svg size={18}>
       <path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6L12 3z" />

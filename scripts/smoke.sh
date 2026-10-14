@@ -75,7 +75,7 @@ API_PID=$!
 wait_api
 
 for path in /v1/health /v1/runs /v1/runs/latest "/v1/findings?scope=open" "/v1/findings/facets?scope=open" \
-  /v1/repos /v1/coverage /v1/waves /v1/metrics/trends /v1/reports /v1/schema/openapi.json; do
+  /v1/repos /v1/coverage /v1/waves /v1/metrics/trends /v1/reports /v1/github /v1/schema/openapi.json; do
   get "$path" >/dev/null
   ok "GET $path"
 done

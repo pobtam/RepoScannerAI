@@ -530,6 +530,52 @@ export const health = z.object({
   demo: z.boolean(),
 });
 
+export const githubAccount = z.object({
+  account: z.string(),
+  kind: z.string(),
+  scopes: z.array(z.string()),
+  expires_at: z.string().optional(),
+  expires_in_days: z.number().optional(),
+  read_only: z.string(),
+  checked_at: z.string(),
+  checked_by: z.string(),
+});
+
+export const discoveredRepo = z.object({
+  name: z.string(),
+  account: z.string(),
+  affiliation: z.string(),
+  private: z.boolean(),
+  archived: z.boolean(),
+  fork: z.boolean(),
+  size_kb: z.number(),
+  default_branch: z.string(),
+  language: z.string().optional(),
+  included: z.boolean(),
+  reason: z.string().optional(),
+  detail: z.string().optional(),
+  discovered_at: z.string(),
+});
+
+export const excludedRepo = z.object({
+  name: z.string(),
+  reason: z.string(),
+  excluded_by: z.string(),
+  excluded_at: z.string(),
+});
+
+export const githubView = z.object({
+  connections: z.array(githubAccount),
+  discovered: z.array(discoveredRepo),
+  exclusions: z.array(excludedRepo),
+  summary: z.object({
+    seen: z.number(),
+    included: z.number(),
+    skipped: openMap,
+    last_discovered_at: z.string().optional(),
+  }),
+});
+
 export const apiError = z.object({
   error: z.string(),
   detail: z.string().optional(),
@@ -556,6 +602,8 @@ export type ReportSummary = z.infer<typeof reportSummary>;
 export type Comparison = z.infer<typeof comparison>;
 export type StateChange = z.infer<typeof stateChange>;
 export type Health = z.infer<typeof health>;
+export type GitHubView = z.infer<typeof githubView>;
+export type DiscoveredRepo = z.infer<typeof discoveredRepo>;
 export type ApiError = z.infer<typeof apiError>;
 
 /* ---------------------------------------------------------------------------

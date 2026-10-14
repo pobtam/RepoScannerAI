@@ -35,6 +35,7 @@ func schemaTypes() []any {
 		RepoSummary{}, RepoDetail{}, Dependency{}, Consumer{},
 		Wave{}, TrendSeries{}, TrendPoint{},
 		ReportSummary{}, Health{}, Error{},
+		GitHubView{}, GitHubAccount{}, DiscoveredRepo{}, ExcludedRepo{}, DiscoverySummary{},
 		Identity{}, Location{}, Versions{}, Classification{}, SLA{},
 		Observation{}, Refs{}, Provenance{}, Triage{}, ScoreBreakdown{}, ScoreInputs{},
 	}
@@ -108,6 +109,7 @@ func (s *Server) openAPI() (map[string]any, error) {
 		"/v1/metrics/trends":         get("trends", "One metric over runs of one kind", jsonResponse("TrendSeries", "the series")),
 		"/v1/reports":                get("reports", "Issued reports", arrayResponse("ReportSummary", "the reports")),
 		"/v1/reports/{id}":           get("report", "One issued report, as issued", jsonResponse("ReportSummary", "the report")),
+		"/v1/github":                 get("github", "The connected GitHub account and every repository discovery saw, with whether it is scanned", jsonResponse("GitHubView", "the account view")),
 	}
 
 	return map[string]any{

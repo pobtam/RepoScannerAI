@@ -553,6 +553,9 @@ type Store interface {
 	// scan history across runs of the given kind.
 	FleetCoverage(ctx context.Context, kind RunKind, repos []string) ([]CoverageState, error)
 
+	// --- GitHub discovery (migration 0016) ---
+	GitHubStore
+
 	// Close releases resources.
 	Close() error
 }

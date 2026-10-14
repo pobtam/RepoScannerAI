@@ -61,6 +61,7 @@ async function main() {
     'waves.json': await get('/v1/waves'),
     'trend.json': await get('/v1/metrics/trends?metric=open'),
     'reports.json': await get('/v1/reports'),
+    'github.json': await get('/v1/github'),
   };
 
   for (const [name, body] of Object.entries(fixtures)) {

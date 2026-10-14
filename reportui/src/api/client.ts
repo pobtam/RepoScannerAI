@@ -188,4 +188,5 @@ export const api = {
   trends: (metric: string, window = 20, kind = 'sweep') =>
     request(`/metrics/trends${qs({ metric, window, kind })}`, s.trendSeries),
   reports: () => request('/reports', z.array(s.reportSummary)),
+  github: () => request('/github', s.githubView),
 };

@@ -22,6 +22,7 @@ import (
 
 	"github.com/wanaware/vulnframework/internal/feed"
 	"github.com/wanaware/vulnframework/internal/firstparty"
+	"github.com/wanaware/vulnframework/internal/gh"
 	"github.com/wanaware/vulnframework/internal/orchestrator"
 	"github.com/wanaware/vulnframework/internal/policy"
 	"github.com/wanaware/vulnframework/internal/scan"
@@ -69,6 +70,17 @@ func run() error {
 		// finding is first-party, so none is deferred to its owner and no
 		// wave forms.
 		fpPath = flag.String("firstparty", "", "path to the first-party module registry; empty means none")
+
+		// Account mode: one read-only GitHub token, every repository it
+		// reaches. The token is read from the environment only, never from
+		// a flag, so it is not in shell history or a process listing.
+		githubMode    = flag.Bool("github", false, "account mode: discover the repositories $"+githubTokenEnv+" reaches, then download and scan each one (read-only)")
+		githubAPI     = flag.String("github-api", "", "GitHub REST root; empty means api.github.com")
+		downloadRoot  = flag.String("download-root", "", "account mode: where each repository is unpacked for its scan and deleted after; empty means a temporary directory")
+		maxDownloadMB = flag.Int("max-download-mb", 512, "account mode: largest repository tarball to download")
+		maxSizeMB     = flag.Int("max-size-mb", 1024, "account mode: skip repositories GitHub estimates larger than this")
+		inclCollab    = flag.Bool("include-collaborator", false, "account mode: also scan repositories the account is only a collaborator on")
+		inclForks     = flag.Bool("include-forks", false, "account mode: also scan forks")
 	)
 	flag.Parse()
 
@@ -124,7 +136,7 @@ func run() error {
 		toolVersions[name] = lock.MustVersion(name)
 	}
 
-	dispatcher := &orchestrator.LocalDispatcher{
+	var dispatcher orchestrator.Dispatcher = &orchestrator.LocalDispatcher{
 		Worker: scan.NewWorker(reg),
 		WorkDir: func(repo string) string {
 			if *workDir == "" {
@@ -132,6 +144,23 @@ func run() error {
 			}
 			return *workDir + "/" + lastPath(repo)
 		},
+	}
+	var account *gh.TokenClient
+	if *githubMode {
+		account = &gh.TokenClient{BaseURL: *githubAPI, Token: githubToken}
+		root := *downloadRoot
+		if root == "" {
+			if root, err = os.MkdirTemp("", "vf-downloads-"); err != nil {
+				return err
+			}
+			defer os.RemoveAll(root)
+		} else if err := os.MkdirAll(root, 0o700); err != nil {
+			return err
+		}
+		dispatcher = &orchestrator.DownloadDispatcher{
+			Worker: scan.NewWorker(reg), GitHub: account, Root: root,
+			MaxDownloadBytes: int64(*maxDownloadMB) << 20,
+		}
 	}
 
 	o := orchestrator.New(st, dispatcher, orchestrator.NewRateBudget(*credits), orchestrator.Config{
@@ -184,6 +213,19 @@ func run() error {
 		}
 	}
 
+	var discovered *orchestrator.DiscoverStats
+	if account != nil {
+		ds, err := o.Discover(ctx, account, gh.DiscoverOptions{
+			IncludeCollaborator: *inclCollab, IncludeForks: *inclForks, MaxSizeMB: *maxSizeMB,
+		}, "orchestrator")
+		if err != nil {
+			return fmt.Errorf("discovering repositories: %w", err)
+		}
+		discovered = &ds
+		log.Info("discovery complete", "account", ds.Account, "seen", ds.Seen, "included", ds.Included,
+			"skipped", ds.Skipped, "added", ds.Sync.Added, "archived", ds.Sync.Archived)
+	}
+
 	repos, err := registry(ctx, st)
 	if err != nil {
 		return err
@@ -198,10 +240,11 @@ func run() error {
 	}
 
 	output := struct {
+		Discovery  *orchestrator.DiscoverStats  `json:"discovery,omitempty"`
 		Sweep      orchestrator.RunStats        `json:"sweep"`
 		PostSweep  *PostSweepStats              `json:"post_sweep,omitempty"`
 		Recoveries []orchestrator.RecoveryEvent `json:"recoveries,omitempty"`
-	}{Sweep: stats}
+	}{Discovery: discovered, Sweep: stats}
 	if pass != nil {
 		post, err := pass.Run(ctx, stats.RunID, repos)
 		if err != nil {
@@ -229,6 +272,20 @@ func run() error {
 		"not_dispatched", stats.Close.NotDispatched,
 		"no_result", stats.Close.NoResult)
 	return nil
+}
+
+// githubTokenEnv names the environment variable account mode reads its
+// token from.
+const githubTokenEnv = "VULNFRAMEWORK_GITHUB_TOKEN"
+
+// githubToken reads the token at the moment of use. It is never stored,
+// logged, or put on a command line.
+func githubToken() (string, error) {
+	t := os.Getenv(githubTokenEnv)
+	if t == "" {
+		return "", fmt.Errorf("%s is not set; account mode needs a read-only fine-grained token there", githubTokenEnv)
+	}
+	return t, nil
 }
 
 // registry returns the repositories in the fleet.

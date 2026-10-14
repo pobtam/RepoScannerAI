@@ -5,8 +5,10 @@ read this file first and resume from "Next".
 
 ## Current
 
-- **Phase:** 1 (scan any language)
-- **Next:** read the Phase 1 code and write the Phase 1 plan below
+- **Priority changed by you (2026-10-13):** build only what a bare-minimum
+  NON-LOCAL demo needs, before resuming Phase 1. See "Demo track" below.
+- **Phase:** demo track, step D2 (deployable package and minimal login)
+- **Next:** production images, compose stack, Caddy login, sweep timer
 
 ## Ground rules in force
 
@@ -41,6 +43,47 @@ Phase 0 result: **done**.
 - New `scripts/smoke.sh` (`--real` adds a real-mode sweep of the fabricated
   repos into a throwaway database, `vf-smoke-pg`, whose data is a temp folder).
 
+## Demo track (bare-minimum non-local demo)
+
+Goal: on a GCP VM, a read-only GitHub key discovers your repos, the sweep
+downloads and scans them with no hand-cloning, and the results are browsable
+over HTTPS behind a login, from your IP only.
+
+- **D1, GitHub key and discovery (core of Phase 2).**
+  - `gh.TokenClient`: fine-grained PAT, GET-only transport (any other method
+    is refused in code), `/user` on connect (account, classic scopes, expiry
+    header), `/user/repos` paging by Link header, rate-limit waits.
+  - Each repo is included or skipped with a reason (archived, empty, fork,
+    too large, collaborator not opted in, excluded by you).
+  - `SyncFleet` reused through a narrower `gh.Lister` interface: new repos
+    added, vanished or skipped ones archived, never deleted.
+  - Download as a GitHub tarball (GET only, no git credential on disk), safe
+    extraction, size cap, deleted after the scan; failure = coverage gap
+    `download_failed`. Languages set from the downloaded tree's root files.
+  - Migration 0016 `github_discovery`: connection metadata (never the token)
+    and the discovered list; both backends.
+  - `vfctl github connect|status|discover`, `vfctl repo exclude|include`;
+    orchestrator `-github`; read-only `GET /v1/github` and a UI page.
+  - Tests against a local fake GitHub server; end-to-end connect -> discover
+    -> download -> sweep.
+  - **D1 result: done.** Commit "Account mode: a read-only GitHub token
+    discovers, downloads and scans". Tests: gh (token client, paging, rate
+    limits, write refusal, classification), store (both backends), the
+    orchestrator end to end against `internal/gh/ghfake`, hostile tarballs
+    (path escapes, symlinks), the compiled `orchestrator -github` against
+    Postgres, vfctl commands, `/v1/github`, and the UI page. Found and fixed
+    in passing: a path-traversal bug in my own first tarball extractor
+    (cleaning before stripping the top directory).
+- **D2, deployable package and minimal login (Phase 4/5 minimum).**
+  Production images (API + built UI behind Caddy; sweep image on top of the
+  scanner image), docker compose, HTTPS with basic auth at Caddy which strips
+  client-sent identity headers and sets its own, a daily sweep timer.
+  Verified locally with compose: no login -> 401, forged header -> 401.
+- **D3, GCP as code (Phase 6 minimum).** Terraform: VM, static IP, firewall
+  to your IP, IAP SSH, Secret Manager for the token and login hash, disk
+  snapshots. `terraform fmt/validate` only, via the official image. DEPLOY.md
+  with exact steps, costs, teardown.
+
 ## Demo of 2026-10-13 (GCP-Sec, at your request, before this run)
 
 Real-mode sweep S-000001 of GCP-Sec (complete, 99 findings) and
@@ -66,6 +109,22 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
 - **Re-triage command not built.** You were asked whether to add
   `vfctl finding retriage`; no answer, and the brief says no extras. It is in
   the handoff as a suggestion.
+- **The GitHub token is never stored, not even encrypted.** It is read from
+  `VULNFRAMEWORK_GITHUB_TOKEN` (or a hidden prompt) at the moment of use;
+  only the account, token kind, scopes and expiry are recorded. On the VM it
+  comes from Secret Manager. Safer than encrypting it into the database,
+  whose key would have to live next to it.
+- **Read-only is enforced in code:** the token client's transport refuses
+  every method but GET/HEAD before the network. GitHub exposes no API to
+  read a fine-grained token's permissions, so they cannot be verified; a
+  classic token's scopes can, and write scopes are refused.
+- **Repositories are downloaded as tarballs, not cloned.** GET-only, no git
+  credential written to disk, no `.git` directory to scan. Symlinks are not
+  recreated; paths escaping the tree fail the download (a gap, not a scan).
+- **All-skipped is a decision, empty is a failure.** If GitHub lists
+  repositories and every one is skipped with a reason, discovery archives
+  the registry; if GitHub lists none while the registry holds some, it
+  refuses (the existing empty-fleet guard).
 - **The smoke test's throwaway database is deleted after each run.** It is
   created by the script, in a temp folder, never a named Docker volume; the
   "never delete databases" rule is about yours.

@@ -88,3 +88,34 @@ func withDatabase(dsn, name string) (string, error) {
 	u.Path = "/" + name
 	return u.String(), nil
 }
+
+// FreshDSN returns a connection string for an EMPTY database of the suite's
+// own, recreating it if a previous run left one behind. It is for tests that
+// drive a compiled program, which needs a DSN rather than a handle. Like
+// OpenDB it skips unless EnvDSN is set, and it only ever touches databases
+// named vftest_*.
+func FreshDSN(t *testing.T, suite string) string {
+	t.Helper()
+	admin := os.Getenv(EnvDSN)
+	if admin == "" {
+		t.Skipf("%s not set: skipping the Postgres backend", EnvDSN)
+	}
+	name := "vftest_" + safeName.ReplaceAllString(strings.ToLower(suite), "_")
+	db, err := sql.Open("pgx", admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	// The name is derived from a Go identifier and filtered to [a-z0-9_].
+	if _, err := db.Exec(`DROP DATABASE IF EXISTS "` + name + `" WITH (FORCE)`); err != nil {
+		t.Fatalf("dropping %s: %v", name, err)
+	}
+	if err := ensureDatabase(admin, name); err != nil {
+		t.Fatalf("creating %s: %v", name, err)
+	}
+	dsn, err := withDatabase(admin, name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dsn
+}

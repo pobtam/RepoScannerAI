@@ -45,6 +45,10 @@ type Memory struct {
 	deps           map[string]map[string]ModuleDep
 	ticketOps      []TicketOp
 	nextOpID       int64
+
+	ghConnections map[string]GitHubConnection
+	discovered    map[string]DiscoveredRepo
+	exclusions    map[string]RepoExclusion
 }
 
 type memFinding struct {
@@ -135,6 +139,9 @@ func (m *Memory) MigrateTo(_ context.Context, version int) error {
 		m.plan = map[string]map[string]PlanEntry{}
 		m.reports = map[string]Report{}
 		m.intel = map[string]Intel{}
+		m.ghConnections = map[string]GitHubConnection{}
+		m.discovered = map[string]DiscoveredRepo{}
+		m.exclusions = map[string]RepoExclusion{}
 	}
 	m.schemaVersion = version
 	return nil
