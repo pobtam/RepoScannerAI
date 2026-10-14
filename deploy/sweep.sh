@@ -21,7 +21,12 @@ export VULNFRAMEWORK_GITHUB_TOKEN
 # whole command with them.
 env_file=(--env-file "${VF_ENV_FILE:-$ROOT/deploy/.env}")
 
+# VF_COMPOSE_OVERRIDE names an extra compose file layered on top (the stack
+# test uses one); unset, only deploy/compose.yaml is used.
+files=(-f "$ROOT/deploy/compose.yaml")
+[ -n "${VF_COMPOSE_OVERRIDE:-}" ] && files+=(-f "$VF_COMPOSE_OVERRIDE")
+
 mkdir -p "$ROOT/deploy/runs"
 out="$ROOT/deploy/runs/sweep-$(date -u +%Y%m%dT%H%M%SZ).json"
-docker compose "${env_file[@]}" -f "$ROOT/deploy/compose.yaml" --profile jobs run --rm -T sweep >"$out"
+docker compose "${env_file[@]}" "${files[@]}" --profile jobs run --rm -T sweep >"$out"
 echo "sweep complete; the run record is in $out"

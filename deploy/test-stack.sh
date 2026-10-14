@@ -14,7 +14,9 @@
 #     and its value never served.
 #
 # Run deploy/build.sh first (SKIP_SCANNER=1 deploy/build.sh if the scanner
-# image is already built). The stack is stopped at the end; its Docker
+# image is already built). The test's database lives in memory (tmpfs), so
+# each run starts empty and leaves no database volume. The stack is stopped
+# at the end; its other Docker
 # volumes (vf-stacktest_*) are kept, as nothing here deletes volumes.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -26,7 +28,7 @@ PROJECT=vf-stacktest
 U=https://localhost:18443
 cleanup() {
   if [ -n "$GHFAKE_PID" ]; then kill "$GHFAKE_PID" 2>/dev/null || true; wait "$GHFAKE_PID" 2>/dev/null || true; fi
-  docker compose --env-file "$WORK/env" -p "$PROJECT" -f deploy/compose.yaml down >/dev/null 2>&1 || true
+  if [ -f "$WORK/test.override.yaml" ]; then "${COMPOSE[@]}" down >/dev/null 2>&1 || true; fi
   rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -47,9 +49,19 @@ HTTPS_PORT=18443
 SWEEP_CONCURRENCY=2
 VULNFRAMEWORK_GITHUB_API=http://host.docker.internal:18090
 EOF
+# The test's database in memory: a fresh, empty database every run.
+cat >"$WORK/test.override.yaml" <<'YAML'
+services:
+  db:
+    volumes: !reset []
+    tmpfs:
+      - /var/lib/postgresql/data
+YAML
+export VF_ENV_FILE="$WORK/env" VF_COMPOSE_OVERRIDE="$WORK/test.override.yaml" COMPOSE_PROJECT_NAME="$PROJECT"
+COMPOSE=(docker compose --env-file "$WORK/env" -p "$PROJECT" -f deploy/compose.yaml -f "$WORK/test.override.yaml")
 
 echo "starting the stack ($PROJECT)"
-docker compose --env-file "$WORK/env" -p "$PROJECT" -f deploy/compose.yaml up -d >/dev/null 2>&1 || fail "compose up"
+"${COMPOSE[@]}" up -d >"$WORK/up.log" 2>&1 || fail "compose up: $(tail -n 5 "$WORK/up.log")"
 for _ in $(seq 1 60); do [ "$(code -u "admin:$PW" $U/v1/health)" = "200" ] && break; sleep 1; done
 
 echo "the front door"
@@ -81,7 +93,7 @@ GHFAKE_TOKEN=stacktest-token "$WORK/ghfake" -addr 127.0.0.1:18090 -base-url http
 GHFAKE_PID=$!
 for _ in $(seq 1 20); do curl -s -o /dev/null http://127.0.0.1:18090/user && break; sleep 0.5; done
 
-VF_ENV_FILE="$WORK/env" COMPOSE_PROJECT_NAME="$PROJECT" VULNFRAMEWORK_GITHUB_TOKEN=stacktest-token \
+VULNFRAMEWORK_GITHUB_TOKEN=stacktest-token \
   deploy/sweep.sh >"$WORK/sweep.log" 2>&1 || fail "sweep: $(tail -n 5 "$WORK/sweep.log")"
 record="$(ls -t deploy/runs/sweep-*.json | head -n 1)"
 python3 - "$record" <<'PY' || fail "the sweep record is wrong"
@@ -103,5 +115,14 @@ for f in "$WORK/planted"/*; do
   if grep -qF "$(cat "$f")" "$WORK/secrets.json"; then fail "a planted credential value was served"; fi
 done
 ok "planted secret reported, value never served"
+
+echo "administration through deploy/vfctl.sh"
+status="$(deploy/vfctl.sh github status 2>/dev/null)"
+printf '%s' "$status" | grep -q "octo (fine-grained token)" || fail "vfctl github status: $status"
+printf '%s' "$status" | grep -q "2 repositories, 2 to scan" || fail "vfctl github status: $status"
+deploy/vfctl.sh repo exclude octo/payments-web -reason "stack test" -as stacktest >/dev/null 2>&1 ||
+  fail "vfctl repo exclude"
+curl -sk -u "admin:$PW" "$U/v1/github" | grep -q '"stack test"' || fail "the exclusion is not on the GitHub page"
+ok "vfctl runs against the stack; an exclusion shows on the GitHub page"
 
 echo "STACK OK"

@@ -1,0 +1,126 @@
+#!/bin/bash
+# The VM's startup script (Terraform template). Runs on every boot and is
+# safe to re-run: each step checks before it acts.
+#
+#   1. install Docker from Docker's own repository;
+#   2. fetch the source into /opt/vulnframework (unless already there);
+#   3. write deploy/.env once: a database password generated here, the login
+#      hash from Secret Manager, the site address (this VM's static IP);
+#   4. build the images (the first boot takes 15-30 minutes, mostly the
+#      scanner image) and start the stack;
+#   5. install the daily sweep timer, which reads the GitHub token from
+#      Secret Manager at the moment it runs, for that run only.
+#
+# Progress: sudo tail -f /var/log/vulnframework-startup.log
+set -euo pipefail
+exec >>/var/log/vulnframework-startup.log 2>&1
+echo "=== startup $(date -u +%FT%TZ)"
+
+APP=/opt/vulnframework
+PROJECT='${project_id}'
+
+# --- 1. Docker ------------------------------------------------------------------
+if ! command -v docker >/dev/null 2>&1; then
+  apt-get update
+  apt-get install -y ca-certificates curl git python3
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  chmod a+r /etc/apt/keyrings/docker.asc
+  . /etc/os-release
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $VERSION_CODENAME stable" \
+    >/etc/apt/sources.list.d/docker.list
+  apt-get update
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  systemctl enable --now docker
+fi
+
+# --- secrets --------------------------------------------------------------------
+# Read a secret's latest version with the VM's own identity (the metadata
+# server's token), printing it to stdout only. No gcloud, no key file.
+cat >/usr/local/bin/vf-secret <<'SECRET'
+#!/bin/bash
+set -euo pipefail
+name="$1"
+project="$(curl -fsS -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/project/project-id)"
+token="$(curl -fsS -H 'Metadata-Flavor: Google' \
+  http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token |
+  python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')"
+curl -fsS -H "Authorization: Bearer $token" \
+  "https://secretmanager.googleapis.com/v1/projects/$project/secrets/$name/versions/latest:access" |
+  python3 -c 'import base64,json,sys; sys.stdout.write(base64.b64decode(json.load(sys.stdin)["payload"]["data"]).decode())'
+SECRET
+chmod 0755 /usr/local/bin/vf-secret
+
+# --- 2. source ------------------------------------------------------------------
+if [ ! -f "$APP/deploy/compose.yaml" ]; then
+  if [ -n '${repo_url}' ]; then
+    git clone --depth 1 --branch '${repo_ref}' '${repo_url}' "$APP" || {
+      echo "Could not clone ${repo_url} (private, or not pushed yet). Copy the source to $APP as DEPLOY.md describes, then reboot."
+      exit 0
+    }
+  else
+    echo "No repo_url: copy the source to $APP as DEPLOY.md describes, then reboot."
+    exit 0
+  fi
+fi
+
+# --- 3. deploy/.env -------------------------------------------------------------
+ENV_FILE="$APP/deploy/.env"
+if [ ! -f "$ENV_FILE" ]; then
+  hash="$(vf-secret '${login_hash_secret}')" || {
+    echo "Secret ${login_hash_secret} is missing or empty; add a version (DEPLOY.md step 4) and reboot."
+    exit 0
+  }
+  umask 077
+  cat >"$ENV_FILE" <<ENV
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+SITE_ADDRESS=${site_address}
+TLS=${tls}
+LOGIN_USER=${login_user}
+LOGIN_HASH='$hash'
+HTTP_PORT=80
+HTTPS_PORT=443
+SWEEP_CONCURRENCY=${sweep_concurrency}
+ENV
+  umask 022
+fi
+
+# --- 4. images and stack --------------------------------------------------------
+cd "$APP"
+if ! docker image inspect vulnframework-api:v1 vulnframework-web:v1 vulnframework-sweep:v1 >/dev/null 2>&1; then
+  deploy/build.sh
+fi
+docker compose -f deploy/compose.yaml up -d
+
+# --- 5. daily sweep -------------------------------------------------------------
+cat >/etc/systemd/system/vulnframework-sweep.service <<UNIT
+[Unit]
+Description=vulnframework sweep: discover, download and scan (read-only)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=$APP
+# The token goes from Secret Manager into this process's environment and on
+# to the sweep container by name. It is never written to disk. ($$ is
+# systemd's escape for a literal $, so bash receives the command
+# substitution.)
+ExecStart=/bin/bash -c 'VULNFRAMEWORK_GITHUB_TOKEN="\$\$(/usr/local/bin/vf-secret ${github_token_secret})" exec $APP/deploy/sweep.sh'
+UNIT
+
+cat >/etc/systemd/system/vulnframework-sweep.timer <<UNIT
+[Unit]
+Description=Daily vulnframework sweep
+
+[Timer]
+OnCalendar=${sweep_schedule}
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now vulnframework-sweep.timer
+echo "=== ready: https://${site_address} (next sweep: $(systemctl show vulnframework-sweep.timer -p NextElapseUSecRealtime --value))"

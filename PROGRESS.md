@@ -7,8 +7,9 @@ read this file first and resume from "Next".
 
 - **Priority changed by you (2026-10-13):** build only what a bare-minimum
   NON-LOCAL demo needs, before resuming Phase 1. See "Demo track" below.
-- **Phase:** demo track, step D3 (GCP as code, DEPLOY.md)
-- **Next:** Terraform for the VM, startup script, sweep timer; validate via the terraform image
+- **Phase:** demo track complete (D1-D3). Waiting on you for the cloud steps.
+- **Next (when you say so):** resume the unattended plan at Phase 1
+  (mixed-language scanning); the earlier plan for it is below.
 
 ## Ground rules in force
 
@@ -97,6 +98,19 @@ over HTTPS behind a login, from your IP only.
   snapshots. `terraform fmt/validate` only, via the official image. DEPLOY.md
   with exact steps, costs, teardown.
 
+  - **D3 result: done.** `deploy/terraform/gcp/` (VM, VPC, firewall to
+    your IP, IAP-only SSH, egress limited to ports 80/443/53, service
+    account reading exactly two secrets, static IP, daily snapshots,
+    startup script that builds and starts the stack and installs a daily
+    sweep timer) and `DEPLOY.md`. `terraform fmt -check` and `validate`
+    pass (hashicorp/terraform:1.9.8 image, no cloud login); the startup
+    template renders and passes `bash -n`; the generated systemd unit was
+    checked. Not run: plan/apply (forbidden; yours). Also added
+    `deploy/vfctl.sh` (vfctl against the stack) and made the stack test
+    repeatable (database in tmpfs). Found while testing: a database volume
+    keeps the password it was created with, so regenerating `.env` on a
+    VM with data locks the stack out of its database (DEPLOY.md warns).
+
 ## Demo of 2026-10-13 (GCP-Sec, at your request, before this run)
 
 Real-mode sweep S-000001 of GCP-Sec (complete, 99 findings) and
@@ -143,6 +157,14 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
   full Phase 4 (OIDC, roles, TOTP); the Caddyfile says where an identity
   provider goes. Chosen because the API was already built to trust an
   authenticating proxy, so no API code changed.
+- **Secrets never pass through Terraform.** You create the token and
+  login-hash secrets with gcloud before apply; Terraform only grants the
+  VM read access, so neither is in Terraform state. The database password
+  is generated on the VM at first boot.
+- **The firewall refuses 0.0.0.0/0,** so the default certificate is Caddy's
+  own (browser warning); Let's Encrypt would need the internet let in.
+- **Egress is limited by port, not destination:** naming destinations needs
+  Cloud NGFW Enterprise, a paid add-on.
 - **Test stacks leave their Docker volumes** (`vf-d2test_*`,
   `vf-stacktest_*`): the rules forbid deleting volumes. Remove them with
   `docker volume rm $(docker volume ls -q | grep -E '^vf-(d2test|stacktest)_')`.
@@ -155,6 +177,27 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
 (none)
 
 ## Only you can do
+
+For the cloud demo, in order (details and exact commands in DEPLOY.md):
+1. Allow the two old fake keys via the unblock links, then
+   `git push -u origin main real-repos` (or copy the code to the VM).
+2. `gcloud auth login && gcloud auth application-default login`.
+3. Create a fine-grained GitHub token: Contents read-only, Metadata
+   read-only.
+4. Create the secrets `vulnframework-github-token` and
+   `vulnframework-login-hash` (DEPLOY.md step 4).
+5. `terraform init && terraform plan && terraform apply` in
+   `deploy/terraform/gcp` with your project ID and IP. This costs money
+   (~US$4/day while running).
+6. Wait for first boot, open the URL, run the first sweep.
+7. Afterwards: `terraform destroy`, delete snapshots and secrets, revoke the
+   token (DEPLOY.md "Tear it all down").
+
+Housekeeping on this Mac: the real-mode demo app (`./run.sh --real`, ports
+8080/5173) is still running from earlier; and test volumes `vf-d2test_*`,
+`vf-stacktest_*` can be removed when you like.
+
+Earlier items:
 
 - Push `real-repos` and `main` (origin is set to
   https://github.com/pobtampal/vulnerabilityAI.git). The fake keys are gone

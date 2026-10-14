@@ -25,3 +25,10 @@ dist/
 # The stack's secrets
 deploy/.env
 deploy/runs/
+
+# Terraform state, plans, variables and provider caches
+deploy/terraform/**/.terraform/
+deploy/terraform/**/*.tfstate*
+deploy/terraform/**/*.tfplan
+deploy/terraform/**/terraform.tfvars
+deploy/terraform/**/.terraform.lock.hcl

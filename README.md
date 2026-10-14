@@ -34,6 +34,11 @@ real.
 
 * `SETUP.md` — installing the two prerequisites, step by step.
 * `USAGE.md` — what each screen shows and how to read it.
+* `REAL-REPOS.md` — scanning your own clones, read-only, on this machine.
+* `DEPLOY.md` — running it on a Google Cloud VM: a read-only GitHub token
+  discovers your repositories, a daily sweep scans them, and you browse the
+  results over HTTPS behind a login. `deploy/test-stack.sh` proves the stack
+  locally against a fake GitHub first.
 * `FINAL-STATUS.md` — **what is real and what is not**, and exactly what stands
   between this and a production deployment. Read this before drawing any
   conclusion about what the system can do today.
