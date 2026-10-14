@@ -1,0 +1,101 @@
+# The whole service on one machine: database, API, web front door, and a
+# sweep job. Cloud-agnostic; deploy/terraform/gcp is the only provider-specific
+# part, and all it does is make a VM that runs this.
+#
+#   cp deploy/env.example deploy/.env      # then fill it in
+#   deploy/build.sh                        # build the images on this machine
+#   docker compose -f deploy/compose.yaml up -d
+#   VULNFRAMEWORK_GITHUB_TOKEN=... deploy/sweep.sh
+#
+# Only the web service publishes ports. The API and the database are reachable
+# only on the compose network: the API trusts identity headers, so it must
+# never be reachable except through the proxy that sets them (deploy/Caddyfile).
+
+name: vulnframework
+
+services:
+  db:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vulnframework
+      POSTGRES_DB: vulnframework
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "vulnframework"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    image: vulnframework-api:v1
+    entrypoint: ["/usr/local/bin/orchestrator"]
+    command: ["-dsn", "postgres://vulnframework:${POSTGRES_PASSWORD}@db:5432/vulnframework?sslmode=disable", "-migrate"]
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    image: vulnframework-api:v1
+    restart: unless-stopped
+    command:
+      - "-addr=0.0.0.0:8080"
+      - "-dsn=postgres://vulnframework:${POSTGRES_PASSWORD}@db:5432/vulnframework?sslmode=disable"
+      - "-calibration=/opt/vf/config/calibration.yaml"
+      - "-policy=/opt/vf/config/policy.yaml"
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    # No ports: reachable only through web.
+
+  web:
+    image: vulnframework-web:v1
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in deploy/.env}
+      TLS: ${TLS:-internal}
+      LOGIN_USER: ${LOGIN_USER:?set LOGIN_USER in deploy/.env}
+      LOGIN_HASH: ${LOGIN_HASH:?set LOGIN_HASH in deploy/.env}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+  # The sweep is a job, not a service: `deploy/sweep.sh` runs it once
+  # (a timer runs that daily on the VM). The token is passed in from the
+  # caller's environment for this run only and is never written here.
+  sweep:
+    image: vulnframework-sweep:v1
+    profiles: ["jobs"]
+    environment:
+      VULNFRAMEWORK_GITHUB_TOKEN: ${VULNFRAMEWORK_GITHUB_TOKEN:-}
+    command:
+      - "-dsn=postgres://vulnframework:${POSTGRES_PASSWORD}@db:5432/vulnframework?sslmode=disable"
+      - "-github"
+      - "-github-api=${VULNFRAMEWORK_GITHUB_API:-}"
+      # Under the scanner home volume, which the scanner user owns; each
+      # repository is deleted after its scan.
+      - "-download-root=/home/scanner/repos"
+      - "-tools=/opt/vf/config/tools.lock"
+      - "-calibration=/opt/vf/config/calibration.yaml"
+      - "-policy=/opt/vf/config/policy.yaml"
+      - "-kev-url=${KEV_URL:-https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json}"
+      - "-epss-url=${EPSS_URL:-https://epss.empiricalsecurity.com/epss_scores-current.csv.gz}"
+      - "-max-concurrent=${SWEEP_CONCURRENCY:-2}"
+    volumes:
+      - scanhome:/home/scanner
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+  scanhome:

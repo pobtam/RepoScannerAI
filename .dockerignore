@@ -1,0 +1,13 @@
+# Keep the build context to source: no dependencies, build output, history,
+# local databases or documents.
+.git
+**/node_modules
+**/dist
+vulnframework/bin
+reportui/dist
+prototype
+*.pdf
+*.png
+deploy/terraform/**/.terraform
+deploy/terraform/**/*.tfstate*
+deploy/.env

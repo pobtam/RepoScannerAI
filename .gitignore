@@ -21,3 +21,7 @@ dist/
 /vulnframework/vfctl
 /vulnframework/fixworker
 /vulnframework/scanworker
+
+# The stack's secrets
+deploy/.env
+deploy/runs/

@@ -44,7 +44,12 @@ type Repo struct {
 
 // Server is the fake.
 type Server struct {
+	// Server is set when the fake runs in-process for a test (New). A
+	// standalone fake (cmd/ghfake) leaves it nil and sets BaseURL.
 	*httptest.Server
+	// BaseURL is the address clients reach the fake at, used for Link
+	// headers when the fake is not an httptest server.
+	BaseURL string
 
 	mu sync.Mutex
 	// Account and Token are what /user answers and what Authorization must
@@ -68,8 +73,18 @@ type Server struct {
 // New starts a fake for account, accepting token.
 func New(account, token string, repos ...Repo) *Server {
 	s := &Server{Account: account, Token: token, Repos: repos, PageSize: 2}
-	s.Server = httptest.NewServer(http.HandlerFunc(s.serve))
+	s.Server = httptest.NewServer(s)
 	return s
+}
+
+// ServeHTTP makes the fake an http.Handler, for a standalone server.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) { s.serve(w, r) }
+
+func (s *Server) base() string {
+	if s.BaseURL != "" {
+		return s.BaseURL
+	}
+	return s.Server.URL
 }
 
 // Requests lists every request as "METHOD path", in order.
@@ -146,7 +161,7 @@ func (s *Server) serveRepos(w http.ResponseWriter, r *http.Request) {
 	if end < len(s.Repos) {
 		q := r.URL.Query()
 		q.Set("page", strconv.Itoa(page+1))
-		w.Header().Set("Link", fmt.Sprintf(`<%s/user/repos?%s>; rel="next"`, s.URL, q.Encode()))
+		w.Header().Set("Link", fmt.Sprintf(`<%s/user/repos?%s>; rel="next"`, s.base(), q.Encode()))
 	}
 	var out []map[string]any
 	for _, repo := range s.Repos[start:end] {

@@ -7,8 +7,8 @@ read this file first and resume from "Next".
 
 - **Priority changed by you (2026-10-13):** build only what a bare-minimum
   NON-LOCAL demo needs, before resuming Phase 1. See "Demo track" below.
-- **Phase:** demo track, step D2 (deployable package and minimal login)
-- **Next:** production images, compose stack, Caddy login, sweep timer
+- **Phase:** demo track, step D3 (GCP as code, DEPLOY.md)
+- **Next:** Terraform for the VM, startup script, sweep timer; validate via the terraform image
 
 ## Ground rules in force
 
@@ -79,6 +79,19 @@ over HTTPS behind a login, from your IP only.
   scanner image), docker compose, HTTPS with basic auth at Caddy which strips
   client-sent identity headers and sets its own, a daily sweep timer.
   Verified locally with compose: no login -> 401, forged header -> 401.
+  - **D2 result: done.** `deploy/`: Dockerfile (api on distroless, web on
+    Caddy with the built UI, sweep on the pinned scanner image), compose
+    stack, Caddyfile, env.example, build.sh, sweep.sh, test-stack.sh.
+    `deploy/test-stack.sh` passes locally: no login / wrong password /
+    forged headers all 401; login gets the UI and API; the API publishes no
+    port; client identity headers are overwritten (API logs
+    principal=admin level=security_owner); a sweep through the real sweep
+    image discovers a fake account (ghfake), downloads and scans both
+    fabricated repos (116 and 77 findings), planted secret reported and
+    never served. Found and fixed while testing: `SITE_ADDRESS=:443` gives
+    Caddy no name to issue a certificate for (handshake fails), so the site
+    address must be a hostname or IP; `sweep.sh` must not pass arguments to
+    `compose run` (they replace the command).
 - **D3, GCP as code (Phase 6 minimum).** Terraform: VM, static IP, firewall
   to your IP, IAP SSH, Secret Manager for the token and login hash, disk
   snapshots. `terraform fmt/validate` only, via the official image. DEPLOY.md
@@ -125,6 +138,14 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
   repositories and every one is skipped with a reason, discovery archives
   the registry; if GitHub lists none while the registry holds some, it
   refuses (the existing empty-fleet guard).
+- **Minimal login = HTTP basic auth at Caddy over HTTPS,** one login at the
+  security-owner level, plus the firewall limited to your IP (D3). Not the
+  full Phase 4 (OIDC, roles, TOTP); the Caddyfile says where an identity
+  provider goes. Chosen because the API was already built to trust an
+  authenticating proxy, so no API code changed.
+- **Test stacks leave their Docker volumes** (`vf-d2test_*`,
+  `vf-stacktest_*`): the rules forbid deleting volumes. Remove them with
+  `docker volume rm $(docker volume ls -q | grep -E '^vf-(d2test|stacktest)_')`.
 - **The smoke test's throwaway database is deleted after each run.** It is
   created by the script, in a temp folder, never a named Docker volume; the
   "never delete databases" rule is about yours.

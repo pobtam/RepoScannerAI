@@ -1,0 +1,68 @@
+# The front door: HTTPS, the login, and the identity the API trusts.
+#
+# The API serves real data only to a request carrying identity headers
+# (X-Auth-User, X-Auth-Level), and trusts whoever sets them. So the API is
+# never published: it is reachable only on the compose network, through this
+# proxy, and this proxy:
+#
+#   1. requires a login (HTTP basic auth over HTTPS, bcrypt hash);
+#   2. DELETES any identity header the client sent, then sets its own from the
+#      authenticated login. A client cannot claim to be anyone.
+#
+# One login, at the security-owner level, is the bare minimum for a demo. A
+# real deployment puts an identity provider here instead (OpenID Connect via
+# an oauth2 proxy, or the cloud's identity-aware proxy) and keeps step 2.
+#
+# Environment (deploy/.env):
+#   SITE_ADDRESS  what to serve: a hostname, or :443 for "any name"
+#   TLS           "internal" (Caddy's own CA: a browser warning, no public
+#                 exposure needed) or an e-mail address (Let's Encrypt, which
+#                 needs ports 80/443 reachable from the internet)
+#   LOGIN_USER    the login name
+#   LOGIN_HASH    its bcrypt hash: docker run --rm caddy:2.8.4-alpine caddy hash-password
+
+{
+	admin off
+}
+
+{$SITE_ADDRESS} {
+	tls {$TLS}
+
+	request_header -X-Auth-User
+	request_header -X-Auth-Level
+	request_header -X-Auth-Repos
+
+	basic_auth {
+		{$LOGIN_USER} {$LOGIN_HASH}
+	}
+
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+		-Server
+	}
+
+	handle /v1/* {
+		reverse_proxy api:8080 {
+			header_up X-Auth-User {http.auth.user.id}
+			header_up X-Auth-Level security_owner
+			header_up -X-Auth-Repos
+		}
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
