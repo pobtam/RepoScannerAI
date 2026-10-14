@@ -43,6 +43,24 @@ export function Explorer() {
 
   useEffect(() => setText(state.q ?? ''), [state.q]);
 
+  // Hiding the filter panel gives the table its width back. A per-viewer
+  // convenience, like row density: localStorage, never the URL, and the
+  // active filters stay in force (and listed as chips) while it is hidden.
+  const [filtersHidden, setFiltersHidden] = useState(() => {
+    try {
+      return window.localStorage.getItem('explorer.filters') === 'hidden';
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('explorer.filters', filtersHidden ? 'hidden' : 'shown');
+    } catch {
+      // Blocked site data: the choice lasts for this page only.
+    }
+  }, [filtersHidden]);
+
   const update = (next: ExplorerState) => {
     navigate(`/findings${serialiseExplorerState(next)}`);
   };
@@ -62,13 +80,15 @@ export function Explorer() {
   });
 
   return (
-    <div className="explorer">
-      <FilterPanel
-        state={state}
-        facets={facets.data}
-        facetsError={facets.error as Error | null}
-        onChange={update}
-      />
+    <div className={`explorer${filtersHidden ? ' filters-hidden' : ''}`}>
+      {!filtersHidden && (
+        <FilterPanel
+          state={state}
+          facets={facets.data}
+          facetsError={facets.error as Error | null}
+          onChange={update}
+        />
+      )}
 
       <div className="explorer-main">
         <Panel
@@ -88,6 +108,13 @@ export function Explorer() {
           }
           actions={
             <>
+              <button
+                type="button"
+                onClick={() => setFiltersHidden((h) => !h)}
+                aria-pressed={!filtersHidden}
+              >
+                {filtersHidden ? 'Show filters' : 'Hide filters'}
+              </button>
               <select
                 value={state.scope}
                 onChange={(e) =>

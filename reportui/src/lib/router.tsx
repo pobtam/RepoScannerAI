@@ -72,11 +72,15 @@ export function Link({
   children,
   className,
   title,
+  current,
 }: {
   to: string;
   children: ReactNode;
   className?: string;
   title?: string;
+  /** Marks the link as the page being shown, for assistive technology as
+   *  well as for the eye (WCAG 2.4.8). */
+  current?: boolean;
 }) {
   const { navigate } = useRouter();
   return (
@@ -84,6 +88,7 @@ export function Link({
       href={to}
       className={className}
       title={title}
+      aria-current={current ? 'page' : undefined}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
         e.preventDefault();

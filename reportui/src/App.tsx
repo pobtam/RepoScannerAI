@@ -21,6 +21,7 @@ import { RepoDetail, RepoIndex } from './features/repos/Repos';
 import { Waves } from './features/waves/Waves';
 import { Reports } from './features/reports/Reports';
 import { Link, RouterProvider, match, useRouter } from './lib/router';
+import { icons } from './components/icons';
 
 const client = new QueryClient({
   defaultOptions: {
@@ -45,39 +46,108 @@ export function App() {
   );
 }
 
+/** The navigation, in the order a reader works: what happened, what is
+ *  open, whether it was all looked at; then the records behind it. */
+const NAV: { heading: string; items: { to: string; label: string; icon: ReactNode; active: (p: string) => boolean }[] }[] = [
+  {
+    heading: 'Monitor',
+    items: [
+      { to: '/', label: 'Overview', icon: icons.overview, active: (p) => p === '/' || p === '' },
+      { to: '/findings?scope=open', label: 'Findings', icon: icons.findings, active: (p) => p.startsWith('/findings') },
+      { to: '/coverage', label: 'Coverage', icon: icons.coverage, active: (p) => p === '/coverage' },
+    ],
+  },
+  {
+    heading: 'Explore',
+    items: [
+      { to: '/repos', label: 'Repositories', icon: icons.repos, active: (p) => p.startsWith('/repos') },
+      { to: '/waves', label: 'Waves', icon: icons.waves, active: (p) => p === '/waves' },
+    ],
+  },
+  {
+    heading: 'Records',
+    items: [
+      { to: '/runs', label: 'Run history', icon: icons.history, active: (p) => p.startsWith('/runs') },
+      { to: '/reports', label: 'Reports', icon: icons.reports, active: (p) => p === '/reports' },
+    ],
+  },
+];
+
 function Shell() {
+  const { path } = useRouter();
+  const [navOpen, setNavOpen] = useState(false);
+
+  // A drawer left open over the page you just chose is in the way.
+  useEffect(() => setNavOpen(false), [path]);
+
   return (
-    <>
-      <DeploymentBanner />
-      <header className="masthead">
-        <h1>
-          <Link to="/">Vulnerability report browser</Link>
-        </h1>
-        <DensityToggle />
+    <div className="app" data-nav={navOpen ? 'open' : 'closed'}>
+      <aside className="sidebar" id="sidebar">
+        <Link to="/" className="brand">
+          <span className="brand-mark">{icons.shield}</span>
+          <span>
+            Vulnerability
+            <span className="brand-sub">report browser</span>
+          </span>
+        </Link>
+
         <nav aria-label="Main">
-          <Link to="/">Latest run</Link>
-          <Link to="/findings?scope=open">Findings</Link>
-          <Link to="/coverage">Coverage</Link>
-          <Link to="/runs">History</Link>
-          <Link to="/repos">Repositories</Link>
-          <Link to="/waves">Waves</Link>
-          <Link to="/reports">Reports</Link>
+          {NAV.map((section) => (
+            <div className="nav-section" key={section.heading}>
+              <p className="nav-heading">{section.heading}</p>
+              {section.items.map((item) => (
+                <Link key={item.to} to={item.to} className="nav-link" current={item.active(path)}>
+                  {item.icon}
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ))}
         </nav>
-      </header>
-      <main>
-        <ErrorBoundary>
-          <Routes />
-        </ErrorBoundary>
-      </main>
-      <footer className="footer">
-        <p className="muted small">
-          Counts, priorities and coverage figures on these pages are the framework's own — the
-          interface computes none of them, so it cannot disagree with a report about the same run.
-          Where a figure rests on incomplete inputs the qualification is beside the number, not in
-          this footer.
-        </p>
-      </footer>
-    </>
+
+        <div className="sidebar-foot">
+          <DeploymentStatus />
+          <div className="sidebar-tools">
+            <DensityToggle />
+            <ThemeToggle />
+          </div>
+        </div>
+      </aside>
+      <div className="scrim" onClick={() => setNavOpen(false)} aria-hidden="true" />
+
+      <div className="page">
+        <header className="topbar">
+          <button
+            type="button"
+            className="menu-button"
+            aria-label="Open navigation"
+            aria-controls="sidebar"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((o) => !o)}
+          >
+            {icons.menu}
+          </button>
+          <Link to="/" className="brand">
+            <span className="brand-mark">{icons.shield}</span>
+            <span>Vulnerability</span>
+          </Link>
+        </header>
+        <DemoNotice />
+        <main>
+          <ErrorBoundary>
+            <Routes />
+          </ErrorBoundary>
+        </main>
+        <footer className="footer">
+          <p className="small">
+            Counts, priorities and coverage figures on these pages are the framework's own — the
+            interface computes none of them, so it cannot disagree with a report about the same run.
+            Where a figure rests on incomplete inputs the qualification is beside the number, not in
+            this footer.
+          </p>
+        </footer>
+      </div>
+    </div>
   );
 }
 
@@ -146,42 +216,117 @@ function DensityToggle() {
   return (
     <button
       type="button"
-      className="link-button density"
+      className="tool-button"
       onClick={() => setDense((d) => !d)}
       aria-pressed={dense}
+      title={dense ? 'Switch to comfortable rows' : 'Switch to compact rows'}
     >
-      {dense ? 'Comfortable rows' : 'Compact rows'}
+      {icons.rows}
+      Compact
     </button>
   );
 }
 
 /**
- * DeploymentBanner says what this deployment cannot do.
+ * ThemeToggle cycles the colour scheme: following the system, light, dark.
+ * Like density it is a per-viewer convenience, so it lives in localStorage.
+ */
+function ThemeToggle() {
+  const order = ['system', 'light', 'dark'] as const;
+  type Theme = (typeof order)[number];
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      const t = window.localStorage.getItem('theme');
+      return t === 'light' || t === 'dark' ? t : 'system';
+    } catch {
+      return 'system';
+    }
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'system') delete root.dataset.theme;
+    else root.dataset.theme = theme;
+    try {
+      window.localStorage.setItem('theme', theme);
+    } catch {
+      // Blocked site data: the choice lasts for this page only.
+    }
+  }, [theme]);
+
+  const label = theme === 'system' ? 'Auto' : theme === 'light' ? 'Light' : 'Dark';
+  return (
+    <button
+      type="button"
+      className="tool-button"
+      onClick={() => setTheme((t) => order[(order.indexOf(t) + 1) % order.length] ?? 'system')}
+      title={`Colour scheme: ${label}. Click to change.`}
+      aria-label={`Colour scheme: ${label}`}
+    >
+      {icons.theme}
+      {label}
+    </button>
+  );
+}
+
+/**
+ * DemoNotice and DeploymentStatus say what this deployment cannot do.
  *
  * Demonstration data and an uncalibrated threshold are both facts that change
- * what a number means, and neither is visible in the number itself.
+ * what a number means, and neither is visible in the number itself. Demo data
+ * changes EVERY number, so it is a notice across the top of every page; the
+ * backend and the degraded inputs sit in the sidebar, always in view, with
+ * each qualification also repeated beside the figures it affects.
  */
-function DeploymentBanner() {
-  const q = useQuery({ queryKey: ['health'], queryFn: api.health, staleTime: 60_000 });
+function useHealth() {
+  return useQuery({ queryKey: ['health'], queryFn: api.health, staleTime: 60_000 });
+}
+
+function DemoNotice() {
+  const q = useHealth();
+  if (!q.data?.demo) return null;
+  return (
+    <div className="notice" role="note">
+      <span aria-hidden="true">⚠</span>
+      <span>
+        <strong>Demonstration data.</strong> Every repository, advisory and credential below is
+        fabricated. None of it came from a scanner.
+      </span>
+    </div>
+  );
+}
+
+function DeploymentStatus() {
+  const q = useHealth();
   if (!q.data) return null;
   const h = q.data;
+  const degraded = h.degraded ?? [];
   return (
-    <div className={`banner${h.demo ? ' banner-demo' : ''}`} role="note">
-      {h.demo && (
-        <strong>
-          DEMONSTRATION DATA — every repository, advisory and credential below is fabricated. None
-          of it came from a scanner.{' '}
-        </strong>
-      )}
-      <span>
-        Reading the <strong>{h.backend}</strong> backend.
-      </span>
-      {h.degraded && h.degraded.length > 0 && (
-        <span>
-          {' '}
-          Degraded in this deployment: {h.degraded.join('; ')}. Figures that rest on those inputs
-          carry the qualification beside them.
+    <div className="status-card" role="note">
+      <div className="status-row">
+        <span>Backend</span>
+        <span className="pill">
+          <span className="pill-dot" aria-hidden="true" />
+          {h.backend}
         </span>
+      </div>
+      {degraded.length > 0 && (
+        <details>
+          <summary>
+            <span className="status-row" style={{ marginTop: 8 }}>
+              <span>Provisional inputs</span>
+              <span className="pill pill-warn">{degraded.length}</span>
+            </span>
+          </summary>
+          <ul>
+            {degraded.map((d) => (
+              <li key={d}>{d}</li>
+            ))}
+          </ul>
+          <p className="small" style={{ margin: '6px 0 0' }}>
+            Figures that rest on these carry the qualification beside them.
+          </p>
+        </details>
       )}
     </div>
   );
