@@ -300,3 +300,140 @@ is not mistaken for something already handled.
 
 `FINAL-STATUS.md` lists what is real and what is a stub, which is the input to
 this decision.
+
+---
+
+## D12 — Phase 1: what is scanned, how versions compare, and whose rules
+
+Recorded 2026-10-19. Two parts are **decided**; the third is decided in
+principle, with a per-language proposal **awaiting approval** before anything
+is built.
+
+### Decided
+
+- **Exclusions.** `vendor/` is excluded from dependency and code scanning (its
+  dependencies are declared by the parent manifest, and its code is someone
+  else's) but **kept in secrets scanning**, because vendored files are
+  committed and a secret in them is exposed. `node_modules/` and build output
+  (`dist/`, `build/` when generated, `target/`, `.venv/`, `venv/`,
+  `site-packages/`, `bower_components/`) are excluded **everywhere**: they are
+  installed or generated, not authored. Every exclusion is reported with its
+  reason and file count, never silent. Test folders are never excluded.
+- **Version comparison.** `github.com/google/osv-scalibr/semantic`
+  (Apache-2.0): the ecosystem-specific ordering osv-scanner itself uses (PEP
+  440, Maven, RubyGems, SemVer, Go and others). A Go library, not a scanner.
+
+### Decided in principle: no official semgrep-rules
+
+The official `semgrep/semgrep-rules` repository is under the **Semgrep Rules
+License v1.0**, which does not permit use in a product. Since this may become
+one, it is not used, at any commit. Rules written for this project live in
+this repository (`vulnframework/config/semgrep/rules/`).
+
+The **semgrep engine** (Community Edition, `semgrep 1.177.0`, already pinned)
+is **LGPL-2.1**. Running it unmodified as a separate program is compatible
+with a product; shipping it in the scanner image means shipping its licence
+text and offering its source. (Opengrep, the community fork, is also
+LGPL-2.1 and a drop-in alternative if that ever matters.)
+
+### Licences checked (2026-10-19, from each project's own LICENSE)
+
+| Candidate | Kind | Licence | Usable in a product? |
+|---|---|---|---|
+| semgrep/semgrep-rules (official) | semgrep rules | Semgrep Rules License v1.0 | **No** |
+| GitLab `sast-rules`, files marked MIT | semgrep rules | MIT | **Yes** |
+| GitLab `sast-rules`, `go/` | semgrep rules (ported from gosec) | Apache-2.0 | Yes |
+| GitLab `sast-rules`, `c/` | semgrep rules (ported from flawfinder) | GPL-2.0 | No (copyleft) |
+| GitLab `sast-rules`, `rules/gitlab/` (most) | semgrep rules | GitLab Enterprise Edition licence | **No** |
+| GitLab `sast-rules`, `rules/lgpl/` | semgrep rules | LGPL-3.0 | No (copyleft) |
+| GitLab `sast-rules`, `rules/lgpl-cc/` | semgrep rules (from semgrep-rules) | LGPL-2.1 + Commons Clause (no selling) | **No** |
+| trailofbits/semgrep-rules | semgrep rules | AGPL-3.0 | No |
+| 0xdea/semgrep-rules (C/C++) | semgrep rules | MIT | Yes |
+| elttam/semgrep-rules | semgrep rules | MIT | Yes |
+| dgryski/semgrep-go | semgrep rules | MIT | Yes |
+| mindedsecurity android rules | semgrep rules | GPL-3.0 | No |
+| Bandit (Python) | tool | Apache-2.0 | Yes |
+| eslint-plugin-security (JS) | ESLint plugin | Apache-2.0 | Yes |
+| ESLint, typescript-eslint | tool, parser | MIT | Yes |
+| eslint-plugin-no-unsanitized (JS) | ESLint plugin | MPL-2.0 | With care (file-level copyleft) |
+| njsscan (JS) | tool | LGPL-3.0 | No (copyleft) |
+| gosec (Go) | tool, **already used** | Apache-2.0 | Yes |
+| staticcheck (Go) | tool, **already used** | MIT | Yes |
+| RuboCop, `Security/*` cops (Ruby) | tool | MIT | Yes |
+| Brakeman (Ruby) | tool | Brakeman Public Use License (Synopsys) | **No** (source-available) |
+| Psalm taint analysis (PHP) | tool | MIT | Yes |
+| Progpilot (PHP) | tool | MIT | Yes |
+| phpcs-security-audit (PHP) | tool | GPL-3.0 | No |
+| PMD (Java) | tool | BSD-style (with DARPA acknowledgement) | Yes |
+| SpotBugs / find-sec-bugs (Java) | tool | LGPL-2.1 / LGPL-3.0 | No (copyleft, and needs a build) |
+| .NET Roslyn analyzers (C#) | analyzers | MIT | Yes, but need `dotnet build` |
+| Security Code Scan (C#) | analyzers | LGPL-3.0 | No |
+| flawfinder, cppcheck (C/C++) | tools | GPL-2.0, GPL-3.0 | No (copyleft) |
+| ShellCheck | tool | GPL-3.0 | No |
+| detekt (Kotlin), clippy (Rust) | tools | Apache-2.0, MIT/Apache-2.0 | Yes, but almost no security checks |
+| trivy (IaC, already used) | tool | Apache-2.0 | Yes |
+| Checkov, KICS (IaC) | tools | Apache-2.0 | Yes |
+| gitleaks (already used) | tool | MIT | Yes |
+
+"Copyleft" tools could legally be run unmodified as separate programs, but
+the brief asked for permissive licences, so they are excluded.
+
+**A caution on GitLab's rules.** GitLab marks each rule file with its own
+licence, and several MIT-marked sets are ports of rules from tools under other
+licences (Bandit, Apache-2.0; find-sec-bugs, LGPL-3.0, for Java and Scala).
+GitLab's own determination is that the ported files are MIT. We would rely on
+each file's header, keep GitLab's LICENSE beside the copied files, and record
+the source commit; **a legal review of the Java and Scala ports is advisable
+before this ships as a product.**
+
+### Coverage compared with the official rules
+
+Rule counts are a rough proxy: a rule in one set may cover more or less than a
+rule in another. Official = security-category rules in semgrep-rules
+`develop`, counted 2026-10-19 (1,674 in total). GitLab = MIT/Apache rule files
+at commit `53bf5cf6`.
+
+| Language | Official rules | Permissive replacement available | Gain or loss |
+|---|---:|---|---|
+| Python | 269 | GitLab MIT: 73 (ports of Bandit's checks); or Bandit itself (31 check modules) | **Large loss**: framework rules (Django, Flask) mostly gone |
+| JavaScript | 169 | GitLab MIT: 11; eslint-plugin-security: 15 | **Large loss** |
+| TypeScript | 20 | same as JavaScript | Loss |
+| Java | 119 | GitLab MIT: 55; PMD (few security rules) | Loss of about half |
+| Scala | 26 | GitLab MIT: 87 | **Gain** |
+| C# | 48 | GitLab MIT: 22 | Loss of about half |
+| Go | 73 | gosec + staticcheck (already run); GitLab's Go rules are gosec ports, so they add nothing | Similar |
+| Ruby | 92 | RuboCop `Security/*`: 7 cops | **Almost total loss** |
+| PHP | 64 | Psalm taint analysis, Progpilot (whole-program taint, no rule count) | Different, possibly deeper; needs dependencies installed |
+| Kotlin | 14 | none permissive | Gap unless we write rules |
+| C / C++ | 12 | 0xdea/semgrep-rules (MIT) | Comparable for dangerous-function checks |
+| Rust | 10 | none | Gap |
+| Terraform, Dockerfile, Kubernetes YAML | 262 + 7 + 50 | trivy misconfig (already run) | No loss: trivy's own check set |
+| Generic (mostly secrets) | 248 | gitleaks (already run) | No loss |
+| AI / LLM | 107 | none | **Our own rules, Phase 3** |
+
+### Proposal awaiting approval
+
+1. **Vendor GitLab's MIT and Apache files** (Python, Java, Scala, C#,
+   JavaScript) at a pinned commit into
+   `vulnframework/config/semgrep/vendor/gitlab-sast-rules/`, with GitLab's
+   LICENSE and a manifest of source paths. A test refuses any vendored file
+   whose header is not MIT or Apache-2.0.
+2. **Vendor 0xdea/semgrep-rules (MIT)** for C/C++ the same way.
+3. **Write our own rules** where the permissive sets are thin, starting with
+   JavaScript/TypeScript (eval and `Function`, `child_process` command
+   injection, SQL built from strings, DOM XSS sinks, path traversal, SSRF,
+   prototype pollution, weak crypto, JWT `none`), then Ruby and Kotlin. Each
+   rule has a vulnerable and a safe test case.
+4. **Add no new tool in Phase 1.** Bandit duplicates the GitLab Python ports;
+   ESLint, RuboCop and Psalm each need a new adapter, fixtures and an image
+   change, and Psalm needs a repository's dependencies installed. Revisit
+   per language after the pilot, if our own rules fall short.
+5. Where a language has **no** rules (Rust, Shell, Kotlin until written), the
+   scan reports a coverage gap "no code rules for <language>", with that
+   language's share of the repository, never a clean result.
+
+**Open questions for you:** approve 1–5 as a whole, or say which of these to
+change: Bandit, ESLint (with eslint-plugin-security), RuboCop and Psalm can
+each be added as a tool instead of, or as well as, our own rules; and whether
+to commission the legal review of GitLab's Java and Scala ports now or before
+release.
