@@ -9,9 +9,11 @@ read this file first and resume from "Next".
   NON-LOCAL demo needs, before resuming Phase 1. See "Demo track" below.
 - **Phase:** demo track complete (D1-D3). Waiting on you for the cloud steps.
 - **Waiting on you (2026-10-20):**
-  - Phase 1 rule sources: approve DECISIONS-NEEDED D12 points 1-5.
-  - Phase 3 AI scanner: choose from the NuGuard evaluation below.
-  - The PROGRESS wording fix for item 3 (fairness check, 2026-10-19).
+  - Phase 1 rule sources: your answer on DECISIONS-NEEDED D12 points 1-5
+    (the reply that settled Phase 3 left this as an unfilled placeholder).
+- **Decided 2026-10-20:** Phase 3 uses our own rules (option 2, D13);
+  NuGuard's `sbom generate` may be added later as an inventory signal only,
+  after a separate check. Evaluation image removed.
 - **Next (when you say so):** resume the unattended plan at Phase 1
   (mixed-language scanning); the earlier plan for it is below.
 
@@ -130,9 +132,68 @@ only NuGuard's AI inventory later, and only after a separate check.
   and the JavaScript `eval` and exec rules) into our own rules with
   attribution.
 
-**Decision needed from you:** our own rules only (recommended); our own
-rules plus NuGuard's `sbom generate` as an AI inventory (a later, separate
-check); NuGuard plus our own rules; or NuGuard alone.
+**Decided (2026-10-20): option 2.** Our own rules now; NuGuard's
+`sbom generate` may be added later as an inventory signal only, after a
+separate check. Rules that adapt NuGuard's ideas credit it per Apache-2.0.
+Recorded as DECISIONS-NEEDED D13.
+
+### Draft upstream issue (not posted)
+
+For github.com/NuGuardAI/nuguard. Two rules in
+`nuguard/analysis/plugins/semgrep_rules/ai-security.yaml`, v0.9.15
+(commit `fa3583c`), can never produce a finding.
+
+> **Title:** Two semgrep rules in ai-security.yaml can never match
+> (prompt-injection-fstring, eval-on-llm-output)
+>
+> **1. `nuguard-llm-prompt-injection-fstring` (line 7): exclusion equals the
+> match.** The rule's `pattern-not` is the same pattern as its `pattern`, so
+> every match is removed and the rule never fires:
+>
+> ```yaml
+> patterns:
+>   - pattern: |
+>       $LLM.chat(..., messages=[..., {"role": "user", "content": f"...{$INPUT}..."}], ...)
+>   - pattern-not: |
+>       $LLM.chat(..., messages=[..., {"role": "user", "content": f"...{$INPUT}..."}], ...)
+> ```
+>
+> Reproduce: `semgrep scan --config ai-security.yaml` on
+>
+> ```python
+> def fstring_case(llm, user):
+>     return llm.chat(messages=[{"role": "user", "content": f"Summarise {user}"}])
+> ```
+>
+> No finding. Expected: one. Suggested fix: drop the `pattern-not`, or make
+> it a `pattern-not-inside` for the validated case the comment describes.
+> Separately, the pattern only covers `$LLM.chat(...)`, not
+> `client.chat.completions.create(...)` or an f-string assigned to a
+> variable first, which is how most code builds prompts.
+>
+> **2. `nuguard-eval-on-llm-output` (line 78): needs `eval` and `exec` at
+> once.** Two `pattern:` entries under `patterns:` are a conjunction, so a
+> match would have to be both `eval($X)` and `exec($X)`:
+>
+> ```yaml
+> patterns:
+>   - pattern: eval($LLM_OUTPUT)
+>   - pattern: exec($LLM_OUTPUT)
+> ```
+>
+> Reproduce on `def f(llm_output): return eval(llm_output)` and
+> `def g(llm_output): exec(llm_output)`. No finding for either. Suggested
+> fix: `pattern-either`. As written it would then flag any `eval`; tying it
+> to model output (taint mode from the LLM call's return value) would make it
+> say what its message says.
+>
+> Found with semgrep 1.177.0, offline. Thank you for NuGuard.
+
+Other things seen, separate issues if wanted: `pip install nuguard==0.9.15`
+fails at start-up without the `[secrets]` extra (`cryptography` is imported
+but not a base dependency); offline, `analyze` reports `osv` and `trivy` as
+`ok` with 0 findings when their lookups failed; `finding_id` hashes change
+on every run.
 
 ## Ground rules in force
 
@@ -151,7 +212,7 @@ Plan, from reading the code (not the docs):
 | Item | State found | Action |
 |---|---|---|
 | 2: allowlisted and removed secrets | Done in `de01629`: proposals, vfctl confirm/reject/confirm-rotation, re-escalation, overview counts (Overview.tsx:191-206), report counts. History question answered: the sweep runs `gitleaks detect --no-git`, current files only (REAL-REPOS.md §9). | None |
-| 3: fleet simulation | Done in `998dc38`: data fixed, `diag_test.go` deleted, fleet tests pass with the planner's tie-break reversed. | None |
+| 3: fleet simulation | Done in `998dc38`: data fixed, `diag_test.go` deleted. The fleet tests pass with the planner unchanged; as a check, they also passed with the final name tie-break flipped on a scratch copy (not committed). The fairness fix from `21960c9` is intact: verified 2026-10-19 (no change to `ByCoverageStaleness` since; `TestRotationIsEvenWhenTheBudgetDoesNotDivideTheFleet` passes on memory and Postgres, and fails at 5-10 scans when the fairness step is removed). | None |
 | 4: allowlist warning | Partial: REAL-REPOS.md §9 says "keep the paths narrow" but its own example allowlists `_test\.go$` and `^testdata/`. | Rewrite the example to exact files and make the warning explicit |
 | Fake keys | 145 gitleaks hits in the committed tree. Real key formats: fake AWS pair, `ghp_`, `glpat-`, `xoxb-`, a PEM header, and AWS's documented example ID, across 16 files. False matches: 120 Go commit hashes in recorded govulncheck URLs, 1 advisory text in recorded osv output. | Central `internal/testkeys` assembles values at run time; fixture files carry placeholders expanded by the test loader and by capture.sh |
 

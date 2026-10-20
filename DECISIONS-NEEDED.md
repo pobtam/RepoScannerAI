@@ -437,3 +437,46 @@ change: Bandit, ESLint (with eslint-plugin-security), RuboCop and Psalm can
 each be added as a tool instead of, or as well as, our own rules; and whether
 to commission the legal review of GitLab's Java and Scala ports now or before
 release.
+
+---
+
+## D13 — Phase 3: how AI prompt vulnerabilities are found
+
+**Decided 2026-10-20: our own rules, now.** NuGuard's AI inventory
+(`nuguard sbom generate`) may be added later as an inventory signal only,
+after a separate check; `nuguard analyze` is not used. Where our rules adapt
+NuGuard's ideas, they credit NuGuard as Apache-2.0 requires (a NOTICE entry
+and an attribution comment in the rule).
+
+### The evaluation behind it
+
+NuGuard v0.9.15 (Apache-2.0; github.com/NuGuardAI/nuguard), evaluated
+read-only on 2026-10-20: only `sbom generate` and `analyze`, inside an image
+built from the scanner image, with networking disabled and no LLM
+credentials. Inputs were twelve fabricated vulnerable and safe cases for the
+five Phase 3 patterns, and three pinned public repositories, each run twice.
+Full results are in PROGRESS.md.
+
+| Question | Result |
+|---|---|
+| Works offline, no credentials | Yes. `sbom generate` makes no network attempt. `analyze` completes, but its OSV and trivy checks need the network and, offline, report `ok` with 0 findings. |
+| 1. User input in prompts | Missed. The rule for it can never match (its exclusion equals its match). |
+| 2. Model output to eval, shell, SQL, HTML | Partly. SQL in Python only; the eval rule can never match (needs `eval` and `exec` together). |
+| 3. Agent tools with shell or file-write | Partly. A structural check flags framework agents without human approval; no source rule; missed a plain OpenAI tools agent. |
+| 4. Secrets or system prompts sent to the model | Missed. |
+| 5. Missing token or call limits | Detected at INFO, hidden by the default severity filter. |
+| False alarms on safe examples | None from pattern rules; 3-6 posture findings on every AI app, safe or not, which dominate real repositories (37 on one). |
+| Stable across runs | SARIF byte-identical, but every result located in the SBOM file, not the source. JSON finding IDs change every run. |
+| Image size, runtime | +419 MB (Python 3.12 beside the image's 3.11); 2-8 s inventory and 6-24 s analysis per repository. |
+| Telemetry | None found. No LLM call without a key; semgrep run with metrics off. |
+| Licences | NuGuard and its bundled rules Apache-2.0; all 99 dependencies permissive. |
+
+### Why
+
+NuGuard caught about one of the five patterns reliably; two of its relevant
+rules cannot fire (reported upstream as a draft, see PROGRESS.md). Its default
+output is posture checks that do not distinguish safe from vulnerable code,
+and its IDs and locations would need a translation layer before our
+fingerprints could rest on them. Its inventory, however, found agents, tools,
+models, prompts and MCP servers in every repository offline, which is why it
+stays a candidate for that role only.
