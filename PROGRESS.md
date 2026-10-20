@@ -8,8 +8,131 @@ read this file first and resume from "Next".
 - **Priority changed by you (2026-10-13):** build only what a bare-minimum
   NON-LOCAL demo needs, before resuming Phase 1. See "Demo track" below.
 - **Phase:** demo track complete (D1-D3). Waiting on you for the cloud steps.
+- **Waiting on you (2026-10-20):**
+  - Phase 1 rule sources: approve DECISIONS-NEEDED D12 points 1-5.
+  - Phase 3 AI scanner: choose from the NuGuard evaluation below.
+  - The PROGRESS wording fix for item 3 (fairness check, 2026-10-19).
 - **Next (when you say so):** resume the unattended plan at Phase 1
   (mixed-language scanning); the earlier plan for it is below.
+
+## Phase 3 evaluation: NuGuard as the AI scanner (2026-10-20)
+
+Read-only. Nothing integrated; no repository file changed except this one.
+Everything ran in a throwaway image `vf-nuguard-eval:0.9.15` built FROM
+`vulnframework-scanner:v1` (unchanged), with `--network none`, no LLM
+credentials, sources mounted read-only, and `strace` recording connect().
+Only `nuguard sbom generate` and `nuguard analyze` were run.
+
+**What was tested**
+- NuGuard v0.9.15 (latest release, 2026-10-04; PyPI `nuguard==0.9.15`).
+- 12 fabricated cases, a vulnerable and a safe version of each Phase 3
+  pattern in Python (OpenAI SDK, Flask), plus TypeScript vulnerable versions
+  of patterns 1 and 2. No key-like strings.
+- 3 public repositories, pinned: `anthropics/claude-quickstarts@9ec32b9`
+  (MIT), `openai/openai-quickstart-python@ec8890d` (MIT),
+  `simonw/llm@cbeeb8f` (Apache-2.0).
+- Every case and repository was run twice.
+- Working files (cases, scripts, outputs) are in the session scratchpad
+  under `nuguard-eval/`; they are not in the repository.
+
+**Does it work offline, with no credentials?** Yes, with caveats.
+- `sbom generate` works fully offline and made no network attempt at all.
+- `analyze` completes offline. Its AI checks (NGA structural rules, ATLAS
+  graph checks, bundled semgrep rules) need no network.
+- Its dependency checks do need the network: its own OSV lookup
+  (api.osv.dev), and trivy, which it runs with the vulnerability scanner on
+  and, on claude-quickstarts, against a container image named in the repo
+  (`debian:12-slim`).
+- **Offline, these fail silently.** The log warns, but `tool_status` reports
+  `osv: ok, 0 findings` and `trivy: ok, 0 findings`. That is "clean because
+  nothing looked", which this project does not accept.
+- Packaging defect: `pip install nuguard==0.9.15` fails at start-up with
+  `No module named 'cryptography'`; it needs the `[secrets]` extra.
+- `analyze` exits 1 on any high finding and 2 on critical (by design,
+  `--fail-on high`).
+
+**The five patterns**
+
+| Pattern | Caught? | Detail |
+|---|---|---|
+| 1. User input in prompts without separation | **No** | `nuguard-llm-prompt-injection-fstring` can never match: its `pattern-not` is identical to its `pattern`, and it only looks at `.chat(...)`. Verified on code written exactly in the rule's shape. `nuguard-llm-direct-user-input` matches only a request field written inline in the call. Missed in Python and TypeScript. |
+| 2. Model output to eval / shell / SQL / HTML | **Partly** | Python: SQL only (`nuguard-sql-injection-via-llm`). `nuguard-eval-on-llm-output` can never match: it requires `eval(x)` AND `exec(x)` at once (verified). No shell or HTML rule for Python. TypeScript: `eval` and `execSync` caught by generic JavaScript rules, not AI-specific. |
+| 3. Agent tools with shell or file-write and no allowlist | **Partly** | No source rule. NGA-012 ("agent can invoke tool without human approval") fires on framework agents in claude-quickstarts, but not on a plain OpenAI `tools=` agent (case P3). It does not distinguish shell or file-write tools, or an allowlist; some tool names were parsing artefacts (`'  Aenter  '`, `' Create Rw Context'`). |
+| 4. Secrets or system prompts sent to the model | **No** | Nothing fired on credentials or `os.environ` in prompts. |
+| 5. Missing token or call limits | **Hidden by default** | `nuguard-no-output-length-limit` fires on a missing `max_tokens`, but at INFO, and `analyze` reports medium and above unless `--min-severity info` is passed. Unbounded loops, missing timeouts and retries are not checked. |
+
+**False alarms on the safe examples:** none from the pattern rules. But every
+case, safe or vulnerable, gets the same 3-6 posture findings (NGA-002 "no output
+guardrail", NGA-006 "missing authentication", NGA-009 "no audit logging",
+NGA-026 rate limiting, NGA-027 security headers, ATLAS-NC-001 "model API
+version not pinned"). On real repositories these dominate:
+- NGA-002 fires once per model name string, so `simonw/llm` gets 37 high
+  findings from its catalogue of model names, and claude-quickstarts 22.
+- claude-quickstarts gets 12 "critical" supply-chain findings because its
+  bundled threat-intel indicator for a "Bun downloader" matches any
+  `bun run` script.
+
+**Stability across two identical runs**
+- **SARIF:** byte-identical in 15 of 15 pairs. Rule IDs are stable
+  (`nga-NGA-006`, `atlas-ATLAS-NC-001`). But every SARIF result's location
+  is the generated `sbom.json`, not the source file and line, and the semgrep
+  rule IDs embed the install path
+  (`semgrep-opt.uv-tools.nuguard.lib.python3.12...nuguard-sql-injection-via-llm`).
+- **JSON:** the findings and their source locations (`/src/app.py:29`) are
+  identical, but every `finding_id` ends in a different random hash on each
+  run (`-9078c0cf` then `-282bc81f`), so it cannot be a fingerprint.
+
+**Cost**
+- Image size: +419 MB uncompressed (+129 MB compressed; scanner image
+  433 MB, evaluation image 562 MB, 2 MB of which is strace). It needs Python
+  3.12, installed beside the image's 3.11.
+- Runtime per repository: `sbom generate` 1.7-7.8 s, `analyze` 6-24 s.
+
+**Telemetry and network**
+- No telemetry or analytics library in the code paths of the two commands.
+- The LLM stays off with no key configured (`--no-llm` was also passed).
+- Semgrep is launched with `--metrics off --disable-version-check`.
+- Every network attempt seen (on port 53, all refused) came from the OSV
+  lookup and from trivy. `sbom generate` made none.
+
+**Licences**
+- NuGuard: Apache-2.0. Its LICENSE file is the short notice form, which
+  GitHub does not detect, but it is a valid grant; PyPI declares Apache-2.0.
+- Bundled rule data (four semgrep rule files, about 43 rules) is
+  NuGuard-authored under the same Apache-2.0; nothing comes from the
+  official semgrep-rules.
+- The bundled threat-intel file is a list of known-malicious package names
+  with sources cited.
+- All 99 installed Python packages are permissive (MIT, Apache, BSD, PSF,
+  MPL-2.0 x2; python-dateutil dual Apache/BSD; isoduration ISC).
+
+**Recommendation: our own rules for the five patterns.** If anything, take
+only NuGuard's AI inventory later, and only after a separate check.
+- NuGuard reliably catches about 1 of the 5 patterns as a finding (SQL from
+  model output). Two of the rules that should cover patterns 1 and 2 cannot
+  fire. Pattern 5 is hidden by default, and patterns 3 and 4 have no source
+  rule.
+- Its default findings are posture checks that fire identically on safe and
+  vulnerable code, and on real repositories they bury everything else.
+- Its random finding IDs and SBOM-only SARIF locations would need a
+  translation layer before our fingerprints could rest on them.
+- Its offline dependency checks report "ok, 0" when they could not run.
+- **NuGuard plus our own rules** would mean carrying 419 MB and a second
+  Python, and filtering out most of its output, to keep one SQL rule we
+  would write anyway.
+- **NuGuard alone** misses most of what Phase 3 is for.
+- **What is worth keeping:** `sbom generate` is good at what Phase 3 calls
+  "detect AI use": it found agents, tools, models, prompts and MCP servers
+  in every repository, offline. If that inventory turns out to be better
+  than our own SDK-import detection, it could be added later as a
+  source-only signal, with `analyze` never run.
+- Apache-2.0 also lets us adapt NuGuard's working rule ideas (the SQL rule
+  and the JavaScript `eval` and exec rules) into our own rules with
+  attribution.
+
+**Decision needed from you:** our own rules only (recommended); our own
+rules plus NuGuard's `sbom generate` as an AI inventory (a later, separate
+check); NuGuard plus our own rules; or NuGuard alone.
 
 ## Ground rules in force
 
