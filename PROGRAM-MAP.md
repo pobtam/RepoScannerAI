@@ -205,6 +205,11 @@ is reported as a gap.
 
 ### Fixing
 
+> **Changed 22 October 2026:** fixing is now Phase 8, automated but not
+> autonomous: AI-prepared, validated proposals that a qualified person
+> approves before anything reaches GitHub. See `REMEDIATION-DESIGN.md`, and
+> `NOW-VS-LATER.md` for the plain-language version.
+
 **`internal/remediate`** (with **`internal/remediate/guard`**)
 
 The mechanical fixer. For an out-of-date dependency it works out the version

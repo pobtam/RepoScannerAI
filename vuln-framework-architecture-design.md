@@ -912,6 +912,19 @@ categories:
 
 ## 11. Remediation
 
+> **Superseded in part, 22 October 2026: see `REMEDIATION-DESIGN.md`.** A
+> security review made fixing **automated, not autonomous**: nothing is
+> written to GitHub until a qualified person approves a specific, validated
+> diff in the tool. The harness below is split in two:
+> - **Proposal generation and validation** (steps 1-8, plus several
+>   candidates, a full rescan and non-CVE regression checks) run on a
+>   downloaded tarball with no credential, and store a proposal.
+> - **Publication** (step 9) runs only for an approved proposal, in a
+>   separate component that alone holds a write credential.
+>
+> The work order's `github.installation_token` (§11.1) no longer goes to the
+> component that hosts the agent.
+
 ### 11.1 Work order
 
 Both worker kinds consume the same bounded instruction:
@@ -972,6 +985,12 @@ Go environment: set `GOPRIVATE` and `GONOSUMDB` for internal module paths; set `
 JavaScript: `npm ci` → targeted upgrade → `npm run build` → `npm test` if a test script exists.
 
 ### 11.4 Agentic fix worker
+
+> **Changed 22 October 2026 (`REMEDIATION-DESIGN.md` §4).** The agent now
+> proposes up to N candidates; a separate chooser ranks them against the
+> full code with reasons, and an independent critic reviews the chosen diff.
+> The agent works on a downloaded tarball, so no git remote, and no
+> installation token in `.git/config`, is within its reach.
 
 Wraps Claude Code headless. The prompt is derived from the work order and carries these constraints:
 
@@ -1260,6 +1279,12 @@ api.anthropic.com, api.osv.dev,
 Explicitly denied: `169.254.169.254` and all metadata endpoints. Workers run with a service account holding no Workload Identity binding beyond the minimum. Read-only root filesystem except `/workspace`. No privileged containers.
 
 ### 15.3 Credentials
+
+> **Changed 22 October 2026 (`REMEDIATION-DESIGN.md` §11).** Write
+> permission moves to a dedicated publisher that only acts on an approved
+> proposal, never shares a process or working copy with an AI component, and
+> never puts a token in a remote URL. Scanning uses a separate read-only
+> credential.
 
 GitHub App, not a personal access token. The orchestrator mints a per-repository installation token with 1-hour TTL per job (VM-F-1001). A worker acting on repository A must never hold a credential valid for repository B — otherwise one malicious `go generate` directive in a dependency compromises the fleet.
 

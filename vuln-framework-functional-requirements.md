@@ -265,6 +265,24 @@ verification, and counting it as unresolved overstates outstanding work. See VM-
 
 ### 5.10 Remediation (VM-F-5xx)
 
+> **Amended 22 October 2026: see `REMEDIATION-DESIGN.md`.** These
+> requirements stand, with these changes:
+> - **VM-F-501:** the branch and pull request are created only after a
+>   recorded human approval of the exact diff (the review's requirement 1).
+>   The pull request is no longer where a human first decides.
+> - **VM-F-531:** a fix is also verified by a re-run of **all** scanners for
+>   the repository, failing on any new finding, and by the non-CVE
+>   regression checks in `REMEDIATION-DESIGN.md` §6.3.
+> - **VM-F-534** (coverage delta) becomes MUST.
+> - **VM-F-541** ("not automatically merged in v1.0") becomes permanent for
+>   human-approved fixes: merging happens in GitHub under branch protection.
+>   Any automatic merge is limited to the autonomy guardrails of
+>   `REMEDIATION-DESIGN.md` §10 and needs a formal approval.
+>
+> New requirements (two risks with confidence, thresholds per severity, an
+> approver role, the review page) are specified there and will be numbered
+> VM-F-55x when the requirements are next revised.
+
 #### General
 
 | ID | Norm | Requirement | Verify |

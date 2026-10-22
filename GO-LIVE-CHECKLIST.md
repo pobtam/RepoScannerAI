@@ -189,6 +189,12 @@ that does not build.
 
 ### 2.2 Grant the App write permission, and run remediation in dry-run
 
+> **Changed 22 October 2026 (`REMEDIATION-DESIGN.md`).** Write permission
+> now goes only to the fix publisher (8b), and only after Phase 4's login and
+> roles, the `fix_approver` role, and a signed risk acceptance exist. "Dry
+> run" becomes 8a: validated proposals in our own database, with no GitHub
+> writes at all.
+
 **Precondition:** 0.1, 1.2, 2.1.
 
 **What you do.** Widen the App's permissions to branch creation and pull

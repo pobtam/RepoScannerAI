@@ -480,3 +480,118 @@ and its IDs and locations would need a translation layer before our
 fingerprints could rest on them. Its inventory, however, found agents, tools,
 models, prompts and MCP servers in every repository offline, which is why it
 stays a candidate for that role only.
+
+---
+
+## D14 — AI-assisted fixing (Phase 8): the choices that set the bar
+
+Recorded 2026-10-22, from the security review (Aaron Lawvere, 24 September;
+notes dated 22 October). The design is `REMEDIATION-DESIGN.md` (RD). Each item
+below has a recommendation; none is decided.
+
+### D14.1 Who may approve a fix, and the context they need
+
+**Recommendation:**
+- A `fix_approver` role, granted per person through the identity provider.
+- Approval of a given proposal also requires being a developer or DevOps
+  engineer on the owning team.
+- For high and critical findings, being a code owner (CODEOWNERS) of every
+  changed file.
+- Critical findings need two approvers: a code owner and a second developer
+  or DevOps engineer.
+- Security staff without code context may comment and reject, not approve.
+- The person who set the current thresholds may not be the sole approver of
+  a critical fix.
+
+Every approver confirms, per decision, that they read the diff and the
+evidence; the tool records what they were shown (RD §8.1-8.2).
+
+**Needs from you:** the identity-provider groups, and whether code ownership
+comes from CODEOWNERS or a team registry.
+
+### D14.2 Confidence thresholds per severity
+
+**Recommendation:** the lower bound of the calibrated fix-safety interval
+must clear:
+
+| Severity | Lower bound |
+|---|---|
+| Low | 0.80 |
+| Medium | 0.85 |
+| High | 0.90 |
+| Critical | 0.95 |
+
+- No agent-written source fix for a critical finding in the first release.
+- Below the threshold, or before calibration exists, the proposal is "needs
+  expert review" (RD §7.3).
+- The numbers are provisional until the 8a pilot has produced at least
+  4-6 weeks of reviewer decisions to calibrate against.
+
+**Needs from you:** agreement on the starting values, and who may change them.
+
+### D14.3 How non-CVE regressions (such as leaks) are detected
+
+**Recommendation:** all five checks in RD §6.3:
+- differential resource measurement of the test suite (memory, goroutines or
+  threads, file descriptors, time) against the baseline, with tolerances;
+- leak-pattern rules on the changed lines;
+- language leak detectors where they exist;
+- an independent AI critic of the diff;
+- minimal-change limits.
+
+The page states what was not checked. Accept that problems that appear only
+under production load are out of reach before merge, and are caught after it
+by post-merge verification and revert tracking.
+
+**Needs from you:** the tolerances (default 10% memory, no new leaked
+goroutines or descriptors), and whether a flagged check blocks approval or
+only lowers confidence.
+
+### D14.4 Merge in GitHub, or in the tool
+
+**Recommendation:**
+- **At first, merge in GitHub** under each repository's branch protection:
+  the tool approves and opens the pull request; a person merges.
+- **Once the pilot shows approvals are reliable,** let the publisher enable
+  GitHub's own auto-merge on approved pull requests, so required checks still
+  gate the merge and the team's protections stay in force.
+- **Never give the tool merge or administration permission directly**
+  (RD §8.4).
+
+**Needs from you:** whether the double step at first (approve in the tool,
+merge in GitHub) is acceptable, or the tool's approval should count as
+GitHub's required review.
+
+### D14.5 Formal risk acceptance
+
+**Recommendation:**
+- A signed `RISK-ACCEPTANCE.md` before any fix is published in production
+  (RD §7.4), naming:
+  - the thresholds and their calibration evidence;
+  - who may approve;
+  - the residual risks;
+  - the review interval (quarterly).
+- The publisher refuses to run without an accepted version, and records the
+  version on every fix.
+- 8c needs its own.
+
+**Needs from you:** who signs (security, engineering leadership, the
+product owner), and the review interval.
+
+### D14.6 Guardrails for any future autonomy (8c)
+
+**Recommendation:** only with its own signed acceptance, and only inside all
+of RD §10:
+- **Fix types:** deterministic patch and minor dependency bumps, never
+  agent-written code or major bumps.
+- **Findings:** an allowlist of advisory classes.
+- **Repositories:** opted in by their teams, tier 3 first.
+- **Environments:** development branches and environments only.
+- **Thresholds:** stricter than any manual one, backed by a minimum number of
+  verified examples per change class.
+- **Rate:** a per-repository daily limit, one open change at a time.
+- **Kill switch:** in the web app and vfctl, and automatic after any revert.
+- **Rollback:** reverts go through human approval.
+
+**Needs from you:** whether 8c is wanted at all, and which repositories
+would opt in first.

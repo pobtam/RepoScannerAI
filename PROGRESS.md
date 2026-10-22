@@ -14,8 +14,39 @@ read this file first and resume from "Next".
 - **Decided 2026-10-20:** Phase 3 uses our own rules (option 2, D13);
   NuGuard's `sbom generate` may be added later as an inventory signal only,
   after a separate check. Evaluation image removed.
-- **Next (when you say so):** resume the unattended plan at Phase 1
-  (mixed-language scanning); the earlier plan for it is below.
+- **Next:** Phase 1 (mixed-language scanning). The parts that do not depend
+  on D12 come first: detection (1a), then the schema and vfctl (1b). The
+  semgrep rule work waits for D12.
+
+## Plan order (updated 2026-10-22)
+
+AI-assisted fixing is now in scope as Phase 8, under the security review's
+requirements (`REMEDIATION-DESIGN.md`; plain language in `NOW-VS-LATER.md`;
+the review's questions answered in `SECURITY-READINESS.md`; decisions in
+DECISIONS-NEEDED D14).
+
+| Order | Phase | Notes |
+|---|---|---|
+| 1 | Phase 1: scan any language | **In progress next.** 8a needs it: proposals are per component |
+| 2 | Phase 3: AI prompt vulnerability scanning | Our own rules (D13) |
+| 2 | **Phase 8a: validated fix proposals** | Alongside Phase 3. Database only, no GitHub writes. Go and JavaScript/TypeScript toolchains first; about 10-13 weeks. Needs the Linux sandbox proof (D2) before running on real repositories |
+| 3 | Phase 4: secure the service | Identity provider, roles (adds `fix_approver`), writable API |
+| 4 | **Phase 8b: approval and publication** | After Phase 4. Separate publisher with its own write credential; merge stays in GitHub. About 4-5 weeks. Needs D4 (App with write permission), D14 and a signed risk acceptance before production use |
+| 5 | Phase 5: scheduled, unattended scanning | |
+| 6 | Phase 6: cloud VM | As code already (demo track D3) |
+| 7 | Phase 7: pilot and go-live | Includes calibrating 8a's confidence from reviewer decisions |
+| later | **Phase 8c: limited autonomy** | Only with its own formal approval, inside RD §10 |
+
+Gap analysis highlights (RD §2):
+- Nothing merges.
+- The original worker pushes and opens pull requests with no human
+  approval.
+- The real Go toolchain, the agent harness, the GitHub write client and the
+  pull-request closer are built but never called from any program.
+- A latent write token sits in the clone's `.git/config` within the agent's
+  reach.
+- The rescan does not look for new findings.
+- No confidence scores, approver role or review page exist.
 
 ## Phase 3 evaluation: NuGuard as the AI scanner (2026-10-20)
 
