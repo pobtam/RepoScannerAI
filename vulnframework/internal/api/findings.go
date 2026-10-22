@@ -367,6 +367,7 @@ func (s *Server) findingDTO(ctx context.Context, f model.Finding, withScore bool
 		},
 		Annotations: f.Annotations,
 	}
+	out.Description, out.DescriptionSource = model.Describe(f)
 	if f.ReasonCode != nil {
 		out.ReasonCode = string(*f.ReasonCode)
 	}

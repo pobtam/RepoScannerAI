@@ -82,6 +82,7 @@ type gvcOSV struct {
 	ID               string   `json:"id"`
 	Aliases          []string `json:"aliases"`
 	Summary          string   `json:"summary"`
+	Details          string   `json:"details"`
 	DatabaseSpecific struct {
 		URL string `json:"url"`
 	} `json:"database_specific"`
@@ -168,6 +169,7 @@ func (a *Govulncheck) Normalize(out scan.RawOutput) ([]model.RawFinding, error) 
 			},
 			ToolVersion: a.Version(),
 			AdvisoryURL: adv.DatabaseSpecific.URL,
+			Description: firstNonEmptyText(adv.Summary, adv.Details),
 			ImportPath:  importPath(out.Repo, f.Trace),
 			Raw:         mustRaw(f),
 		}

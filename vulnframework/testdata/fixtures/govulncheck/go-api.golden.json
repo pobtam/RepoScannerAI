@@ -23,6 +23,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Man-in-the-middle attacker can compromise integrity of secure channel in golang.org/x/crypto",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.17.0"
@@ -77,6 +78,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Misuse of connection.serverAuthenticate may cause authorization bypass in golang.org/x/crypto",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.31.0"
@@ -130,6 +132,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Potential denial of service in golang.org/x/crypto",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.35.0"
@@ -183,6 +186,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Potential denial of service in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.43.0"
@@ -237,6 +241,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Unbounded memory consumption in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.45.0"
@@ -291,6 +296,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Malformed constraint may cause denial of service in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.45.0"
@@ -345,6 +351,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking key constraints not enforced in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -399,6 +406,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking agent constraints dropped when forwarding keys in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -452,6 +460,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking byte arithmetic causes underflow and panic in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -505,6 +514,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking bypass of certificate restrictions in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -558,6 +568,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking server panic during CheckHostKey/Authenticate in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -611,6 +622,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking memory leak when rejecting channels can lead to DoS in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -664,6 +676,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking client can cause server deadlock on unexpected responses in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -717,6 +730,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking pathological RSA/DSA parameters may cause DoS in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -770,6 +784,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking bypass of FIDO/U2F security keys physical interaction in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -823,6 +838,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking infinite loop on large channel writes in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -877,6 +893,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking auth bypass via unenforced @revoked status in golang.org/x/crypto/ssh/knownhosts",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -930,6 +947,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking VerifiedPublicKeyCallback permissions skip enforcement in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -983,6 +1001,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking pathological inputs can lead to client panic in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.52.0"
@@ -1034,6 +1053,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
     "Versions": {
       "current": "v0.16.0"
     },
@@ -1086,6 +1106,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Source-address critical option not enforced for non-public-key auth callbacks in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.55.0"
@@ -1139,6 +1160,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Prevent DoS on deadlocked undecided channel in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.56.0"
@@ -1192,6 +1214,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Prevent DoS on deadlocked established channel in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "v0.56.0"
@@ -1246,6 +1269,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "HTTP/2 CONTINUATION flood in net/http",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.23.0"
@@ -1300,6 +1324,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Non-linear parsing of case-insensitive content in golang.org/x/net/html",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.33.0"
@@ -1354,6 +1379,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "HTTP Proxy bypass using IPv6 Zone IDs in golang.org/x/net",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.36.0"
@@ -1407,6 +1433,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Incorrect Neutralization of Input During Web Page Generation in x/net in golang.org/x/net",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.38.0"
@@ -1460,6 +1487,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Quadratic parsing complexity in golang.org/x/net/html",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.45.0"
@@ -1513,6 +1541,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Infinite parsing loop in golang.org/x/net",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.45.0"
@@ -1566,6 +1595,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Infinite loop in HTTP/2 transport when given bad SETTINGS_MAX_FRAME_SIZE in net/http/internal/http2 in golang.org/x/net",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.53.0"
@@ -1619,6 +1649,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking incorrect handling of namespaced elements in foreign content in golang.org/x/net/html",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.55.0"
@@ -1672,6 +1703,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking failure to reject ASCII-only Punycode-encoded labels in golang.org/x/net/idna",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.55.0"
@@ -1725,6 +1757,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking incorrect handling of HTML elements in foreign content in golang.org/x/net/html",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.55.0"
@@ -1778,6 +1811,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking denial of service when parsing arbitrary HTML in golang.org/x/net/html",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.55.0"
@@ -1831,6 +1865,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking incorrect handling of character references in DOCTYPE nodes in golang.org/x/net/html",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.55.0"
@@ -1884,6 +1919,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking duplicate attributes can cause XSS in golang.org/x/net/html",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.55.0"
@@ -1937,6 +1973,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Parsing an invalid SVCB or HTTPS RR can panic in golang.org/x/net/dns/dnsmessage",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "v0.56.0"
@@ -1990,6 +2027,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Infinite loop on invalid input in golang.org/x/text",
     "Versions": {
       "current": "v0.14.0",
       "fixed": "v0.39.0"
@@ -2043,6 +2081,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "TOCTOU permits root escape on Linux via Root.Chmod in os in internal/syscall/unix",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.2"
@@ -2096,6 +2135,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "JsBraceDepth Context Tracking Bugs (XSS) in html/template",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.2"
@@ -2149,6 +2189,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Case-sensitive excludedSubtrees name constraints cause Auth Bypass in crypto/x509",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.2"
@@ -2202,6 +2243,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Unbounded allocation for old GNU sparse in archive/tar",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.2"
@@ -2255,6 +2297,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Unauthenticated TLS 1.3 KeyUpdate record can cause persistent connection retention and DoS in crypto/tls",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.2"
@@ -2308,6 +2351,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Infinite loop in HTTP/2 transport when given bad SETTINGS_MAX_FRAME_SIZE in net/http/internal/http2 in golang.org/x/net",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.3"
@@ -2361,6 +2405,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Inefficient policy validation in crypto/x509",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.2"
@@ -2414,6 +2459,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Unexpected work during chain building in crypto/x509",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.2"
@@ -2467,6 +2513,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Root escape via symlink plus trailing slash in os",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.5"
@@ -2520,6 +2567,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Panic in Dial and LookupPort when handling NUL byte on Windows in net",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.3"
@@ -2573,6 +2621,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "ReverseProxy forwards queries with more than urlmaxqueryparams parameters in net/http/httputil",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.3"
@@ -2626,6 +2675,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Quadratic string concatenation in consumePhrase in net/mail",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.3"
@@ -2679,6 +2729,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Escaper bypass leads to XSS in html/template",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.3"
@@ -2732,6 +2783,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Crash when handling long CNAME response in net",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.3"
@@ -2785,6 +2837,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Bypass of meta content URL escaping causes XSS in html/template",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.3"
@@ -2838,6 +2891,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Quadratic string concatentation in consumeComment in net/mail",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.3"
@@ -2891,6 +2945,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking failure to reject ASCII-only Punycode-encoded labels in golang.org/x/net/idna",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.6"
@@ -2944,6 +2999,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Inefficient candidate hostname parsing in crypto/x509",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.4"
@@ -2997,6 +3053,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Quadratic complexity in WordDecoder.DecodeHeader in mime",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.4"
@@ -3050,6 +3107,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Arbitrary inputs are included in errors without any escaping in net/textproto",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.4"
@@ -3103,6 +3161,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking Encrypted Client Hello privacy leak in crypto/tls",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.5"
@@ -3156,6 +3215,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Parsing an invalid SVCB or HTTPS RR can panic in golang.org/x/net/dns/dnsmessage",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.6"
@@ -3209,6 +3269,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Enforce maximum recursion depth in encoding/asn1",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.6"
@@ -3262,6 +3323,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Add recursion depth guard during decode in encoding/xml",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.6"
@@ -3315,6 +3377,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Apply ReadHeaderTimeout when doing unencrypted HTTP/2 check in net/http",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.6"
@@ -3368,6 +3431,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Limit handshake messages we are willing to accept post-handshake in crypto/tls",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.6"
@@ -3421,6 +3485,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Fix Javascript regexp context tracking in html/template",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.6"
@@ -3474,6 +3539,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Avoid quadratic complexity in resolvePath in net/url",
     "Versions": {
       "current": "v1.26.1",
       "fixed": "v1.26.6"

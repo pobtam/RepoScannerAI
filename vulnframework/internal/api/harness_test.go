@@ -433,6 +433,7 @@ func codeRaw(repo, rule, file string) model.RawFinding {
 	return model.RawFinding{
 		Repo: repo, Category: model.CategoryCode, Tool: "gosec", ToolVersion: "v2.22.9",
 		RuleID: rule, PrimaryID: rule, File: file, Line: 42,
+		Description: "Use of weak cryptographic primitive",
 		Classification: model.Classification{Severity: model.SeverityMedium,
 			Reachable: model.ReachableUnknown},
 	}

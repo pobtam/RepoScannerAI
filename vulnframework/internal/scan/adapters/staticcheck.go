@@ -139,6 +139,7 @@ func (a *Staticcheck) Normalize(out scan.RawOutput) ([]model.RawFinding, error) 
 				DepClass:  model.DepNotApplicable,
 			},
 			ToolVersion: a.Version(),
+			Description: d.Message,
 			Raw:         mustRaw(d),
 		})
 	}

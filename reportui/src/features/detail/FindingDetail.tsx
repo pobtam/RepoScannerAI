@@ -63,6 +63,7 @@ export function FindingDetail({ fingerprint }: { fingerprint: string }) {
   return (
     <div className="detail">
       <Header finding={f} />
+      <Description finding={f} />
 
       {f.observation.not_reobserved && (
         <Panel tone="warning" title="The last run did not observe this finding">
@@ -494,6 +495,29 @@ function Header({ finding: f }: { finding: Finding }) {
         <CopyButton value={f.fingerprint} label="the fingerprint" />
       </p>
     </header>
+  );
+}
+
+/** What the problem is, and whose words those are. */
+function Description({ finding: f }: { finding: Finding }) {
+  if (!f.description) {
+    return (
+      <section className="finding-description" aria-label="Description">
+        <Absent why="the server sent no description for this finding" />
+      </section>
+    );
+  }
+  const derived = f.description_source === 'derived';
+  return (
+    <section className="finding-description" aria-label="Description">
+      <p>{f.description}</p>
+      <p className="muted small">
+        {derived
+          ? 'Built from this record\'s fields: no scanner supplied a description.'
+          : `In the words of ${f.description_source}.`}
+        {f.triage?.description && ' The AI triage narrative is below, under Triage.'}
+      </p>
+    </section>
   );
 }
 

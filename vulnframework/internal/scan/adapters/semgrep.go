@@ -124,6 +124,7 @@ func (a *Semgrep) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 			},
 			ToolVersion: a.Version(),
 			AdvisoryURL: advisory,
+			Description: r.Extra.Message,
 			Raw:         mustRaw(r),
 		})
 	}

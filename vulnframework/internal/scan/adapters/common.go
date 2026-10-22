@@ -185,6 +185,9 @@ func mergeReachability(a, b model.RawFinding) model.RawFinding {
 	if a.Versions.Fixed == "" && b.Versions.Fixed != "" {
 		a.Versions.Fixed = b.Versions.Fixed
 	}
+	if a.Description == "" && b.Description != "" {
+		a.Description = b.Description
+	}
 	return a
 }
 
@@ -197,4 +200,15 @@ func reachRank(r model.Reachable) int {
 	default: // unknown
 		return 0
 	}
+}
+
+// firstNonEmptyText returns the first argument that is not blank: a short
+// summary in preference to the long details where the tool gives both.
+func firstNonEmptyText(in ...string) string {
+	for _, s := range in {
+		if strings.TrimSpace(s) != "" {
+			return s
+		}
+	}
+	return ""
 }

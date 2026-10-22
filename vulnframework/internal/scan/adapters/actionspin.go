@@ -181,7 +181,9 @@ func (a *ActionsPin) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 			},
 			ToolVersion: a.Version(),
 			AdvisoryURL: "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-third-party-actions",
-			Raw:         mustRaw(u),
+			Description: fmt.Sprintf("The workflow uses %s by a tag or branch rather than a full commit SHA. "+
+				"Whoever controls that tag can change the code this repository's workflow runs; pin it to a commit SHA.", u.Uses),
+			Raw: mustRaw(u),
 		})
 	}
 

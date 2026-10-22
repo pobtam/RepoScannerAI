@@ -27,6 +27,18 @@ read this file first and resume from "Next".
 
   Found and fixed on the way: scan results were ordered by run_id as text,
   so a sweep run sorted above a later manual run on both backends.
+- **Done 2026-10-22, at your request:**
+  - **History rewrite:** the fake keys were removed from git history and
+    both branches pushed; the old history is kept locally as
+    `backup/*-pre-rewrite`.
+  - **Scan now on every row:** a "Scan now" button on each row of the
+    repositories table (014fb06).
+  - **A description on every finding:** the scanner's own text, credited to
+    the tool; otherwise one built from the record, marked "derived". Shown
+    under the identifier in the findings table and at the top of the finding
+    page, and included in the CSV export. Verified by unit tests on both
+    backends, the API and UI tests, and `scripts/smoke.sh --real`, where 198
+    of 198 real findings carried the scanner's words.
 - **Next:** Phase 1 (mixed-language scanning), unblocked (D12 decided).
 
 ## Start a scan from the web app (designed and built 2026-10-22)
@@ -479,6 +491,16 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
 
 ## Decisions I made
 
+- **Finding descriptions are the scanner's words, never edited.** Our
+  fallback is labelled "derived", so it is never passed off as a tool's text.
+  A description that matches a credential pattern is dropped whole, not
+  partly scrubbed, because a semgrep message can quote the matched line.
+  Descriptions are capped at 1000 characters. They are withheld from
+  restricted findings along with the rest of the detail.
+- **Existing findings get scanner text on their next scan.** The text is
+  carried on each observation, and stored findings show the derived fallback
+  until they are seen again. There is no backfill from the stored raw output:
+  a rescan is the faithful source.
 - **121 remaining gitleaks matches are kept.** 120 are Go commit hashes in
   googlesource URLs inside recorded govulncheck output, 1 is prose inside a
   published advisory in recorded osv output. None is a credential format

@@ -22,6 +22,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Man-in-the-middle attacker can compromise integrity of secure channel in golang.org/x/crypto",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.17.0",
@@ -51,6 +52,7 @@
         "PYSEC-2026-1758"
       ],
       "summary": "Man-in-the-middle attacker can compromise integrity of secure channel in golang.org/x/crypto",
+      "details": "A protocol weakness allows a MITM attacker to compromise the integrity of the secure channel before it is established, allowing the attacker to prevent transmission of a number of messages immediately after the secure channel is established without either side being aware.\n\nThe impact of this attack is relatively limited, as it does not compromise confidentiality of the channel. Notably this attack would allow an attacker to prevent the transmission of the SSH2_MSG_EXT_INFO message, disabling a handful of newer security features.\n\nThis protocol weakness was also fixed in OpenSSH 9.6.",
       "affected": [
         {
           "ranges": [
@@ -119,6 +121,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Misuse of connection.serverAuthenticate may cause authorization bypass in golang.org/x/crypto",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.31.0",
@@ -147,6 +150,7 @@
         "GHSA-v778-237x-gjrc"
       ],
       "summary": "Misuse of connection.serverAuthenticate may cause authorization bypass in golang.org/x/crypto",
+      "details": "Applications and libraries which misuse connection.serverAuthenticate (via callback field ServerConfig.PublicKeyCallback) may be susceptible to an authorization bypass.\n\nThe documentation for ServerConfig.PublicKeyCallback says that \"A call to this function does not guarantee that the key offered is in fact used to authenticate.\" Specifically, the SSH protocol allows clients to inquire about whether a public key is acceptable before proving control of the corresponding private key. PublicKeyCallback may be called with multiple keys, and the order in which the keys were provided cannot be used to infer which key the client successfully authenticated with, if any. Some applications, which store the key(s) passed to PublicKeyCallback (or derived information) and make security relevant determinations based on it once the connection is established, may make incorrect assumptions.\n\nFor example, an attacker may send public keys A and B, and then authenticate with A. PublicKeyCallback would be called only twice, first with A and then with B. A vulnerable application may then make authorization decisions based on key B for which the attacker does not actually control the private key.\n\nSince this API is widely misused, as a partial mitigation golang.org/x/cry...@v0.31.0 enforces the property that, when successfully authenticating via public key, the last key passed to ServerConfig.PublicKeyCallback will be the key used to authenticate the connection. PublicKeyCallback will now be called multiple times with the same key, if necessary. Note that the client may still not control the last key passed to PublicKeyCallback if the connection is then authenticated with a different method, such as PasswordCallback, KeyboardInteractiveCallback, or NoClientAuth.\n\nUsers should be using the Extensions field of the Permissions return value from the various authentication callbacks to record data associated with the authentication attempt instead of referencing external state. Once the connection is established the state corresponding to the successful authentication attempt can be retrieved via the ServerConn.Permissions field. Note that some third-party libraries misuse the Permissions type by sharing it across authentication attempts; users of third-party libraries should refer to the relevant projects for guidance.",
       "affected": [
         {
           "ranges": [
@@ -211,6 +215,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Potential denial of service in golang.org/x/crypto",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.35.0",
@@ -239,6 +244,7 @@
         "GHSA-hcg3-q754-cr77"
       ],
       "summary": "Potential denial of service in golang.org/x/crypto",
+      "details": "SSH servers which implement file transfer protocols are vulnerable to a denial of service attack from clients which complete the key exchange slowly, or not at all, causing pending content to be read into memory, but never transmitted.",
       "affected": [
         {
           "ranges": [
@@ -295,6 +301,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Potential denial of service in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.43.0",
@@ -322,6 +329,7 @@
         "GHSA-56w8-48fp-6mgv"
       ],
       "summary": "Potential denial of service in golang.org/x/crypto/ssh/agent",
+      "details": "SSH clients receiving SSH_AGENT_SUCCESS when expecting a typed response will panic and cause early termination of the client process.",
       "affected": [
         {
           "ranges": [
@@ -382,6 +390,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Unbounded memory consumption in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.45.0",
@@ -410,6 +419,7 @@
         "GHSA-j5w8-q4qc-rx2x"
       ],
       "summary": "Unbounded memory consumption in golang.org/x/crypto/ssh",
+      "details": "SSH servers parsing GSSAPI authentication requests do not validate the number of mechanisms specified in the request, allowing an attacker to cause unbounded memory consumption.",
       "affected": [
         {
           "ranges": [
@@ -470,6 +480,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Malformed constraint may cause denial of service in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.45.0",
@@ -498,6 +509,7 @@
         "GHSA-f6x5-jh6r-wrfv"
       ],
       "summary": "Malformed constraint may cause denial of service in golang.org/x/crypto/ssh/agent",
+      "details": "SSH Agent servers do not validate the size of messages when processing new identity requests, which may cause the program to panic if the message is malformed due to an out of bounds read.",
       "affected": [
         {
           "ranges": [
@@ -558,6 +570,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking key constraints not enforced in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -586,6 +599,7 @@
         "GHSA-jppx-rxg9-jmrx"
       ],
       "summary": "Invoking key constraints not enforced in golang.org/x/crypto/ssh/agent",
+      "details": "The in-memory keyring returned by NewKeyring() silently accepted keys with the ConfirmBeforeUse constraint but never enforced it. The key would sign without any confirmation prompt, with no indication to the caller that the constraint was not in effect. NewKeyring() now returns an error when unsupported constraints are requested.",
       "affected": [
         {
           "ranges": [
@@ -646,6 +660,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking agent constraints dropped when forwarding keys in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -674,6 +689,7 @@
         "GHSA-f5wc-c3c7-36mc"
       ],
       "summary": "Invoking agent constraints dropped when forwarding keys in golang.org/x/crypto/ssh/agent",
+      "details": "When adding a key to a remote agent constraint extensions such as restrict-destination-v00@openssh.com were not serialized in the request. Destination restrictions were silently stripped when forwarding keys, allowing unrestricted use of the key on the remote host. The client now serializes all constraint extensions. Additionally, the in-memory keyring returned by NewKeyring() now rejects keys with unsupported constraint extensions instead of silently ignoring them.",
       "affected": [
         {
           "ranges": [
@@ -738,6 +754,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking byte arithmetic causes underflow and panic in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -766,6 +783,7 @@
         "GHSA-q4h4-gmj2-qvw2"
       ],
       "summary": "Invoking byte arithmetic causes underflow and panic in golang.org/x/crypto/ssh",
+      "details": "An incorrectly placed cast from bytes to int allowed for server-side panic in the AES-GCM packet decoder for well-crafted inputs.",
       "affected": [
         {
           "ranges": [
@@ -826,6 +844,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking bypass of certificate restrictions in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -854,6 +873,7 @@
         "GHSA-45gg-vh54-h5m9"
       ],
       "summary": "Invoking bypass of certificate restrictions in golang.org/x/crypto/ssh",
+      "details": "When an SSH server authentication callback returned PartialSuccessError with non-nil Permissions, those permissions were silently discarded, potentially dropping certificate restrictions such as force-command after a second factor succeeded. Returning non-nil Permissions with PartialSuccessError now results in a connection error.",
       "affected": [
         {
           "ranges": [
@@ -914,6 +934,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking server panic during CheckHostKey/Authenticate in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -942,6 +963,7 @@
         "GHSA-78mq-xcr3-xm33"
       ],
       "summary": "Invoking server panic during CheckHostKey/Authenticate in golang.org/x/crypto/ssh",
+      "details": "SSH servers which use CertChecker as a public key callback without setting IsUserAuthority or IsHostAuthority could be caused to panic by a client presenting a certificate. CertChecker now returns an error instead of panicking when these callbacks are nil.",
       "affected": [
         {
           "ranges": [
@@ -1002,6 +1024,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking memory leak when rejecting channels can lead to DoS in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -1030,6 +1053,7 @@
         "GHSA-qpw4-5x99-6vjp"
       ],
       "summary": "Invoking memory leak when rejecting channels can lead to DoS in golang.org/x/crypto/ssh",
+      "details": "An authenticated SSH client that repeatedly opened channels which were rejected by the server caused unbounded memory growth, eventually crashing the server process and affecting all connected users. Rejected channels are now properly removed from the connection's internal state and released for garbage collection.",
       "affected": [
         {
           "ranges": [
@@ -1090,6 +1114,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking client can cause server deadlock on unexpected responses in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -1118,6 +1143,7 @@
         "GHSA-vgwf-h737-ff37"
       ],
       "summary": "Invoking client can cause server deadlock on unexpected responses in golang.org/x/crypto/ssh",
+      "details": "A malicious SSH peer could send unsolicited global request responses to fill an internal buffer, blocking the connection's read loop. The blocked goroutine could not be released by calling Close(), resulting in a resource leak per connection. Unsolicited global responses are now discarded.",
       "affected": [
         {
           "ranges": [
@@ -1182,6 +1208,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking pathological RSA/DSA parameters may cause DoS in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -1210,6 +1237,7 @@
         "GHSA-w879-237q-wc7r"
       ],
       "summary": "Invoking pathological RSA/DSA parameters may cause DoS in golang.org/x/crypto/ssh",
+      "details": "The RSA and DSA public key parsers did not enforce size limits on key parameters. A crafted public key with an excessively large modulus or DSA parameter could cause several minutes of CPU consumption during signature verification. This could be triggered by unauthenticated clients during public key authentication. RSA moduli are now limited to 8192 bits, and DSA parameters are validated per FIPS 186-2.",
       "affected": [
         {
           "ranges": [
@@ -1274,6 +1302,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking bypass of FIDO/U2F security keys physical interaction in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -1302,6 +1331,7 @@
         "GHSA-89gr-r52h-f8rx"
       ],
       "summary": "Invoking bypass of FIDO/U2F security keys physical interaction in golang.org/x/crypto/ssh",
+      "details": "The Verify() method for FIDO/U2F security key types (sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@openssh.com) did not check the User Presence flag. Signatures generated without physical touch were accepted, allowing unattended use of a hardware security key. To restore the previous behavior, return a \"no-touch-required\" extension in Permissions.Extensions from PublicKeyCallback.",
       "affected": [
         {
           "ranges": [
@@ -1362,6 +1392,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking infinite loop on large channel writes in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -1390,6 +1421,7 @@
         "GHSA-rm3j-f69w-wqmq"
       ],
       "summary": "Invoking infinite loop on large channel writes in golang.org/x/crypto/ssh",
+      "details": "When writing data larger than 4GB in a single Write call on an SSH channel, an integer overflow in the internal payload size calculation caused the write loop to spin indefinitely, sending empty packets without making progress. The size comparison now uses int64 to prevent truncation.",
       "affected": [
         {
           "ranges": [
@@ -1450,6 +1482,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking auth bypass via unenforced @revoked status in golang.org/x/crypto/ssh/knownhosts",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -1478,6 +1511,7 @@
         "GHSA-5cgq-3rg8-m6cv"
       ],
       "summary": "Invoking auth bypass via unenforced @revoked status in golang.org/x/crypto/ssh/knownhosts",
+      "details": "Previously, a revoked 'SignatureKey' belonging to a CA was not correctly checked for revocation. Now, both the 'key' and 'key.SignatureKey' are checked for @revoked.",
       "affected": [
         {
           "ranges": [
@@ -1538,6 +1572,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking VerifiedPublicKeyCallback permissions skip enforcement in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -1566,6 +1601,7 @@
         "GHSA-x527-x647-q7gg"
       ],
       "summary": "Invoking VerifiedPublicKeyCallback permissions skip enforcement in golang.org/x/crypto/ssh",
+      "details": "Previously, CVE-2024-45337 fixed an authorization bypass for misused ssh server configurations; if any other type of callback is passed other than public key, then the source-address validation would be skipped.",
       "affected": [
         {
           "ranges": [
@@ -1626,6 +1662,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking pathological inputs can lead to client panic in golang.org/x/crypto/ssh/agent",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.52.0",
@@ -1654,6 +1691,7 @@
         "GHSA-9m57-25v3-79x9"
       ],
       "summary": "Invoking pathological inputs can lead to client panic in golang.org/x/crypto/ssh/agent",
+      "details": "For certain crafted inputs, a 'ed25519.PrivateKey' was created by casting malformed wire bytes, leading to a panic when used.",
       "affected": [
         {
           "ranges": [
@@ -1712,6 +1750,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
     "Versions": {
       "current": "0.16.0",
       "introduced": "0"
@@ -1735,6 +1774,7 @@
       "id": "GO-2026-5932",
       "aliases": null,
       "summary": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
+      "details": "The golang.org/x/crypto/openpgp package is unsafe by design, has numerous known security issues, is not maintained, and should not be used.\n\nIf you are required to interoperate with OpenPGP systems and need a maintained package, consider github.com/ProtonMail/go-crypto/openpgp which is a maintained fork that aims to be a drop-in replacement for this package.",
       "affected": [
         {
           "ranges": [
@@ -1782,6 +1822,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Source-address critical option not enforced for non-public-key auth callbacks in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.55.0",
@@ -1808,6 +1849,7 @@
         "CVE-2026-56854"
       ],
       "summary": "Source-address critical option not enforced for non-public-key auth callbacks in golang.org/x/crypto/ssh",
+      "details": "The source-address critical option in the Permissions returned by an authentication callback was only enforced for the PublicKeyCallback and VerifiedPublicKeyCallback paths, extending the fix for CVE-2026-46595. Permissions returned by the PasswordCallback, KeyboardInteractiveCallback, NoClientAuthCallback, and GSSAPIWithMICConfig.AllowLogin callbacks were not validated against the client's remote address, so a source-address restriction set by those callbacks was silently ignored. The check is now applied to the Permissions returned by any authentication callback.",
       "affected": [
         {
           "ranges": [
@@ -1863,6 +1905,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Prevent DoS on deadlocked undecided channel in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.56.0",
@@ -1889,6 +1932,7 @@
         "CVE-2026-78662"
       ],
       "summary": "Prevent DoS on deadlocked undecided channel in golang.org/x/crypto/ssh",
+      "details": "Previously, a channel registered in the mux's chanList is not usable until it is established. A malicious peer was able flood the channel's incomingRequests, deadlocking the entire connection.\n\nNow, we add an atomic established state, set when a channel becomes usable. Until such a time, handlePacket drops every packet other than the open confirmation/failure, without blocking and without tearing down the connection.",
       "affected": [
         {
           "ranges": [
@@ -1948,6 +1992,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Prevent DoS on deadlocked established channel in golang.org/x/crypto/ssh",
     "Versions": {
       "current": "0.16.0",
       "fixed": "0.56.0",
@@ -1974,6 +2019,7 @@
         "CVE-2026-56855"
       ],
       "summary": "Prevent DoS on deadlocked established channel in golang.org/x/crypto/ssh",
+      "details": "Previously, after a channel has been established, a malicious peer could send crafted messages that would deadlock the entire connection.\n\nNow, we handle all RFC 4254 channel messages; global requests are handled explicitly. Then, treat all other messages as a protocol error and tear the connection down instead of buffering and blocking.",
       "affected": [
         {
           "ranges": [
@@ -2035,6 +2081,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "HTTP/2 CONTINUATION flood in net/http",
     "Versions": {
       "current": "0.17.0",
       "fixed": "1.21.9",
@@ -2064,6 +2111,7 @@
         "GHSA-4v7x-pqxf-cx7m"
       ],
       "summary": "HTTP/2 CONTINUATION flood in net/http",
+      "details": "An attacker may cause an HTTP/2 endpoint to read arbitrary amounts of header data by sending an excessive number of CONTINUATION frames.\n\nMaintaining HPACK state requires parsing and processing all HEADERS and CONTINUATION frames on a connection. When a request's headers exceed MaxHeaderBytes, no memory is allocated to store the excess headers, but they are still parsed.\n\nThis permits an attacker to cause an HTTP/2 endpoint to read arbitrary amounts of header data, all associated with a request which is going to be rejected. These headers can include Huffman-encoded data which is significantly more expensive for the receiver to decode than for an attacker to send.\n\nThe fix sets a limit on the amount of excess header frames we will process before closing a connection.",
       "affected": [
         {
           "ranges": [
@@ -2149,6 +2197,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Non-linear parsing of case-insensitive content in golang.org/x/net/html",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.33.0",
@@ -2176,6 +2225,7 @@
         "GHSA-w32m-9786-jp63"
       ],
       "summary": "Non-linear parsing of case-insensitive content in golang.org/x/net/html",
+      "details": "An attacker can craft an input to the Parse functions that would be processed non-linearly with respect to its length, resulting in extremely slow parsing. This could cause a denial of service.",
       "affected": [
         {
           "ranges": [
@@ -2236,6 +2286,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "HTTP Proxy bypass using IPv6 Zone IDs in golang.org/x/net",
     "Versions": {
       "current": "0.17.0",
       "fixed": "1.23.7",
@@ -2264,6 +2315,7 @@
         "GHSA-qxp5-gwg8-xv66"
       ],
       "summary": "HTTP Proxy bypass using IPv6 Zone IDs in golang.org/x/net",
+      "details": "Matching of hosts against proxy patterns can improperly treat an IPv6 zone ID as a hostname component. For example, when the NO_PROXY environment variable is set to \"*.example.com\", a request to \"[::1%25.example.com]:80` will incorrectly match and not be proxied.",
       "affected": [
         {
           "ranges": [
@@ -2349,6 +2401,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Incorrect Neutralization of Input During Web Page Generation in x/net in golang.org/x/net",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.38.0",
@@ -2377,6 +2430,7 @@
         "GHSA-vvgc-356p-c3xw"
       ],
       "summary": "Incorrect Neutralization of Input During Web Page Generation in x/net in golang.org/x/net",
+      "details": "The tokenizer incorrectly interprets tags with unquoted attribute values that end with a solidus character (/) as self-closing. When directly using Tokenizer, this can result in such tags incorrectly being marked as self-closing, and when using the Parse functions, this can result in content following such tags as being placed in the wrong scope during DOM construction, but only when tags are in foreign content (e.g. \u003cmath\u003e, \u003csvg\u003e, etc contexts).",
       "affected": [
         {
           "ranges": [
@@ -2437,6 +2491,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Quadratic parsing complexity in golang.org/x/net/html",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.45.0",
@@ -2464,6 +2519,7 @@
         "GHSA-w4gw-w5jq-g9jh"
       ],
       "summary": "Quadratic parsing complexity in golang.org/x/net/html",
+      "details": "The html.Parse function in golang.org/x/net/html has quadratic parsing complexity when processing certain inputs, which can lead to denial of service (DoS) if an attacker provides specially crafted HTML content.",
       "affected": [
         {
           "ranges": [
@@ -2523,6 +2579,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Infinite parsing loop in golang.org/x/net",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.45.0",
@@ -2549,6 +2606,7 @@
         "CVE-2025-58190"
       ],
       "summary": "Infinite parsing loop in golang.org/x/net",
+      "details": "The html.Parse function in golang.org/x/net/html has an infinite parsing loop when processing certain inputs, which can lead to denial of service (DoS) if an attacker provides specially crafted HTML content.",
       "affected": [
         {
           "ranges": [
@@ -2609,6 +2667,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Infinite loop in HTTP/2 transport when given bad SETTINGS_MAX_FRAME_SIZE in net/http/internal/http2 in golang.org/x/net",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.53.0",
@@ -2636,6 +2695,7 @@
         "CVE-2026-33814"
       ],
       "summary": "Infinite loop in HTTP/2 transport when given bad SETTINGS_MAX_FRAME_SIZE in net/http/internal/http2 in golang.org/x/net",
+      "details": "When processing HTTP/2 SETTINGS frames, transport will enter an infinite loop of writing CONTINUATION frames if it receives a SETTINGS_MAX_FRAME_SIZE with a value of 0.",
       "affected": [
         {
           "ranges": [
@@ -2724,6 +2784,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking incorrect handling of namespaced elements in foreign content in golang.org/x/net/html",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.55.0",
@@ -2750,6 +2811,7 @@
         "CVE-2026-42506"
       ],
       "summary": "Invoking incorrect handling of namespaced elements in foreign content in golang.org/x/net/html",
+      "details": "Parsing arbitrary HTML which is then rendered using Render can result in an unexpected HTML tree. This can be leveraged to execute XSS attacks in applications that attempt to sanitize input HTML before rendering.",
       "affected": [
         {
           "ranges": [
@@ -2809,6 +2871,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking failure to reject ASCII-only Punycode-encoded labels in golang.org/x/net/idna",
     "Versions": {
       "current": "0.17.0",
       "fixed": "1.25.13",
@@ -2835,6 +2898,7 @@
         "CVE-2026-39821"
       ],
       "summary": "Invoking failure to reject ASCII-only Punycode-encoded labels in golang.org/x/net/idna",
+      "details": "The ToASCII and ToUnicode functions incorrectly accept Punycode-encoded labels that decode to an ASCII-only label. For example, ToUnicode(\"xn--example-.com\") incorrectly returns the name \"example.com\" rather than an error.\n\nThis behavior can lead to privilege escalation in programs using the idna package. For example, a program which performs privilege checks on the ASCII hostname may reject \"example.com\" but permit \"xn--example-.com\". If that program subsequently converts the ASCII hostname to Unicode, it will inadvertently permits access to the Unicode name \"example.com\".",
       "affected": [
         {
           "ranges": [
@@ -2931,6 +2995,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking incorrect handling of HTML elements in foreign content in golang.org/x/net/html",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.55.0",
@@ -2957,6 +3022,7 @@
         "CVE-2026-42502"
       ],
       "summary": "Invoking incorrect handling of HTML elements in foreign content in golang.org/x/net/html",
+      "details": "Parsing arbitrary HTML which is then rendered using Render can result in an unexpected HTML tree. This can be leveraged to execute XSS attacks in applications that attempt to sanitize input HTML before rendering.",
       "affected": [
         {
           "ranges": [
@@ -3017,6 +3083,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking denial of service when parsing arbitrary HTML in golang.org/x/net/html",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.55.0",
@@ -3045,6 +3112,7 @@
         "GHSA-5cv4-jp36-h3mw"
       ],
       "summary": "Invoking denial of service when parsing arbitrary HTML in golang.org/x/net/html",
+      "details": "Parsing arbitrary HTML can consume excessive CPU time, possibly leading to denial of service.",
       "affected": [
         {
           "ranges": [
@@ -3104,6 +3172,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking incorrect handling of character references in DOCTYPE nodes in golang.org/x/net/html",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.55.0",
@@ -3130,6 +3199,7 @@
         "CVE-2026-25681"
       ],
       "summary": "Invoking incorrect handling of character references in DOCTYPE nodes in golang.org/x/net/html",
+      "details": "Parsing arbitrary HTML which is then rendered using Render can result in an unexpected HTML tree. This can be leveraged to execute XSS attacks in applications that attempt to sanitize input HTML before rendering.",
       "affected": [
         {
           "ranges": [
@@ -3189,6 +3259,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking duplicate attributes can cause XSS in golang.org/x/net/html",
     "Versions": {
       "current": "0.17.0",
       "fixed": "0.55.0",
@@ -3215,6 +3286,7 @@
         "CVE-2026-27136"
       ],
       "summary": "Invoking duplicate attributes can cause XSS in golang.org/x/net/html",
+      "details": "Parsing arbitrary HTML which is then rendered using Render can result in an unexpected HTML tree. This can be leveraged to execute XSS attacks in applications that attempt to sanitize input HTML before rendering.",
       "affected": [
         {
           "ranges": [
@@ -3275,6 +3347,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Parsing an invalid SVCB or HTTPS RR can panic in golang.org/x/net/dns/dnsmessage",
     "Versions": {
       "current": "0.17.0",
       "fixed": "1.26.6",
@@ -3302,6 +3375,7 @@
         "CVE-2026-46600"
       ],
       "summary": "Parsing an invalid SVCB or HTTPS RR can panic in golang.org/x/net/dns/dnsmessage",
+      "details": "Parsing an invalid SVCB or HTTPS RR can panic when the size of a parameter value overflows the message buffer.",
       "affected": [
         {
           "ranges": [
@@ -3386,6 +3460,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking integer overflow in NewNTUnicodeString in golang.org/x/sys/windows",
     "Versions": {
       "current": "0.15.0",
       "fixed": "0.44.0",
@@ -3412,6 +3487,7 @@
         "CVE-2026-39824"
       ],
       "summary": "Invoking integer overflow in NewNTUnicodeString in golang.org/x/sys/windows",
+      "details": "NewNTUnicodeString does not check for string length overflow. When provided with a string that overflows the maximum size of a NTUnicodeString (a 16-bit number of bytes), it returns a truncated string rather than an error.",
       "affected": [
         {
           "ranges": [
@@ -3471,6 +3547,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Infinite loop on invalid input in golang.org/x/text",
     "Versions": {
       "current": "0.14.0",
       "fixed": "0.39.0",
@@ -3497,6 +3574,7 @@
         "CVE-2026-56852"
       ],
       "summary": "Infinite loop on invalid input in golang.org/x/text",
+      "details": "A norm.Iter can enter an infinite loop when handling input containing invalid UTF-8 bytes.",
       "affected": [
         {
           "ranges": [

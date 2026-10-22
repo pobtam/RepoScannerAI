@@ -196,6 +196,7 @@ func (a *NPMAudit) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 				},
 				ToolVersion: a.Version(),
 				AdvisoryURL: via.URL,
+				Description: via.Title,
 				Raw:         mustRaw(via),
 			})
 		}

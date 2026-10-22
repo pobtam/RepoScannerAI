@@ -105,6 +105,7 @@ func (a *Gosec) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 			},
 			ToolVersion: a.Version(),
 			AdvisoryURL: issue.CWE.URL,
+			Description: issue.Details,
 			Raw:         mustRaw(issue),
 		})
 	}

@@ -156,6 +156,8 @@ export const finding = z.object({
   reason_code: z.string().optional(),
   verified_reason: z.string().optional(),
   credential_type: z.string().optional(),
+  description: z.string().optional(),
+  description_source: z.string().optional(),
   sla: sla,
   observation: observation,
   refs: refs,

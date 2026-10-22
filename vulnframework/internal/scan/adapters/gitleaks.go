@@ -161,6 +161,9 @@ func (a *Gitleaks) secretFindings(out scan.RawOutput, hits []gitleaksHit, eviden
 			File:           file,
 			Line:           hit.StartLine,
 			CredentialType: hit.RuleID,
+			// The detector rule's description, which names the kind of
+			// credential; never Match or Secret.
+			Description: hit.Description,
 			Classification: model.Classification{
 				// Secrets take a fixed maximum severity and bypass the scoring
 				// formula entirely (VM-AD §9.4).

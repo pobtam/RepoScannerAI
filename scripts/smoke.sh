@@ -152,6 +152,19 @@ for f in "$WORK/planted"/*; do
 done
 ok "planted secret reported, value never served"
 
+# Every finding says what the problem is, and real scans supply the tool's own
+# words for most of them rather than leaving all of them to the fallback.
+described="$(get '/v1/findings?scope=open&limit=500' "${AUTH[@]}" | python3 -c '
+import json, sys
+fs = json.load(sys.stdin)["findings"]
+bare = [f["fingerprint"] for f in fs if not f.get("restricted") and not f.get("description")]
+tool = sum(1 for f in fs if f.get("description_source") not in (None, "", "derived"))
+print(len(fs), tool, " ".join(bare[:5]))')"
+read -r total by_tool bare <<<"$described"
+[ -z "$bare" ] || fail "findings with no description: $bare"
+[ "$by_tool" -gt 0 ] || fail "none of $total findings carries a scanner's description"
+ok "every finding described ($by_tool of $total in the scanner's own words)"
+
 # Scan now, as ./run.sh --real runs it: a worker over the clones, and a
 # request through the API with its same-origin and CSRF checks.
 export VULNFRAMEWORK_WORKER_CONTAINER=vf-smoke-worker

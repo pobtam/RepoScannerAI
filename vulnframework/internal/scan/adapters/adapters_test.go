@@ -763,3 +763,22 @@ func gitleaksAllowlistAux(t *testing.T) map[string][]byte {
 	return adapters.GitleaksFixtureAux(read("unfiltered.json"), read("config-bypass.json"),
 		read("ignore-check.json"), read("gitleaks.toml"), read("gitleaksignore"))
 }
+
+// Every finding from real captured output carries the scanner's own words for
+// the problem, so the interface never shows an identifier alone.
+func TestEveryAdapterDescribesItsFindings(t *testing.T) {
+	lock := testLock(t)
+	for _, tc := range fixtureCases(t, lock) {
+		o := out(tc.tool, tc.repo, tc.dir, readFixture(t, tc.tool, tc.fixture))
+		o.Aux = tc.aux
+		got, err := tc.adapter.Normalize(o)
+		if err != nil {
+			continue // error envelopes: covered elsewhere
+		}
+		for _, f := range got {
+			if strings.TrimSpace(f.Description) == "" {
+				t.Errorf("%s/%s: a %s finding (%s%s) has no description", tc.tool, tc.fixture, f.Category, f.PrimaryID, f.RuleID+f.CheckID+f.DetectorRuleID)
+			}
+		}
+	}
+}

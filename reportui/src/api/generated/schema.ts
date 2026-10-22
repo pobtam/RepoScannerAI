@@ -461,6 +461,8 @@ export interface components {
                     transitive: boolean;
                 };
                 credential_type?: string;
+                description?: string;
+                description_source?: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -594,6 +596,8 @@ export interface components {
                         transitive: boolean;
                     };
                     credential_type?: string;
+                    description?: string;
+                    description_source?: string;
                     fingerprint: string;
                     identity: {
                         aliases?: string[];
@@ -715,6 +719,8 @@ export interface components {
                     transitive: boolean;
                 };
                 credential_type?: string;
+                description?: string;
+                description_source?: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -1022,6 +1028,8 @@ export interface components {
                 transitive: boolean;
             };
             credential_type?: string;
+            description?: string;
+            description_source?: string;
             fingerprint: string;
             identity: {
                 aliases?: string[];
@@ -1148,6 +1156,8 @@ export interface components {
                     transitive: boolean;
                 };
                 credential_type?: string;
+                description?: string;
+                description_source?: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -1728,6 +1738,8 @@ export interface components {
                     transitive: boolean;
                 };
                 credential_type?: string;
+                description?: string;
+                description_source?: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];

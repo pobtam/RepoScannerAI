@@ -61,6 +61,11 @@ type SourceObservation struct {
 	// reviewer cannot tell one static-analysis finding from another.
 	RuleID string `json:"rule_id,omitempty"`
 
+	// Description is the tool's own account of the problem, already passed
+	// through model.SafeDescription. Carried for the same reason as RuleID:
+	// the finding document is rebuilt from these, and what is not here is lost.
+	Description string `json:"description,omitempty"`
+
 	// Annotations are the non-determining, version-tagged observations
 	// OQ-P3-01 decided to RETAIN — osv-scanner's experimental reachability
 	// among them. Dropping them here discarded the whole point of that
@@ -99,6 +104,7 @@ func SourceOf(fp, runID string, observedAt time.Time, raw model.RawFinding) Sour
 		AdvisoryURL:    raw.AdvisoryURL,
 		CredentialTy:   raw.CredentialType,
 		RuleID:         firstNonEmpty(raw.RuleID, raw.DetectorRuleID, raw.CheckID),
+		Description:    model.SafeDescription(raw.Description),
 		Annotations:    raw.Annotations,
 	}
 }
@@ -114,6 +120,7 @@ type Projection struct {
 	AdvisoryURL    string
 	IntroducedIn   string
 	RuleID         string
+	Description    string
 	Annotations    map[string]string
 	CredentialType string
 	FirstPartyPath string
@@ -247,6 +254,11 @@ func Project(obs []SourceObservation) Projection {
 		}
 		if p.RuleID == "" && o.RuleID != "" {
 			p.RuleID = o.RuleID
+		}
+		// The first source, in tool order, that describes it. Deterministic,
+		// so the text does not change with which scanner finished first.
+		if p.Description == "" && o.Description != "" {
+			p.Description = o.Description
 		}
 		// Merged across sources rather than taken from one: two tools may each
 		// annotate the same finding, and keeping only the first would discard

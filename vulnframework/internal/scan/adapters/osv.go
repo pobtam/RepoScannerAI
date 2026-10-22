@@ -84,6 +84,7 @@ type osvVulnerability struct {
 	ID       string   `json:"id"`
 	Aliases  []string `json:"aliases"`
 	Summary  string   `json:"summary"`
+	Details  string   `json:"details"`
 	Affected []struct {
 		Ranges []struct {
 			Type   string `json:"type"`
@@ -172,6 +173,7 @@ func (a *OSVScanner) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 					},
 					ToolVersion: a.Version(),
 					AdvisoryURL: advisoryURL(v),
+					Description: firstNonEmptyText(v.Summary, v.Details),
 					Annotations: a.annotate(analysedByID[v.ID], calledByID[v.ID]),
 					Raw:         mustRaw(v),
 				}

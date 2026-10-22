@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/scan"
@@ -70,6 +71,7 @@ type trivyVulnerability struct {
 	FixedVersion     string `json:"FixedVersion"`
 	Severity         string `json:"Severity"`
 	Title            string `json:"Title"`
+	Description      string `json:"Description"`
 	PrimaryURL       string `json:"PrimaryURL"`
 	Status           string `json:"Status"`
 	CVSS             map[string]struct {
@@ -138,6 +140,7 @@ func (a *Trivy) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 				},
 				ToolVersion: a.Version(),
 				AdvisoryURL: v.PrimaryURL,
+				Description: firstNonEmptyText(v.Title, v.Description),
 				Raw:         mustRaw(v),
 			})
 		}
@@ -167,6 +170,7 @@ func (a *Trivy) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 				},
 				ToolVersion: a.Version(),
 				AdvisoryURL: m.PrimaryURL,
+				Description: misconfigDescription(m),
 				Raw:         mustRaw(m),
 			})
 		}
@@ -175,4 +179,18 @@ func (a *Trivy) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 	raw = dedupe(raw)
 	sortFindings(raw)
 	return raw, nil
+}
+
+// misconfigDescription is the check's title with what it found here: trivy's
+// Message names the resource and setting, the Title the rule.
+func misconfigDescription(m trivyMisconfig) string {
+	title := firstNonEmptyText(m.Title, m.Description)
+	switch {
+	case m.Message == "" || m.Message == title:
+		return title
+	case title == "":
+		return m.Message
+	default:
+		return strings.TrimRight(title, ". ") + ": " + m.Message
+	}
 }

@@ -17,6 +17,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Image user should not be 'root': Specify at least 1 USER command in Dockerfile with non-root user as argument",
     "Versions": {},
     "Classification": {
       "severity": "HIGH",
@@ -68,6 +69,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "No HEALTHCHECK defined: Add HEALTHCHECK instruction in your Dockerfile",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -119,6 +121,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Can elevate its own privileges: Container 'api' of Deployment 'wanaware-api' should set 'securityContext.allowPrivilegeEscalation' to false",
     "Versions": {},
     "Classification": {
       "severity": "MEDIUM",
@@ -170,6 +173,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Default capabilities: some containers do not drop all: Container 'api' of Deployment 'wanaware-api' should add 'ALL' to 'securityContext.capabilities.drop'",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -221,6 +225,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Default capabilities: some containers do not drop any: Container 'api' of 'deployment' 'wanaware-api' in 'default' namespace should set securityContext.capabilities.drop",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -272,6 +277,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "CPU not limited: Container 'api' of Deployment 'wanaware-api' should set 'resources.limits.cpu'",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -323,6 +329,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Runs as root user: Container 'api' of Deployment 'wanaware-api' should set 'securityContext.runAsNonRoot' to true",
     "Versions": {},
     "Classification": {
       "severity": "MEDIUM",
@@ -374,6 +381,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Image tag \":latest\" used: Container 'api' of Deployment 'wanaware-api' should specify an image tag",
     "Versions": {},
     "Classification": {
       "severity": "MEDIUM",
@@ -425,6 +433,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Root file system is not read-only: Container 'api' of Deployment 'wanaware-api' should set 'securityContext.readOnlyRootFilesystem' to true",
     "Versions": {},
     "Classification": {
       "severity": "HIGH",
@@ -476,6 +485,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "CPU requests not specified: Container 'api' of Deployment 'wanaware-api' should set 'resources.requests.cpu'",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -527,6 +537,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Memory requests not specified: Container 'api' of Deployment 'wanaware-api' should set 'resources.requests.memory'",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -578,6 +589,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Memory not limited: Container 'api' of Deployment 'wanaware-api' should set 'resources.limits.memory'",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -629,6 +641,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Runs with UID \u003c= 10000: Container 'api' of Deployment 'wanaware-api' should set 'securityContext.runAsUser' \u003e 10000",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -680,6 +693,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Runs with GID \u003c= 10000: Container 'api' of Deployment 'wanaware-api' should set 'securityContext.runAsGroup' \u003e 10000",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -731,6 +745,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Runtime/Default Seccomp profile not set: Either Pod or Container should set 'securityContext.seccompProfile.type' to 'RuntimeDefault'",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -782,6 +797,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Seccomp policies disabled: container \"api\" of deployment \"wanaware-api\" in \"default\" namespace should specify a seccomp profile",
     "Versions": {},
     "Classification": {
       "severity": "MEDIUM",
@@ -833,6 +849,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Container capabilities must only include NET_BIND_SERVICE: container should drop all",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -884,6 +901,7 @@
     "ResourceKey": "",
     "Line": 3,
     "CredentialType": "",
+    "Description": "Workloads in the default namespace: deployment wanaware-api in default namespace should set metadata.namespace to a non-default namespace",
     "Versions": {},
     "Classification": {
       "severity": "LOW",
@@ -935,6 +953,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Default security context configured: container wanaware-api in default namespace is using the default security context",
     "Versions": {},
     "Classification": {
       "severity": "HIGH",
@@ -986,6 +1005,7 @@
     "ResourceKey": "",
     "Line": 14,
     "CredentialType": "",
+    "Description": "Restrict container images to trusted registries: Container api in deployment wanaware-api (namespace: default) uses an image from an untrusted registry.",
     "Versions": {},
     "Classification": {
       "severity": "MEDIUM",
@@ -1037,6 +1057,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "ssh: Prefix truncation attack on Binary Packet Protocol (BPP)",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.17.0"
@@ -1062,6 +1083,7 @@
       "FixedVersion": "0.17.0",
       "Severity": "MEDIUM",
       "Title": "ssh: Prefix truncation attack on Binary Packet Protocol (BPP)",
+      "Description": "The SSH transport protocol with certain OpenSSH extensions, found in OpenSSH before 9.6 and other products, allows remote attackers to bypass integrity checks such that some packets are omitted (from the extension negotiation message), and a client and server may consequently end up with a connection for which some security features have been downgraded or disabled, aka a Terrapin attack. This occurs because the SSH Binary Packet Protocol (BPP), implemented by these extensions, mishandles the handshake phase and mishandles use of sequence numbers. For example, there is an effective attack against SSH's use of ChaCha20-Poly1305 (and CBC with Encrypt-then-MAC). The bypass occurs in chacha20-poly1305@openssh.com and (if CBC is used) the -etm@openssh.com MAC algorithms. This also affects Maverick Synergy Java SSH API before 3.1.0-SNAPSHOT, Dropbear through 2022.83, Ssh before 5.1.1 in Erlang/OTP, PuTTY before 0.80, AsyncSSH before 2.14.2, golang.org/x/crypto before 0.17.0, libssh before 0.10.6, libssh2 through 1.11.0, Thorn Tech SFTP Gateway before 3.4.6, Tera Term before 5.1, Paramiko before 3.4.0, jsch before 0.2.15, SFTPGo before 2.5.6, Netgate pfSense Plus through 23.09.1, Netgate pfSense CE through 2.7.2, HPN-SSH through 18.2.0, ProFTPD before 1.3.8b (and before 1.3.9rc2), ORYX CycloneSSH before 2.3.4, NetSarang XShell 7 before Build 0144, CrushFTP before 10.6.0, ConnectBot SSH library before 2.2.22, Apache MINA sshd through 2.11.0, sshj through 0.37.0, TinySSH through 20230101, trilead-ssh2 6401, LANCOM LCOS and LANconfig, FileZilla before 3.66.4, Nova before 11.8, PKIX-SSH before 14.4, SecureCRT before 9.4.3, Transmit5 before 5.10.4, Win32-OpenSSH before 9.5.0.0p1-Beta, WinSCP before 6.2.2, Bitvise SSH Server before 9.32, Bitvise SSH Client before 9.33, KiTTY through 0.76.1.13, the net-ssh gem 7.2.0 for Ruby, the mscdex ssh2 module before 1.15.0 for Node.js, the thrussh library before 0.35.1 for Rust, and the Russh crate before 0.40.2 for Rust.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2023-48795",
       "Status": "fixed",
       "CVSS": {
@@ -1098,6 +1120,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: Misuse of ServerConfig.PublicKeyCallback may cause authorization bypass in golang.org/x/crypto",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.31.0"
@@ -1123,6 +1146,7 @@
       "FixedVersion": "0.31.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: Misuse of ServerConfig.PublicKeyCallback may cause authorization bypass in golang.org/x/crypto",
+      "Description": "Applications and libraries which misuse connection.serverAuthenticate (via callback field ServerConfig.PublicKeyCallback) may be susceptible to an authorization bypass. The documentation for ServerConfig.PublicKeyCallback says that \"A call to this function does not guarantee that the key offered is in fact used to authenticate.\" Specifically, the SSH protocol allows clients to inquire about whether a public key is acceptable before proving control of the corresponding private key. PublicKeyCallback may be called with multiple keys, and the order in which the keys were provided cannot be used to infer which key the client successfully authenticated with, if any. Some applications, which store the key(s) passed to PublicKeyCallback (or derived information) and make security relevant determinations based on it once the connection is established, may make incorrect assumptions. For example, an attacker may send public keys A and B, and then authenticate with A. PublicKeyCallback would be called only twice, first with A and then with B. A vulnerable application may then make authorization decisions based on key B for which the attacker does not actually control the private key. Since this API is widely misused, as a partial mitigation golang.org/x/cry...@v0.31.0 enforces the property that, when successfully authenticating via public key, the last key passed to ServerConfig.PublicKeyCallback will be the key used to authenticate the connection. PublicKeyCallback will now be called multiple times with the same key, if necessary. Note that the client may still not control the last key passed to PublicKeyCallback if the connection is then authenticated with a different method, such as PasswordCallback, KeyboardInteractiveCallback, or NoClientAuth. Users should be using the Extensions field of the Permissions return value from the various authentication callbacks to record data associated with the authentication attempt instead of referencing external state. Once the connection is established the state corresponding to the successful authentication attempt can be retrieved via the ServerConn.Permissions field. Note that some third-party libraries misuse the Permissions type by sharing it across authentication attempts; users of third-party libraries should refer to the relevant projects for guidance.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-45337",
       "Status": "fixed",
       "CVSS": {
@@ -1150,6 +1174,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: Denial of Service in the Key Exchange of golang.org/x/crypto/ssh",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.35.0"
@@ -1175,6 +1200,7 @@
       "FixedVersion": "0.35.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: Denial of Service in the Key Exchange of golang.org/x/crypto/ssh",
+      "Description": "SSH servers which implement file transfer protocols are vulnerable to a denial of service attack from clients which complete the key exchange slowly, or not at all, causing pending content to be read into memory, but never transmitted.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-22869",
       "Status": "fixed",
       "CVSS": {
@@ -1202,6 +1228,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh/agent: golang.org/x/crypto/ssh/agent: SSH client panic due to unexpected SSH_AGENT_SUCCESS",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.43.0"
@@ -1227,6 +1254,7 @@
       "FixedVersion": "0.43.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh/agent: golang.org/x/crypto/ssh/agent: SSH client panic due to unexpected SSH_AGENT_SUCCESS",
+      "Description": "SSH clients receiving SSH_AGENT_SUCCESS when expecting a typed response will panic and cause early termination of the client process.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-47913",
       "Status": "fixed",
       "CVSS": {
@@ -1254,6 +1282,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh/agent: SSH Agent servers: Denial of Service due to malformed messages",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.45.0"
@@ -1279,6 +1308,7 @@
       "FixedVersion": "0.45.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/crypto/ssh/agent: SSH Agent servers: Denial of Service due to malformed messages",
+      "Description": "SSH Agent servers do not validate the size of messages when processing new identity requests, which may cause the program to panic if the message is malformed due to an out of bounds read.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-47914",
       "Status": "fixed",
       "CVSS": {
@@ -1306,6 +1336,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via unbounded memory consumption in GSSAPI authentication",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.45.0"
@@ -1331,6 +1362,7 @@
       "FixedVersion": "0.45.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via unbounded memory consumption in GSSAPI authentication",
+      "Description": "SSH servers parsing GSSAPI authentication requests do not validate the number of mechanisms specified in the request, allowing an attacker to cause unbounded memory consumption.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-58181",
       "Status": "fixed",
       "CVSS": {
@@ -1358,6 +1390,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang: golang.org/x/crypto/ssh: Denial of Service via repeated rejected channel openings",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1383,6 +1416,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/crypto/ssh: golang: golang.org/x/crypto/ssh: Denial of Service via repeated rejected channel openings",
+      "Description": "An authenticated SSH client that repeatedly opened channels which were rejected by the server caused unbounded memory growth, eventually crashing the server process and affecting all connected users. Rejected channels are now properly removed from the connection's internal state and released for garbage collection.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39827",
       "Status": "fixed",
       "CVSS": {
@@ -1410,6 +1444,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Unauthorized command execution via discarded SSH permissions",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1435,6 +1470,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Unauthorized command execution via discarded SSH permissions",
+      "Description": "When an SSH server authentication callback returned PartialSuccessError with non-nil Permissions, those permissions were silently discarded, potentially dropping certificate restrictions such as force-command after a second factor succeeded. Returning non-nil Permissions with PartialSuccessError now results in a connection error.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39828",
       "Status": "fixed",
       "CVSS": {
@@ -1462,6 +1498,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via crafted public key with excessive parameters",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1487,6 +1524,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via crafted public key with excessive parameters",
+      "Description": "The RSA and DSA public key parsers did not enforce size limits on key parameters. A crafted public key with an excessively large modulus or DSA parameter could cause several minutes of CPU consumption during signature verification. This could be triggered by unauthenticated clients during public key authentication. RSA moduli are now limited to 8192 bits, and DSA parameters are validated per FIPS 186-2.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39829",
       "Status": "fixed",
       "CVSS": {
@@ -1514,6 +1552,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via resource leak from unsolicited SSH responses",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1539,6 +1578,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via resource leak from unsolicited SSH responses",
+      "Description": "A malicious SSH peer could send unsolicited global request responses to fill an internal buffer, blocking the connection's read loop. The blocked goroutine could not be released by calling Close(), resulting in a resource leak per connection. Unsolicited global responses are now discarded.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39830",
       "Status": "fixed",
       "CVSS": {
@@ -1566,6 +1606,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Security key bypass due to missing user presence check",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1591,6 +1632,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Security key bypass due to missing user presence check",
+      "Description": "The Verify() method for FIDO/U2F security key types (sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@openssh.com) did not check the User Presence flag. Signatures generated without physical touch were accepted, allowing unattended use of a hardware security key. To restore the previous behavior, return a \"no-touch-required\" extension in Permissions.Extensions from PublicKeyCallback.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39831",
       "Status": "fixed",
       "CVSS": {
@@ -1618,6 +1660,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh/agent: golang.org/x/crypto/ssh/agent: Security bypass due to improper handling of key restrictions",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1643,6 +1686,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh/agent: golang.org/x/crypto/ssh/agent: Security bypass due to improper handling of key restrictions",
+      "Description": "When adding a key to a remote agent constraint extensions such as restrict-destination-v00@openssh.com were not serialized in the request. Destination restrictions were silently stripped when forwarding keys, allowing unrestricted use of the key on the remote host. The client now serializes all constraint extensions. Additionally, the in-memory keyring returned by NewKeyring() now rejects keys with unsupported constraint extensions instead of silently ignoring them.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39832",
       "Status": "fixed",
       "CVSS": {
@@ -1670,6 +1714,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh/agent: golang.org/x/crypto/ssh/agent: Security bypass due to unenforced key confirmation",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1695,6 +1740,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/crypto/ssh/agent: golang.org/x/crypto/ssh/agent: Security bypass due to unenforced key confirmation",
+      "Description": "The in-memory keyring returned by NewKeyring() silently accepted keys with the ConfirmBeforeUse constraint but never enforced it. The key would sign without any confirmation prompt, with no indication to the caller that the constraint was not in effect. NewKeyring() now returns an error when unsupported constraints are requested.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39833",
       "Status": "fixed",
       "CVSS": {
@@ -1722,6 +1768,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang: golang.org/x/crypto/ssh: Denial of Service due to integer overflow in SSH channel write",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1747,6 +1794,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/crypto/ssh: golang: golang.org/x/crypto/ssh: Denial of Service due to integer overflow in SSH channel write",
+      "Description": "When writing data larger than 4GB in a single Write call on an SSH channel, an integer overflow in the internal payload size calculation caused the write loop to spin indefinitely, sending empty packets without making progress. The size comparison now uses int64 to prevent truncation.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39834",
       "Status": "fixed",
       "CVSS": {
@@ -1774,6 +1822,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang: golang.org/x/crypto/ssh: Denial of Service via crafted SSH certificate",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1799,6 +1848,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: golang: golang.org/x/crypto/ssh: Denial of Service via crafted SSH certificate",
+      "Description": "SSH servers which use CertChecker as a public key callback without setting IsUserAuthority or IsHostAuthority could be caused to panic by a client presenting a certificate. CertChecker now returns an error instead of panicking when these callbacks are nil.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39835",
       "Status": "fixed",
       "CVSS": {
@@ -1826,6 +1876,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh/knownhosts: golang: golang.org/x/crypto/ssh/knownhosts: Revocation bypass via unchecked SignatureKey",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1851,6 +1902,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh/knownhosts: golang: golang.org/x/crypto/ssh/knownhosts: Revocation bypass via unchecked SignatureKey",
+      "Description": "Previously, a revoked 'SignatureKey' belonging to a CA was not correctly checked for revocation. Now, both the 'key' and 'key.SignatureKey' are checked for @revoked.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-42508",
       "Status": "fixed",
       "CVSS": {
@@ -1878,6 +1930,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Authorization bypass due to skipped source-address validation",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1903,6 +1956,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Authorization bypass due to skipped source-address validation",
+      "Description": "Previously, CVE-2024-45337 fixed an authorization bypass for misused ssh server configurations; if any other type of callback is passed other than public key, then the source-address validation would be skipped.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-46595",
       "Status": "fixed",
       "CVSS": {
@@ -1930,6 +1984,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via crafted AES-GCM packet decoder inputs",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -1955,6 +2010,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via crafted AES-GCM packet decoder inputs",
+      "Description": "An incorrectly placed cast from bytes to int allowed for server-side panic in the AES-GCM packet decoder for well-crafted inputs.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-46597",
       "Status": "fixed",
       "CVSS": {
@@ -1982,6 +2038,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh/agent: golang: golang.org/x/crypto/ssh/agent: Denial of Service via malformed input",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.52.0"
@@ -2007,6 +2064,7 @@
       "FixedVersion": "0.52.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/crypto/ssh/agent: golang: golang.org/x/crypto/ssh/agent: Denial of Service via malformed input",
+      "Description": "For certain crafted inputs, a 'ed25519.PrivateKey' was created by casting malformed wire bytes, leading to a panic when used.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-46598",
       "Status": "fixed",
       "CVSS": {
@@ -2034,6 +2092,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Authentication bypass due to unenforced source-address restrictions",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.55.0"
@@ -2059,6 +2118,7 @@
       "FixedVersion": "0.55.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Authentication bypass due to unenforced source-address restrictions",
+      "Description": "The source-address critical option in the Permissions returned by an authentication callback was only enforced for the PublicKeyCallback and VerifiedPublicKeyCallback paths, extending the fix for CVE-2026-46595. Permissions returned by the PasswordCallback, KeyboardInteractiveCallback, NoClientAuthCallback, and GSSAPIWithMICConfig.AllowLogin callbacks were not validated against the client's remote address, so a source-address restriction set by those callbacks was silently ignored. The check is now applied to the Permissions returned by any authentication callback.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56854",
       "Status": "fixed",
       "CVSS": {
@@ -2086,6 +2146,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via crafted messages",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.56.0"
@@ -2111,6 +2172,7 @@
       "FixedVersion": "0.56.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via crafted messages",
+      "Description": "Previously, after a channel has been established, a malicious peer could send crafted messages that would deadlock the entire connection. Now, we handle all RFC 4254 channel messages; global requests are handled explicitly. Then, treat all other messages as a protocol error and tear the connection down instead of buffering and blocking.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56855",
       "Status": "fixed",
       "CVSS": {
@@ -2138,6 +2200,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via channel request flooding",
     "Versions": {
       "current": "v0.16.0",
       "fixed": "0.56.0"
@@ -2163,6 +2226,7 @@
       "FixedVersion": "0.56.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/crypto/ssh: golang.org/x/crypto/ssh: Denial of Service via channel request flooding",
+      "Description": "Previously, a channel registered in the mux's chanList is not usable until it is established. A malicious peer was able flood the channel's incomingRequests, deadlocking the entire connection. Now, we add an atomic established state, set when a channel becomes usable. Until such a time, handlePacket drops every packet other than the open confirmation/failure, without blocking and without tearing down the connection.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78662",
       "Status": "fixed",
       "CVSS": {
@@ -2190,6 +2254,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
     "Versions": {
       "current": "v0.16.0"
     },
@@ -2213,6 +2278,7 @@
       "FixedVersion": "",
       "Severity": "UNKNOWN",
       "Title": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
+      "Description": "The golang.org/x/crypto/openpgp package is unsafe by design, has numerous known security issues, is not maintained, and should not be used.\n\nIf you are required to interoperate with OpenPGP systems and need a maintained package, consider github.com/ProtonMail/go-crypto/openpgp which is a maintained fork that aims to be a drop-in replacement for this package.",
       "PrimaryURL": "",
       "Status": "affected",
       "CVSS": null
@@ -2236,6 +2302,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang: net/http, x/net/http2: unlimited number of CONTINUATION frames causes DoS",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.23.0"
@@ -2261,6 +2328,7 @@
       "FixedVersion": "0.23.0",
       "Severity": "HIGH",
       "Title": "golang: net/http, x/net/http2: unlimited number of CONTINUATION frames causes DoS",
+      "Description": "An attacker may cause an HTTP/2 endpoint to read arbitrary amounts of header data by sending an excessive number of CONTINUATION frames. Maintaining HPACK state requires parsing and processing all HEADERS and CONTINUATION frames on a connection. When a request's headers exceed MaxHeaderBytes, no memory is allocated to store the excess headers, but they are still parsed. This permits an attacker to cause an HTTP/2 endpoint to read arbitrary amounts of header data, all associated with a request which is going to be rejected. These headers can include Huffman-encoded data which is significantly more expensive for the receiver to decode than for an attacker to send. The fix sets a limit on the amount of excess header frames we will process before closing a connection.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2023-45288",
       "Status": "fixed",
       "CVSS": {
@@ -2291,6 +2359,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/html: Non-linear parsing of case-insensitive content in golang.org/x/net/html",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.33.0"
@@ -2316,6 +2385,7 @@
       "FixedVersion": "0.33.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/net/html: Non-linear parsing of case-insensitive content in golang.org/x/net/html",
+      "Description": "An attacker can craft an input to the Parse functions that would be processed non-linearly with respect to its length, resulting in extremely slow parsing. This could cause a denial of service.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2024-45338",
       "Status": "fixed",
       "CVSS": {
@@ -2343,6 +2413,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/proxy: golang.org/x/net/http/httpproxy: HTTP Proxy bypass using IPv6 Zone IDs in golang.org/x/net",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.36.0"
@@ -2368,6 +2439,7 @@
       "FixedVersion": "0.36.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/net/proxy: golang.org/x/net/http/httpproxy: HTTP Proxy bypass using IPv6 Zone IDs in golang.org/x/net",
+      "Description": "Matching of hosts against proxy patterns can improperly treat an IPv6 zone ID as a hostname component. For example, when the NO_PROXY environment variable is set to \"*.example.com\", a request to \"[::1%25.example.com]:80` will incorrectly match and not be proxied.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-22870",
       "Status": "fixed",
       "CVSS": {
@@ -2395,6 +2467,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/html: Incorrect Neutralization of Input During Web Page Generation in x/net in golang.org/x/net",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.38.0"
@@ -2420,6 +2493,7 @@
       "FixedVersion": "0.38.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/net/html: Incorrect Neutralization of Input During Web Page Generation in x/net in golang.org/x/net",
+      "Description": "The tokenizer incorrectly interprets tags with unquoted attribute values that end with a solidus character (/) as self-closing. When directly using Tokenizer, this can result in such tags incorrectly being marked as self-closing, and when using the Parse functions, this can result in content following such tags as being placed in the wrong scope during DOM construction, but only when tags are in foreign content (e.g. \u003cmath\u003e, \u003csvg\u003e, etc contexts).",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-22872",
       "Status": "fixed",
       "CVSS": {
@@ -2447,6 +2521,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/html: Quadratic parsing complexity in golang.org/x/net/html",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.45.0"
@@ -2472,6 +2547,7 @@
       "FixedVersion": "0.45.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/net/html: Quadratic parsing complexity in golang.org/x/net/html",
+      "Description": "The html.Parse function in golang.org/x/net/html has quadratic parsing complexity when processing certain inputs, which can lead to denial of service (DoS) if an attacker provides specially crafted HTML content.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-47911",
       "Status": "fixed",
       "CVSS": {
@@ -2502,6 +2578,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/html: Infinite parsing loop in golang.org/x/net",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.45.0"
@@ -2527,6 +2604,7 @@
       "FixedVersion": "0.45.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/net/html: Infinite parsing loop in golang.org/x/net",
+      "Description": "The html.Parse function in golang.org/x/net/html has an infinite parsing loop when processing certain inputs, which can lead to denial of service (DoS) if an attacker provides specially crafted HTML content.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2025-58190",
       "Status": "fixed",
       "CVSS": {
@@ -2557,6 +2635,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/html: golang.org/x/net/html: Denial of Service due to excessive HTML parsing",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.55.0"
@@ -2582,6 +2661,7 @@
       "FixedVersion": "0.55.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/net/html: golang.org/x/net/html: Denial of Service due to excessive HTML parsing",
+      "Description": "Parsing arbitrary HTML can consume excessive CPU time, possibly leading to denial of service.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-25680",
       "Status": "fixed",
       "CVSS": {
@@ -2609,6 +2689,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/html: golang.org/x/net/html: Arbitrary code execution via Cross-Site Scripting",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.55.0"
@@ -2634,6 +2715,7 @@
       "FixedVersion": "0.55.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/net/html: golang.org/x/net/html: Arbitrary code execution via Cross-Site Scripting",
+      "Description": "Parsing arbitrary HTML which is then rendered using Render can result in an unexpected HTML tree. This can be leveraged to execute XSS attacks in applications that attempt to sanitize input HTML before rendering.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-25681",
       "Status": "fixed",
       "CVSS": {
@@ -2661,6 +2743,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/html: golang: golang.org/x/net/html: Cross-Site Scripting via HTML parsing bypass",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.55.0"
@@ -2686,6 +2769,7 @@
       "FixedVersion": "0.55.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/net/html: golang: golang.org/x/net/html: Cross-Site Scripting via HTML parsing bypass",
+      "Description": "Parsing arbitrary HTML which is then rendered using Render can result in an unexpected HTML tree. This can be leveraged to execute XSS attacks in applications that attempt to sanitize input HTML before rendering.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-27136",
       "Status": "fixed",
       "CVSS": {
@@ -2713,6 +2797,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "net/http/internal/http2: golang: golang.org/x/net: Go HTTP/2: Denial of Service via malformed SETTINGS_MAX_FRAME_SIZE frame",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.53.0"
@@ -2738,6 +2823,7 @@
       "FixedVersion": "0.53.0",
       "Severity": "HIGH",
       "Title": "net/http/internal/http2: golang: golang.org/x/net: Go HTTP/2: Denial of Service via malformed SETTINGS_MAX_FRAME_SIZE frame",
+      "Description": "When processing HTTP/2 SETTINGS frames, transport will enter an infinite loop of writing CONTINUATION frames if it receives a SETTINGS_MAX_FRAME_SIZE with a value of 0.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-33814",
       "Status": "fixed",
       "CVSS": {
@@ -2771,6 +2857,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/idna: golang: net/http: golang.org/x/net/idna: Privilege escalation via incorrect Punycode label processing",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.55.0"
@@ -2796,6 +2883,7 @@
       "FixedVersion": "0.55.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/net/idna: golang: net/http: golang.org/x/net/idna: Privilege escalation via incorrect Punycode label processing",
+      "Description": "The ToASCII and ToUnicode functions incorrectly accept Punycode-encoded labels that decode to an ASCII-only label. For example, ToUnicode(\"xn--example-.com\") incorrectly returns the name \"example.com\" rather than an error. This behavior can lead to privilege escalation in programs using the idna package. For example, a program which performs privilege checks on the ASCII hostname may reject \"example.com\" but permit \"xn--example-.com\". If that program subsequently converts the ASCII hostname to Unicode, it will inadvertently permits access to the Unicode name \"example.com\".",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39821",
       "Status": "fixed",
       "CVSS": {
@@ -2823,6 +2911,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/html: golang: golang.org/x/net/html: Cross-Site Scripting via unexpected HTML tree rendering",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.55.0"
@@ -2848,6 +2937,7 @@
       "FixedVersion": "0.55.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/net/html: golang: golang.org/x/net/html: Cross-Site Scripting via unexpected HTML tree rendering",
+      "Description": "Parsing arbitrary HTML which is then rendered using Render can result in an unexpected HTML tree. This can be leveraged to execute XSS attacks in applications that attempt to sanitize input HTML before rendering.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-42502",
       "Status": "fixed",
       "CVSS": {
@@ -2875,6 +2965,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/html: golang.org/x/net/html: Cross-Site Scripting (XSS) via arbitrary HTML parsing",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.55.0"
@@ -2900,6 +2991,7 @@
       "FixedVersion": "0.55.0",
       "Severity": "MEDIUM",
       "Title": "golang.org/x/net/html: golang.org/x/net/html: Cross-Site Scripting (XSS) via arbitrary HTML parsing",
+      "Description": "Parsing arbitrary HTML which is then rendered using Render can result in an unexpected HTML tree. This can be leveraged to execute XSS attacks in applications that attempt to sanitize input HTML before rendering.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-42506",
       "Status": "fixed",
       "CVSS": {
@@ -2927,6 +3019,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/net/dns/dnsmessage: golang.org/x/net/dns/dnsmessage: Denial of Service via invalid DNS record parsing",
     "Versions": {
       "current": "v0.17.0",
       "fixed": "0.56.0"
@@ -2952,6 +3045,7 @@
       "FixedVersion": "0.56.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/net/dns/dnsmessage: golang.org/x/net/dns/dnsmessage: Denial of Service via invalid DNS record parsing",
+      "Description": "Parsing an invalid SVCB or HTTPS RR can panic when the size of a parameter value overflows the message buffer.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-46600",
       "Status": "fixed",
       "CVSS": {
@@ -2982,6 +3076,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Invoking integer overflow in NewNTUnicodeString in golang.org/x/sys/windows",
     "Versions": {
       "current": "v0.15.0",
       "fixed": "0.44.0"
@@ -3006,6 +3101,7 @@
       "FixedVersion": "0.44.0",
       "Severity": "UNKNOWN",
       "Title": "Invoking integer overflow in NewNTUnicodeString in golang.org/x/sys/windows",
+      "Description": "NewNTUnicodeString does not check for string length overflow. When provided with a string that overflows the maximum size of a NTUnicodeString (a 16-bit number of bytes), it returns a truncated string rather than an error.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39824",
       "Status": "fixed",
       "CVSS": null
@@ -3029,6 +3125,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "golang.org/x/text: golang.org/x/text: Denial of Service via invalid UTF-8 input",
     "Versions": {
       "current": "v0.14.0",
       "fixed": "0.39.0"
@@ -3054,6 +3151,7 @@
       "FixedVersion": "0.39.0",
       "Severity": "HIGH",
       "Title": "golang.org/x/text: golang.org/x/text: Denial of Service via invalid UTF-8 input",
+      "Description": "A norm.Iter can enter an infinite loop when handling input containing invalid UTF-8 bytes.",
       "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56852",
       "Status": "fixed",
       "CVSS": {

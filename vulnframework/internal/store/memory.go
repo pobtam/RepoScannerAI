@@ -827,6 +827,7 @@ func (m *Memory) materialise(f *memFinding) model.Finding {
 			ResidualDetail:   f.ResidualDetail,
 		},
 		CredentialType: p.CredentialType,
+		Description:    p.Description,
 		Annotations:    p.Annotations,
 		Refs: model.Refs{
 			Ticket:      ticketRef(m.tickets, f.Fingerprint),

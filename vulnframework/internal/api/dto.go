@@ -221,6 +221,14 @@ type Finding struct {
 	// VM-UI-F-105).
 	CredentialType string `json:"credential_type,omitempty"`
 
+	// Description says what the problem is, on every finding. It is the
+	// reporting scanner's own text where one was recorded, and otherwise an
+	// account built from the record's fields; DescriptionSource says which
+	// (the tool names, or "derived"), so a reader never mistakes our wording
+	// for the tool's. The AI triage narrative, when there is one, is separate.
+	Description       string `json:"description,omitempty"`
+	DescriptionSource string `json:"description_source,omitempty"`
+
 	SLA         SLA               `json:"sla"`
 	Observation Observation       `json:"observation"`
 	Refs        Refs              `json:"refs"`

@@ -17,6 +17,7 @@
     "ResourceKey": "",
     "Line": 13,
     "CredentialType": "",
+    "Description": "Potential file inclusion via variable",
     "Versions": {},
     "Classification": {
       "severity": "MEDIUM",
@@ -64,6 +65,7 @@
     "ResourceKey": "",
     "Line": 13,
     "CredentialType": "",
+    "Description": "Use of weak cryptographic primitive",
     "Versions": {},
     "Classification": {
       "severity": "MEDIUM",
@@ -111,6 +113,7 @@
     "ResourceKey": "",
     "Line": 4,
     "CredentialType": "",
+    "Description": "Blocklisted import crypto/sha1: weak cryptographic primitive",
     "Versions": {},
     "Classification": {
       "severity": "MEDIUM",
@@ -158,6 +161,7 @@
     "ResourceKey": "",
     "Line": 13,
     "CredentialType": "",
+    "Description": "Use of weak random number generator (math/rand or math/rand/v2 instead of crypto/rand)",
     "Versions": {},
     "Classification": {
       "severity": "HIGH",

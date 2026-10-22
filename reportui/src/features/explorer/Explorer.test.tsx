@@ -104,6 +104,26 @@ describe('the not-re-observed marker (VM-UI-F-422/423)', () => {
   });
 });
 
+describe('descriptions', () => {
+  it('shows every finding\'s description under its identifier', async () => {
+    renderExplorer();
+    await waitFor(() => expect(document.querySelectorAll('.finding-desc').length).toBeGreaterThan(0));
+    const shown = [...document.querySelectorAll('.finding-desc')].map((el) => el.textContent);
+    for (const f of page.findings.filter((f) => !f.restricted)) {
+      expect(f.description, `${f.fingerprint} has no description in the captured response`).toBeTruthy();
+      expect(shown).toContain(f.description);
+    }
+  });
+
+  it('shows none for a restricted finding', async () => {
+    const varied = structuredClone(page);
+    varied.findings = [{ ...varied.findings[0]!, restricted: true, identity: {}, description: undefined }];
+    renderExplorer(varied);
+    await waitFor(() => expect(screen.getByText(/restricted — counted, not shown/)).toBeTruthy());
+    expect(document.querySelectorAll('.finding-desc')).toHaveLength(0);
+  });
+});
+
 describe('restricted findings (VM-UI-F-804)', () => {
   it('are shown as counted-but-not-openable rather than omitted', async () => {
     const varied = structuredClone(page);

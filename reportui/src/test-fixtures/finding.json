@@ -21,9 +21,9 @@
     "severity": "CRITICAL",
     "cvss": 9.1,
     "epss": 0.55,
-    "epss_as_of": "2026-09-17T13:00:00Z",
+    "epss_as_of": "2026-10-22T03:00:00Z",
     "kev": false,
-    "kev_as_of": "2026-09-17T03:00:00Z",
+    "kev_as_of": "2026-10-21T17:00:00Z",
     "reachable": "true",
     "dep_class": "production",
     "transitive": false
@@ -31,6 +31,8 @@
   "state": "PR_OPEN",
   "partition": "unresolved",
   "priority": "P0",
+  "description": "example.com/http-router v1.12.4 is affected by CVE-DEMO-70006. Upgrading to v1.12.9 or later fixes it. The vulnerable code is called from this repository.",
+  "description_source": "derived",
   "sla": {
     "computed": true,
     "status": "breached",
@@ -43,8 +45,8 @@
   "observation": {
     "first_seen_run": "S-000001",
     "last_seen_run": "S-000006",
-    "first_seen_at": "2026-08-14T09:00:00Z",
-    "last_seen_at": "2026-09-18T09:00:00Z",
+    "first_seen_at": "2026-09-17T23:00:00Z",
+    "last_seen_at": "2026-10-22T23:00:00Z",
     "not_reobserved": false
   },
   "refs": {
@@ -61,7 +63,7 @@
     "impact": "Impact depends on whether the affected path is exercised in production.",
     "remediation": "Upgrade example.com/http-router to v1.12.9.",
     "false_positive_candidate": false,
-    "triaged_at": "2026-08-14T09:00:00Z",
+    "triaged_at": "2026-09-17T23:00:00Z",
     "model": "claude-sonnet-5"
   },
   "score": {

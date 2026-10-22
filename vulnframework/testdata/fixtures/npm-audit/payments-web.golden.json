@@ -17,6 +17,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "axios Vulnerable to Full Man-in-the-Middle via Prototype Pollution Gadget in `config.proxy`",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -70,6 +71,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "axios Vulnerable to Credential Theft and Response Hijacking via Prototype Pollution Gadget in Config Merge",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -123,6 +125,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios has a NO_PROXY Hostname Normalization Bypass that Leads to SSRF",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -176,6 +179,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Invisible JSON Response Tampering via Prototype Pollution Gadget in `parseReviver`",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -229,6 +233,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Excessive recursion in formDataToJSON can cause denial of service",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -281,6 +286,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios is Vulnerable to Denial of Service via __proto__ Key in mergeConfig",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -334,6 +340,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: CRLF Injection in multipart/form-data body via unsanitized blob.type in formDataToStream",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -386,6 +393,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios is vulnerable to DoS attack through lack of data size check",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -438,6 +446,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios' HTTP adapter-streamed uploads bypass maxBodyLength when maxRedirects: 0",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -490,6 +499,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: unbounded recursion in toFormData causes DoS via deeply nested request data",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -542,6 +552,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Header Injection via Prototype Pollution",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -595,6 +606,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Nested axios option objects can consume polluted prototype values",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -646,6 +658,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "axios has DoS \u0026 Header Injection via Prototype Pollution Read-Side Gadgets in axios merge functions",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -698,6 +711,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Server-Side Request Forgery in axios",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -749,6 +763,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios has Unrestricted Cloud Metadata Exfiltration via Header Injection Chain",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -803,6 +818,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Regular Expression Denial of Service (ReDoS) via Cookie Name Injection",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -856,6 +872,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Proxy-Authorization header leaks to redirect target when proxy is re-evaluated to direct connection",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -908,6 +925,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -959,6 +977,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: no_proxy bypass via IP alias allows SSRF",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1011,6 +1030,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Prototype pollution gadgets can alter axios request construction",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1062,6 +1082,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Proxy-Authorization Credential Leak to Origin Server Across HTTP-to-HTTPS Redirect in Axios Node.js HTTP Adapter",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1113,6 +1134,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Prototype Pollution Gadgets - Response Tampering, Data Exfiltration, and Request Hijacking",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1165,6 +1187,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Deep formToJSON Key Recursion Can Cause Denial of Service",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1217,6 +1240,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Incomplete Fix for CVE-2025-62718 — NO_PROXY Protection Bypassed via RFC 1122 Loopback Subnet (127.0.0.0/8) in Axios 1.15.0",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1271,6 +1295,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios has prototype pollution read-side gadgets in HTTP adapter that allow credential injection and request hijacking",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1323,6 +1348,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: HTTP adapter streamed responses bypass maxContentLength",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1375,6 +1401,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Authentication Bypass via Prototype Pollution Gadget in `validateStatus` Merge Strategy",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1428,6 +1455,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: Null Byte Injection via Reverse-Encoding in AxiosURLSearchParams",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1481,6 +1509,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "Axios: XSRF Token Cross-Origin Leakage via Prototype Pollution Gadget in `withXSRFToken` Boolean Coercion",
     "Versions": {
       "fixed": "1.20.0"
     },
@@ -1534,6 +1563,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
     "Versions": {
       "fixed": "8.5.28"
     },
@@ -1587,6 +1617,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "PostCSS line return parsing error",
     "Versions": {
       "fixed": "8.5.28"
     },
@@ -1640,6 +1671,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
     "Versions": {
       "fixed": "8.5.28"
     },
@@ -1692,6 +1724,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "PostCSS has XSS via Unescaped \u003c/style\u003e in its CSS Stringify Output",
     "Versions": {
       "fixed": "8.5.28"
     },
@@ -1744,6 +1777,7 @@
     "ResourceKey": "",
     "Line": 0,
     "CredentialType": "",
+    "Description": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
     "Versions": {
       "fixed": "8.5.28"
     },

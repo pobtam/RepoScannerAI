@@ -229,9 +229,16 @@ function Row({
             restricted — counted, not shown
           </span>
         ) : (
-          <Link to={`/findings/${f.fingerprint}`} className="mono">
-            {f.identity.primary_id || f.fingerprint}
-          </Link>
+          <>
+            <Link to={`/findings/${f.fingerprint}`} className="mono">
+              {f.identity.primary_id || f.fingerprint}
+            </Link>
+            {f.description && (
+              <div className="finding-desc" title={f.description}>
+                {f.description}
+              </div>
+            )}
+          </>
         )}
       </td>
       <td>

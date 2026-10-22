@@ -64,6 +64,23 @@ describe('the finding detail (U2)', () => {
     return renderApp(<FindingDetail fingerprint={f.fingerprint} />);
   }
 
+  it('says what the problem is, and whose words those are', async () => {
+    renderDetail();
+    const section = await screen.findByRole('region', { name: 'Description' });
+    expect(section.textContent).toContain(fixtures.finding.description!);
+    // The demonstration pipeline records no scanner text, so the server built
+    // this one, and the page says so rather than passing it off as a tool's.
+    expect(fixtures.finding.description_source).toBe('derived');
+    expect(section.textContent).toContain('no scanner supplied a description');
+  });
+
+  it("credits a scanner's description to the scanner", async () => {
+    renderDetail({ ...fixtures.finding, description: 'Potential file inclusion via variable', description_source: 'gosec' });
+    const section = await screen.findByRole('region', { name: 'Description' });
+    expect(section.textContent).toContain('Potential file inclusion via variable');
+    expect(section.textContent).toContain('In the words of gosec.');
+  });
+
   it('explains every absent field rather than leaving a blank', async () => {
     renderDetail();
     await waitFor(() => expect(document.querySelectorAll('.record').length).toBeGreaterThan(1));

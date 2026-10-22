@@ -17,6 +17,7 @@
     "ResourceKey": "",
     "Line": 7,
     "CredentialType": "aws-access-token",
+    "Description": "Identified a pattern that may indicate AWS credentials, risking unauthorized cloud resource access and data breaches on AWS platforms.",
     "Versions": {},
     "Classification": {
       "severity": "CRITICAL",
@@ -59,6 +60,7 @@
     "ResourceKey": "",
     "Line": 8,
     "CredentialType": "generic-api-key",
+    "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
     "Versions": {},
     "Classification": {
       "severity": "CRITICAL",

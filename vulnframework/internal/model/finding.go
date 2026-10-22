@@ -279,6 +279,13 @@ type Finding struct {
 	// (VM-F-263). It describes the class, never the value.
 	CredentialType string `json:"credential_type,omitempty"`
 
+	// Description is what the reporting scanner says the problem is, in its
+	// own words: semgrep's message, the advisory summary, gosec's details. It
+	// is the tool's text, not ours and not a model's (the triage narrative is
+	// separate), and it is empty where no tool supplied one; see Describe for
+	// the account built from the record's own fields.
+	Description string `json:"description,omitempty"`
+
 	// Annotations carry observations a tool made that are recorded but do NOT
 	// determine any classified value.
 	//
@@ -459,6 +466,11 @@ type RawFinding struct {
 
 	// CredentialType names the class of credential for secret findings.
 	CredentialType string
+
+	// Description is the scanner's own account of the problem. For a secret
+	// it is the detector rule's description, never anything from the match.
+	// It passes through SafeDescription before it is stored.
+	Description string
 
 	Versions       Versions
 	Classification Classification

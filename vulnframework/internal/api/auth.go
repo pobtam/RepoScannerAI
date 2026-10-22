@@ -154,6 +154,7 @@ func restrict(f Finding) Finding {
 	f.Identity = Identity{}
 	f.Location = Location{}
 	f.Triage = nil
+	f.Description, f.DescriptionSource = "", ""
 	f.Annotations = nil
 	f.Refs = Refs{}
 	f.Score = nil

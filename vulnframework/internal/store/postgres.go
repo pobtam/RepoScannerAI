@@ -830,6 +830,7 @@ func reprojectTx(ctx context.Context, tx *sql.Tx, fp string) error {
 		Provenance:     model.Provenance{Tools: p.Tools},
 		Refs:           model.Refs{AdvisoryURL: optionalString(p.AdvisoryURL)},
 		CredentialType: p.CredentialType,
+		Description:    p.Description,
 		Annotations:    p.Annotations,
 		Derived:        existingDerived,
 		Triage:         existingTriage,

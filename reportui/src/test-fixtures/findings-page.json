@@ -29,6 +29,8 @@
       "partition": "unresolved",
       "priority": "P0",
       "credential_type": "aws_access_key",
+      "description": "Something that looks like a credential (aws_access_key) is committed in deploy/staging.env. Treat it as exposed: rotate it first, then remove it from the code.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "breached",
@@ -41,8 +43,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -58,7 +60,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -112,6 +114,8 @@
       "partition": "unresolved",
       "priority": "P0",
       "credential_type": "api_key",
+      "description": "Something that looks like a credential (api_key) is committed in config/upstream.toml. Treat it as exposed: rotate it first, then remove it from the code.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "breached",
@@ -124,8 +128,8 @@
       "observation": {
         "first_seen_run": "S-000003",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-28T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-10-01T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -141,7 +145,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-28T09:00:00Z",
+        "triaged_at": "2026-10-01T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -189,9 +193,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.94,
-        "epss_as_of": "2026-09-17T13:00:00Z",
+        "epss_as_of": "2026-10-22T03:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-09-17T03:00:00Z",
+        "kev_as_of": "2026-10-21T17:00:00Z",
         "reachable": "true",
         "dep_class": "production",
         "transitive": false
@@ -199,6 +203,8 @@
       "state": "MERGED",
       "partition": "pending_verification",
       "priority": "P0",
+      "description": "example.com/http-router v1.12.4 is affected by CVE-DEMO-70001. Upgrading to v1.12.9 or later fixes it. The vulnerable code is called from this repository.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "breached",
@@ -211,8 +217,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -228,7 +234,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/http-router to v1.12.9.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -281,9 +287,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.71,
-        "epss_as_of": "2026-09-17T13:00:00Z",
+        "epss_as_of": "2026-10-22T03:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-09-17T03:00:00Z",
+        "kev_as_of": "2026-10-21T17:00:00Z",
         "reachable": "true",
         "dep_class": "production",
         "transitive": false,
@@ -293,6 +299,8 @@
       "partition": "unresolved",
       "priority": "P0",
       "reason_code": "BLOCKED_UPSTREAM_FIRST_PARTY",
+      "description": "example.com/crypto-lib v0.31.0 is affected by CVE-DEMO-70003. Upgrading to v0.32.0 or later fixes it. The vulnerable code is called from this repository.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "breached",
@@ -305,8 +313,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000005",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-11T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-15T23:00:00Z",
         "not_reobserved": true,
         "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
         "gap_repo_scan": "S-000006"
@@ -324,7 +332,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -377,9 +385,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.71,
-        "epss_as_of": "2026-09-17T13:00:00Z",
+        "epss_as_of": "2026-10-22T03:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-09-17T03:00:00Z",
+        "kev_as_of": "2026-10-21T17:00:00Z",
         "reachable": "true",
         "dep_class": "production",
         "transitive": false
@@ -387,6 +395,8 @@
       "state": "MERGED",
       "partition": "pending_verification",
       "priority": "P0",
+      "description": "example.com/crypto-lib v0.31.0 is affected by CVE-DEMO-70003. Upgrading to v0.32.0 or later fixes it. The vulnerable code is called from this repository.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "breached",
@@ -399,8 +409,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -416,7 +426,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -469,9 +479,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.55,
-        "epss_as_of": "2026-09-17T13:00:00Z",
+        "epss_as_of": "2026-10-22T03:00:00Z",
         "kev": false,
-        "kev_as_of": "2026-09-17T03:00:00Z",
+        "kev_as_of": "2026-10-21T17:00:00Z",
         "reachable": "true",
         "dep_class": "production",
         "transitive": false
@@ -479,6 +489,8 @@
       "state": "PR_OPEN",
       "partition": "unresolved",
       "priority": "P0",
+      "description": "example.com/http-router v1.12.4 is affected by CVE-DEMO-70006. Upgrading to v1.12.9 or later fixes it. The vulnerable code is called from this repository.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "breached",
@@ -491,8 +503,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -509,7 +521,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/http-router to v1.12.9.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -572,6 +584,8 @@
       "state": "TRIAGED",
       "partition": "unresolved",
       "priority": "P1",
+      "description": "example.com/csv-reader v0.9.0 is affected by CVE-DEMO-70005. Upgrading to v0.9.4 or later fixes it. The vulnerable code is called from this repository.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "breached",
@@ -584,8 +598,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -601,7 +615,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/csv-reader to v0.9.4.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -659,9 +673,9 @@
         "severity": "HIGH",
         "cvss": 7.5,
         "epss": 0.08,
-        "epss_as_of": "2026-09-17T13:00:00Z",
+        "epss_as_of": "2026-10-22T03:00:00Z",
         "kev": false,
-        "kev_as_of": "2026-09-17T03:00:00Z",
+        "kev_as_of": "2026-10-21T17:00:00Z",
         "reachable": "unknown",
         "dep_class": "production",
         "transitive": false
@@ -669,6 +683,8 @@
       "state": "MERGED",
       "partition": "pending_verification",
       "priority": "P2",
+      "description": "example.com/yaml-parse v3.0.1 is affected by CVE-DEMO-70002. Upgrading to v3.0.4 or later fixes it.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "breached",
@@ -681,8 +697,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -698,7 +714,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/yaml-parse to v3.0.4.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -761,6 +777,8 @@
       "partition": "unresolved",
       "priority": "P2",
       "reason_code": "MAJOR_BUMP_POLICY",
+      "description": "example.com/csv-reader v0.9.0 is affected by CVE-DEMO-70009. No fixed version is recorded. The vulnerable code is called from this repository.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "within",
@@ -772,8 +790,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000004",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-04T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-08T23:00:00Z",
         "not_reobserved": true,
         "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
         "gap_repo_scan": "S-000006"
@@ -791,7 +809,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -849,9 +867,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.71,
-        "epss_as_of": "2026-09-17T13:00:00Z",
+        "epss_as_of": "2026-10-22T03:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-09-17T03:00:00Z",
+        "kev_as_of": "2026-10-21T17:00:00Z",
         "reachable": "unknown",
         "dep_class": "production",
         "transitive": false,
@@ -861,6 +879,8 @@
       "partition": "unresolved",
       "priority": "P2",
       "reason_code": "BLOCKED_UPSTREAM_FIRST_PARTY",
+      "description": "example.com/crypto-lib v0.31.0 is affected by CVE-DEMO-70003. Upgrading to v0.32.0 or later fixes it.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "within",
@@ -872,8 +892,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -889,7 +909,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -942,9 +962,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.71,
-        "epss_as_of": "2026-09-17T13:00:00Z",
+        "epss_as_of": "2026-10-22T03:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-09-17T03:00:00Z",
+        "kev_as_of": "2026-10-21T17:00:00Z",
         "reachable": "false",
         "dep_class": "production",
         "transitive": false,
@@ -954,6 +974,8 @@
       "partition": "unresolved",
       "priority": "P2",
       "reason_code": "BLOCKED_UPSTREAM_FIRST_PARTY",
+      "description": "example.com/crypto-lib v0.31.0 is affected by CVE-DEMO-70003. Upgrading to v0.32.0 or later fixes it. The vulnerable code was not found to be called from this repository.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "breached",
@@ -966,8 +988,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -983,7 +1005,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1046,6 +1068,8 @@
       "state": "MERGED",
       "partition": "pending_verification",
       "priority": "P3",
+      "description": "example.com/log-shim v0.4.2 is affected by CVE-DEMO-70007. Upgrading to v0.4.3 or later fixes it.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "within",
@@ -1057,8 +1081,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -1074,7 +1098,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/log-shim to v0.4.3.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1138,6 +1162,8 @@
       "state": "TRIAGED",
       "partition": "unresolved",
       "priority": "P3",
+      "description": "Rule G404 from gosec flagged a security issue at internal/idgen/random.go:23.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "within",
@@ -1149,8 +1175,8 @@
       "observation": {
         "first_seen_run": "S-000003",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-28T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-10-01T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {},
@@ -1164,7 +1190,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-28T09:00:00Z",
+        "triaged_at": "2026-10-01T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1232,6 +1258,8 @@
       "state": "PR_OPEN",
       "partition": "unresolved",
       "priority": "P3",
+      "description": "example.com/json-stream v2.1.0 is affected by CVE-DEMO-70008. Upgrading to v2.2.0 or later fixes it. The vulnerable code was not found to be called from this repository.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "within",
@@ -1243,8 +1271,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000005",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-11T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-15T23:00:00Z",
         "not_reobserved": true,
         "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
         "gap_repo_scan": "S-000006"
@@ -1263,7 +1291,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/json-stream to v2.2.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1331,6 +1359,8 @@
       "state": "MERGED",
       "partition": "pending_verification",
       "priority": "P3",
+      "description": "example.com/proto-runtime v1.33.0 is affected by CVE-DEMO-70004. Upgrading to v1.34.1 or later fixes it. The vulnerable code was not found to be called from this repository.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "within",
@@ -1342,8 +1372,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -1359,7 +1389,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/proto-runtime to v1.34.1.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1423,6 +1453,8 @@
       "partition": "unresolved",
       "priority": "P3",
       "verified_reason": "external",
+      "description": "Configuration check DEMO-K8S-001 failed in deploy/payments.yaml:31, reported by trivy.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "within",
@@ -1434,9 +1466,9 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-18T09:00:00Z",
-        "resolved_at": "2026-09-11T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-22T23:00:00Z",
+        "resolved_at": "2026-10-15T23:00:00Z",
         "not_reobserved": false,
         "residual_possible": true,
         "residual_detail": "This finding is located to a file and a resource key. A second misconfiguration under the same key may not have been reported separately (OQ-AUDIT-02)."
@@ -1452,7 +1484,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-18T09:00:00Z",
+        "triaged_at": "2026-10-22T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1516,6 +1548,8 @@
       "state": "TRIAGED",
       "partition": "unresolved",
       "priority": "P3",
+      "description": "Rule G402 from gosec flagged a security issue at server/proxy.go:145.",
+      "description_source": "derived",
       "sla": {
         "computed": true,
         "status": "within",
@@ -1527,8 +1561,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000005",
-        "first_seen_at": "2026-08-14T09:00:00Z",
-        "last_seen_at": "2026-09-11T09:00:00Z",
+        "first_seen_at": "2026-09-17T23:00:00Z",
+        "last_seen_at": "2026-10-15T23:00:00Z",
         "not_reobserved": true,
         "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
         "gap_repo_scan": "S-000006"
@@ -1544,7 +1578,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-08-14T09:00:00Z",
+        "triaged_at": "2026-09-17T23:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
