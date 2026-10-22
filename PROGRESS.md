@@ -13,15 +13,29 @@ read this file first and resume from "Next".
 - **Decided 2026-10-20:** Phase 3 uses our own rules (option 2, D13);
   NuGuard's `sbom generate` may be added later as an inventory signal only,
   after a separate check. Evaluation image removed.
-- **Now:** building "start a scan from the web app" (design below), in steps
-  S1 queue store, S2 worker, S3 API and security, S4 interface, vfctl, timer,
-  docs and the end-to-end test.
-- **Then:** Phase 1 (mixed-language scanning), unblocked.
+- **Done 2026-10-22:** "start a scan from the web app" (design below; commits
+  c067d4d S1 queue, eaecf6a S2 worker, aa8c71e S3 API and security, b8fbf1e
+  S4 interface/vfctl/deployment, 7f55adc ordering fix, and the docs commit).
+  Verified:
+  - unit and integration tests on both backends;
+  - an end-to-end test through the compiled worker against the fake GitHub
+    (finished, timed_out as a gap, refused, interrupted);
+  - `deploy/test-stack.sh` through Caddy and the login (cross-site, missing
+    CSRF and no login refused; a click scanned and finished; access log
+    records who and which repository; stopping the worker removes it);
+  - `scripts/smoke.sh --real` (the local worker over clones).
 
-## Proposed: start a scan from the web app (2026-10-22, not built)
+  Found and fixed on the way: scan results were ordered by run_id as text,
+  so a sweep run sorted above a later manual run on both backends.
+- **Next:** Phase 1 (mixed-language scanning), unblocked (D12 decided).
 
-Requested to be built after Phase 1 is committed. This is the design, for
-review first.
+## Start a scan from the web app (designed and built 2026-10-22)
+
+Built before Phase 1, at your direction. As built, it follows this design
+except for two changes:
+- the worker also rediscovers the account (at start-up and every 24 hours),
+  since the timer no longer holds the token;
+- `ScanRefusal` is shared by the API, vfctl and the worker.
 
 **A correction to the brief.** There are no existing Origin/Sec-Fetch checks
 in the API or the Caddy front door. The only ones are in the local

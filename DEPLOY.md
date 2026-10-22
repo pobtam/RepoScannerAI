@@ -132,27 +132,50 @@ with your password.
 The pages are empty until the first sweep. The **GitHub** page fills in after
 it runs.
 
-## 8. Run the first sweep now
+## 8. Run the first scan now
 
-The timer runs a sweep every day at 03:00 UTC. To run one now:
+The **scan worker** runs every scan. It is a systemd service,
+`vulnframework-scanworker`, started at boot. It is the only process holding
+the GitHub token, which it reads from Secret Manager when it starts; the
+token stays in its environment while it runs.
+
+There are three ways to start scans:
+
+- **From the interface:** open Repositories and press **Scan all included
+  repositories**, or **Scan now** on one repository's page. Each request
+  shows its status (queued, running, finished, failed, timed out,
+  interrupted or refused) with the reason and a link to the results.
+- **From the terminal:**
+  ```sh
+  $(terraform output -raw sweep_now)      # queue every included repository now
+  gcloud compute ssh vulnframework --zone us-central1-a --tunnel-through-iap -- \
+    sudo /opt/vulnframework/deploy/vfctl.sh scan list
+  ```
+- **The daily timer** (03:00 UTC) queues every included repository. It needs
+  no token: it only adds requests, and the worker runs them as one sweep.
+
+**What the worker does:**
+1. At start-up and every 24 hours, it lists every repository the token
+   reaches. Each is scanned, or skipped with a reason: archived, fork, empty,
+   too large, collaborator only, or excluded by you.
+2. It takes requests one at a time. For each, it downloads the repository,
+   scans it within the time limit (15 minutes), records the results and
+   deletes the download.
+3. A scan that runs out of time is recorded as a coverage gap. A request in
+   progress when the worker stops is marked interrupted, and can be retried.
+4. Findings are scored and routed. Routing stops at the decision: no
+   tickets, no pull requests.
+
+To follow it:
 
 ```sh
-$(terraform output -raw sweep_now)
-# follow it:
 gcloud compute ssh vulnframework --zone us-central1-a --tunnel-through-iap -- \
-  sudo journalctl -u vulnframework-sweep.service -f
+  sudo journalctl -u vulnframework-scanworker -f
 ```
 
-A sweep:
-1. Lists every repository the token reaches. Each one is scanned, or skipped
-   with a reason: archived, fork, empty, too large, collaborator only, or
-   excluded by you.
-2. Downloads each scanned repository, scans it, and deletes it.
-3. Scores and routes the findings. Routing stops at the decision: no tickets,
-   no pull requests.
-
-Expect a few minutes per repository. Each run's record is saved on the VM in
-`/opt/vulnframework/deploy/runs/`.
+**Stop the worker** (and so remove the token from memory) with
+`sudo systemctl stop vulnframework-scanworker`. Requests then wait in the
+queue until it starts again.
 
 ---
 
@@ -164,7 +187,10 @@ Expect a few minutes per repository. Each run's record is saved on the VM in
 | Check the connection | `sudo deploy/vfctl.sh github status` (account, token expiry, last discovery). |
 | Secrets awaiting a person | `sudo deploy/vfctl.sh finding pending`, then `finding confirm-suppression`, `reject-suppression` or `confirm-rotation`. |
 | See what was discovered | The **GitHub** page. |
-| Rotate the GitHub token | Create a new token (step 3), then `printf %s "$NEW" \| gcloud secrets versions add vulnframework-github-token --data-file=-`. The next sweep uses it; nothing restarts. |
+| Rotate the GitHub token | Create a new token (step 3), then `printf %s "$NEW" \| gcloud secrets versions add vulnframework-github-token --data-file=-`, then `sudo systemctl restart vulnframework-scanworker` so the worker reads it. |
+| Scan one repository now | **Scan now** on its page, or `sudo deploy/vfctl.sh scan request owner/name`. |
+| See the scan queue | The **Scans** panel on Repositories, or `sudo deploy/vfctl.sh scan list`. |
+| Stop all scanning | `sudo systemctl stop vulnframework-scanworker` (the token leaves memory with it); `sudo systemctl stop vulnframework-sweep.timer` to stop the daily batch too. |
 | Change the password | Add a new version of `vulnframework-login-hash` (step 4), then on the VM: `sudo rm /opt/vulnframework/deploy/.env && sudo reboot`. The startup script rewrites `.env`. The database password is regenerated too, which is fine on a fresh VM; on one with data, edit `LOGIN_HASH` in `.env` instead, then run `sudo docker compose -f deploy/compose.yaml up -d web`. |
 | Update the code | On the VM: `cd /opt/vulnframework && sudo git pull && sudo deploy/build.sh && sudo docker compose -f deploy/compose.yaml up -d`. |
 | Turn on AI explanations | Not wired into the VM in this minimum version. See "Limits". |
@@ -239,10 +265,17 @@ tokens → Delete). Deleting the secret doesn't revoke it.
 
 ## Security, briefly
 
-- **The token** lives only in Secret Manager. It's read at the start of each
-  sweep and passed to the sweep container by name. It's never written to
-  disk or stored in the database, and never appears in logs, the API or the
-  pages.
+- **The token** lives in Secret Manager. The scan worker reads it when it
+  starts and keeps it in its environment while it runs: anyone with root on
+  the VM could read it from the running container. Stopping the worker
+  removes it. It's never written to disk or stored in the database, and
+  never appears in logs, the API or the pages. The API and the interface
+  never have it.
+- **Starting a scan from the interface** is the only thing the web app can
+  change. Only the security-owner level may do it, and only from the app's
+  own pages: other sites' requests are refused, and a CSRF token is
+  required. It only adds a request to a queue. Every request is recorded
+  with who asked, which repository and when.
 - **Read-only** is enforced twice: by the token's own permissions, and by the
   scanner's GitHub client, which refuses any request but GET or HEAD before it
   leaves the VM.

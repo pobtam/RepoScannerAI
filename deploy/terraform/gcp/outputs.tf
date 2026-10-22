@@ -19,6 +19,6 @@ output "startup_log" {
 }
 
 output "sweep_now" {
-  description = "Run a sweep immediately instead of waiting for the timer."
+  description = "Queue a scan of every included repository now instead of waiting for the daily timer; the scan worker runs it."
   value       = "gcloud compute ssh ${google_compute_instance.vm.name} --zone ${var.zone} --project ${var.project_id} --tunnel-through-iap -- sudo systemctl start vulnframework-sweep.service"
 }

@@ -34,6 +34,11 @@ detail: `REMEDIATION-DESIGN.md` (RD), `DEPLOY.md`, `DECISIONS-NEEDED.md`.
     before it leaves the machine.
   - A classic token that grants write access is refused at connection.
   - It opens no pull requests, comments or tickets.
+  - The web app's only write is **requesting a scan**: only the
+    security-owner level, only from the app's own pages (cross-site requests
+    refused, CSRF token required), rate-limited, and recorded with who asked,
+    for which repository, and when. It adds a row to a queue; the API never
+    runs a scanner.
 - **It sends no code to an AI provider by default.** AI triage is off unless
   a model and key are configured. When on, it sends finding metadata
   (identifiers, file paths, versions), not source code or secret values.
@@ -82,7 +87,7 @@ that can change anything outside our own database.
 
 | Credential | Today | Held by | Can it change anything? |
 |---|---|---|---|
-| GitHub scanning token (fine-grained) | Yes | Secret Manager on the VM; read only at the start of each sweep, passed to the sweep container by name, never written to disk or database | No: read-only permissions, and the client sends only GET and HEAD |
+| GitHub scanning token (fine-grained) | Yes | Secret Manager on the VM. The scan worker reads it when it starts and keeps it in its environment while it runs (root on the VM could read it from the container); stopping the worker removes it. Never written to disk or database; never seen by the API or the interface | No: read-only permissions, and the client sends only GET and HEAD |
 | Login password | Yes | Secret Manager (bcrypt hash only) | It grants read access to the web app |
 | Database password | Yes | Generated on the VM; the database is not published outside the deployment | Our own data only |
 | AI provider key | Optional, off by default | Environment, when AI triage is turned on | Calls the AI provider only |

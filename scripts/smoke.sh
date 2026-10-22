@@ -28,6 +28,7 @@ SMOKE_PG=vf-smoke-pg
 cleanup() {
   [ -n "$API_PID" ] && kill "$API_PID" 2>/dev/null || true
   if [ "$REAL" -eq 1 ]; then
+    docker stop vf-smoke-worker >/dev/null 2>&1 || true
     # Started with --rm, so stopping it removes the container; its data is
     # the temporary folder below.
     docker stop "$SMOKE_PG" >/dev/null 2>&1 || true
@@ -150,6 +151,22 @@ for f in "$WORK/planted"/*; do
   fi
 done
 ok "planted secret reported, value never served"
+
+# Scan now, as ./run.sh --real runs it: a worker over the clones, and a
+# request through the API with its same-origin and CSRF checks.
+export VULNFRAMEWORK_WORKER_CONTAINER=vf-smoke-worker
+real_worker_start "$CLONES" >"$WORK/worker.log" 2>&1 || fail "starting the scan worker: $(tail -n 5 "$WORK/worker.log")"
+token="$(get /v1/csrf "${AUTH[@]}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
+code="$(curl -s -o "$WORK/body" -w '%{http_code}' "${AUTH[@]}" -X POST -H 'Sec-Fetch-Site: same-origin' \
+  -H "X-CSRF-Token: $token" -d '{"repo":"smoke/go-api"}' "http://127.0.0.1:${PORT}/v1/scans")"
+[ "$code" = "201" ] || fail "Scan now answered $code: $(cat "$WORK/body")"
+for _ in $(seq 1 150); do
+  state="$(get '/v1/scans?repo=smoke/go-api&limit=1' "${AUTH[@]}" | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["status"])')"
+  case "$state" in queued|running) sleep 2 ;; *) break ;; esac
+done
+real_worker_stop
+[ "$state" = "finished" ] || fail "the requested scan ended $state: $(get '/v1/scans?repo=smoke/go-api&limit=1' "${AUTH[@]}")"
+ok "Scan now: queued, run by the local worker over the clones, finished"
 stop_api
 
 echo "SMOKE OK (demo and real mode)"

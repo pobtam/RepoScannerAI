@@ -115,6 +115,49 @@ Press Ctrl-C to stop. To browse the last results without scanning again:
 ./run.sh --real --no-sweep
 ```
 
+### Scan now, from the interface
+
+`./run.sh --real` also starts a **scan worker** (container
+`vulnframework-scanworker`), which runs scans requested while the app is open.
+It scans the clones in `~/clones`, read-only, and needs no GitHub token in
+this mode.
+
+- **One repository:** open its page under Repositories and press **Scan
+  now**. Pull the latest changes into its clone first if you want them
+  scanned.
+- **Everything:** on Repositories, press **Scan all included repositories**.
+  The whole batch is one run.
+- **From the terminal:**
+  ```sh
+  ./vfctl.sh scan request owner/name
+  ./vfctl.sh scan enqueue -all
+  ./vfctl.sh scan list
+  ```
+
+**What you see.** Each request shows one of these statuses:
+
+| Status | Meaning |
+|---|---|
+| queued | waiting for the worker |
+| running | being scanned |
+| finished | scanned; links to the run and the repository's findings. A partial scan also says what was missed |
+| failed | not scanned, with the reason |
+| timed out | stopped at the time limit (15 minutes, `VULNFRAMEWORK_SCAN_TIMEOUT`). Recorded as a coverage gap, never as clean |
+| interrupted | the worker stopped during the scan. Press **Retry** |
+| refused | the repository is excluded, skipped or archived, with the reason |
+
+**How it behaves:**
+- Pressing Scan now again while a scan is queued or running doesn't queue a
+  second one: the request merges into the existing one.
+- Each person can make 10 requests a minute.
+- Only the security-owner level may request scans. Local auth (section 7)
+  grants it on this machine.
+- Every request is recorded with who asked, which repository and when. It's
+  in the access log, and kept as a row in the queue, which is never deleted.
+
+**Stopping.** Ctrl-C stops the worker with the app. A scan it was running is
+marked interrupted, never finished.
+
 **What the states mean here.** Findings are scored and routed, but nothing
 acts on the routing:
 
