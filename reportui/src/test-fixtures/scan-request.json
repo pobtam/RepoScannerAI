@@ -1,0 +1,11 @@
+{
+  "merged": false,
+  "request": {
+    "id": "sr_20261022T191716.147Z_368349ee",
+    "repo": "octo/api",
+    "requested_at": "2026-10-22T19:17:16.147255Z",
+    "requested_by": "pat",
+    "source": "web",
+    "status": "queued"
+  }
+}

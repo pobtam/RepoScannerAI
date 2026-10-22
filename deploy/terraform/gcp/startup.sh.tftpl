@@ -8,8 +8,9 @@
 #      hash from Secret Manager, the site address (this VM's static IP);
 #   4. build the images (the first boot takes 15-30 minutes, mostly the
 #      scanner image) and start the stack;
-#   5. install the daily sweep timer, which reads the GitHub token from
-#      Secret Manager at the moment it runs, for that run only.
+#   5. start the scan worker (the only holder of the GitHub token, read from
+#      Secret Manager when it starts) and the daily timer that queues a scan
+#      of every included repository.
 #
 # Progress: sudo tail -f /var/log/vulnframework-startup.log
 set -euo pipefail
@@ -92,26 +93,49 @@ if ! docker image inspect vulnframework-api:v1 vulnframework-web:v1 vulnframewor
 fi
 docker compose -f deploy/compose.yaml up -d
 
-# --- 5. daily sweep -------------------------------------------------------------
+# --- 5. scan worker and daily timer -------------------------------------------
+# The worker runs every scan: those requested in the interface or with vfctl,
+# and the timer's daily batch. It is the only process holding the GitHub
+# token, read from Secret Manager when the unit starts; it stays in the
+# worker's environment while it runs.
+#   stop it:   sudo systemctl stop vulnframework-scanworker
+cat >/etc/systemd/system/vulnframework-scanworker.service <<UNIT
+[Unit]
+Description=vulnframework scan worker (read-only towards GitHub)
+After=docker.service
+Requires=docker.service
+
+[Service]
+WorkingDirectory=$APP
+# The token goes from Secret Manager into this process's environment and on
+# to the worker container by name. It is never written to disk. (\$\$ is
+# systemd's escape for a literal \$.)
+ExecStart=/bin/bash -c 'VULNFRAMEWORK_GITHUB_TOKEN="\$\$(/usr/local/bin/vf-secret ${github_token_secret})" exec $APP/deploy/scanworker.sh run'
+ExecStop=$APP/deploy/scanworker.sh stop
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+# The daily timer only queues a batch of every included repository; the
+# worker runs it. It needs no token.
 cat >/etc/systemd/system/vulnframework-sweep.service <<UNIT
 [Unit]
-Description=vulnframework sweep: discover, download and scan (read-only)
+Description=Queue the daily scan of every included repository
 After=docker.service
 Requires=docker.service
 
 [Service]
 Type=oneshot
 WorkingDirectory=$APP
-# The token goes from Secret Manager into this process's environment and on
-# to the sweep container by name. It is never written to disk. ($$ is
-# systemd's escape for a literal $, so bash receives the command
-# substitution.)
-ExecStart=/bin/bash -c 'VULNFRAMEWORK_GITHUB_TOKEN="\$\$(/usr/local/bin/vf-secret ${github_token_secret})" exec $APP/deploy/sweep.sh'
+ExecStart=$APP/deploy/vfctl.sh scan enqueue -all -source timer
 UNIT
 
 cat >/etc/systemd/system/vulnframework-sweep.timer <<UNIT
 [Unit]
-Description=Daily vulnframework sweep
+Description=Daily vulnframework scan
 
 [Timer]
 OnCalendar=${sweep_schedule}
@@ -122,5 +146,6 @@ WantedBy=timers.target
 UNIT
 
 systemctl daemon-reload
+systemctl enable --now vulnframework-scanworker.service
 systemctl enable --now vulnframework-sweep.timer
 echo "=== ready: https://${site_address} (next sweep: $(systemctl show vulnframework-sweep.timer -p NextElapseUSecRealtime --value))"

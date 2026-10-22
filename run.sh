@@ -93,6 +93,10 @@ stop() {
   printf '\nStopping…\n'
   [ -n "$UI_PID" ] && kill "$UI_PID" 2>/dev/null || true
   [ -n "$API_PID" ] && kill "$API_PID" 2>/dev/null || true
+  if [ "$USE_REAL" -eq 1 ] && declare -f real_worker_stop >/dev/null; then
+    real_worker_stop
+    printf 'The scan worker is stopped; any scan it was running is marked interrupted.\n'
+  fi
   if [ "$PG_STARTED" -eq 1 ]; then
     docker stop "${REAL_PG_NAME:-vulnframework-pg}" >/dev/null 2>&1 || true
     printf 'The PostgreSQL container is stopped. Its data is kept in the Docker volume\n'
@@ -139,6 +143,7 @@ if [ "$USE_REAL" -eq 1 ]; then
     real_verify_image || exit 1
     real_sweep "$CLONES" || exit 1
   fi
+  real_worker_start "$CLONES" || exit 1
 
   API_ARGS+=(-dsn "$REAL_DSN")
   if [ -f "$REAL_FIRSTPARTY" ]; then

@@ -34,7 +34,7 @@ const usage = `commands:
   finding confirm-rotation FINGERPRINT [-as NAME]
       Record that a secret removed from the files has been rotated, which
       closes it. Removal alone never does.
-` + githubUsage
+` + githubUsage + "\n" + scanUsage
 
 // knownLanguages are the languages the scanner registry selects adapters for.
 // A language outside this set would register cleanly and then match no
@@ -53,6 +53,9 @@ func Exec(ctx context.Context, st store.Store, args []string, out io.Writer) err
 	}
 	if len(args) > 0 && args[0] == "github" {
 		return githubCommand(ctx, st, args[1:], out)
+	}
+	if len(args) > 0 && args[0] == "scan" {
+		return scanCommand(ctx, st, args[1:], out)
 	}
 	if len(args) == 0 || args[0] != "repo" {
 		return fmt.Errorf("unknown command %q\n%s", strings.Join(args, " "), usage)

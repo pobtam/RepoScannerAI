@@ -528,7 +528,34 @@ export const health = z.object({
   backend: z.string(),
   degraded: z.array(z.string()).optional(),
   demo: z.boolean(),
+  scan_requests: z.boolean(),
 });
+
+export const scanRequest = z.object({
+  id: z.string(),
+  repo: z.string(),
+  batch_id: z.string().optional(),
+  source: z.string(),
+  requested_by: z.string(),
+  requested_at: z.string(),
+  status: z.enum(['queued', 'running', 'finished', 'failed', 'timed_out', 'interrupted', 'refused']),
+  reason: z.string().optional(),
+  run_id: z.string().optional(),
+  started_at: z.string().optional(),
+  finished_at: z.string().optional(),
+  retry_of: z.string().optional(),
+});
+
+export const scanRequestResult = z.object({ request: scanRequest, merged: z.boolean() });
+
+export const scanBatchResult = z.object({
+  batch_id: z.string(),
+  requests: z.array(scanRequest),
+  queued: z.number(),
+  merged: z.number(),
+});
+
+export const csrfToken = z.object({ token: z.string(), expires_at: z.string() });
 
 export const githubAccount = z.object({
   account: z.string(),
@@ -603,6 +630,7 @@ export type Comparison = z.infer<typeof comparison>;
 export type StateChange = z.infer<typeof stateChange>;
 export type Health = z.infer<typeof health>;
 export type GitHubView = z.infer<typeof githubView>;
+export type ScanRequest = z.infer<typeof scanRequest>;
 export type DiscoveredRepo = z.infer<typeof discoveredRepo>;
 export type ApiError = z.infer<typeof apiError>;
 

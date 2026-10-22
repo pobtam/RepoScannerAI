@@ -45,7 +45,7 @@ func run() error {
 	fs := flag.NewFlagSet("vfctl", flag.ContinueOnError)
 	dsn := fs.String("dsn", os.Getenv("VULNFRAMEWORK_DSN"), "Postgres connection string")
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "usage: vfctl [-dsn DSN] repo|finding|github ...\n\n%s\n", usage)
+		fmt.Fprintf(fs.Output(), "usage: vfctl [-dsn DSN] repo|finding|github|scan ...\n\n%s\n", usage)
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(os.Args[1:]); err != nil {

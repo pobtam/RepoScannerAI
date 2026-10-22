@@ -495,3 +495,35 @@ func (p *Postgres) CountScanRequests(ctx context.Context, requestedBy string, si
 WHERE requested_by = $1 AND requested_at >= $2`, requestedBy, since.UTC()).Scan(&n)
 	return n, err
 }
+
+// ScanRefusal says why a repository may not be scanned on request, or "" if
+// it may. Shared by the API, vfctl and the scan worker, so all three refuse
+// the same repositories for the same stated reason.
+func ScanRefusal(ctx context.Context, s Store, name string) (string, error) {
+	repo, err := s.GetRepo(ctx, name)
+	if err != nil {
+		return "not a registered repository", nil
+	}
+	if !repo.Archived {
+		return "", nil
+	}
+	exclusions, err := s.Exclusions(ctx)
+	if err != nil {
+		return "", err
+	}
+	for _, e := range exclusions {
+		if e.Name == name {
+			return "excluded by " + e.ExcludedBy + ": " + e.Reason, nil
+		}
+	}
+	found, err := s.Discovery(ctx)
+	if err != nil {
+		return "", err
+	}
+	for _, d := range found {
+		if d.Name == name && !d.Included {
+			return "skipped at discovery: " + d.Detail, nil
+		}
+	}
+	return "archived in the registry; it is not in scope", nil
+}

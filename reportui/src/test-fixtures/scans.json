@@ -1,0 +1,46 @@
+[
+  {
+    "finished_at": "2026-10-22T19:17:16.588422Z",
+    "id": "sr_20261022T191716.583Z_b409d58e",
+    "reason": "the scan worker stopped or restarted during the scan; nothing from it is recorded as done",
+    "repo": "octo/web",
+    "requested_at": "2026-10-22T19:17:16.583894Z",
+    "requested_by": "pat",
+    "source": "web",
+    "started_at": "2026-10-22T18:17:16.585257Z",
+    "status": "interrupted"
+  },
+  {
+    "id": "sr_20261022T191716.580Z_e5084be6",
+    "reason": "excluded by pat: a vendored mirror",
+    "repo": "octo/old",
+    "requested_at": "2026-10-22T19:17:16.580798Z",
+    "requested_by": "pat",
+    "source": "web",
+    "status": "refused"
+  },
+  {
+    "finished_at": "2026-10-22T19:17:16.428815Z",
+    "id": "sr_20261022T191716.364Z_62eedacb",
+    "reason": "the scan of octo/slow exceeded its 1ms time limit and was stopped; nothing it found is recorded as clean",
+    "repo": "octo/slow",
+    "requested_at": "2026-10-22T19:17:16.364023Z",
+    "requested_by": "pat",
+    "run_id": "M-000002",
+    "source": "web",
+    "started_at": "2026-10-22T19:17:16.410066Z",
+    "status": "timed_out"
+  },
+  {
+    "finished_at": "2026-10-22T19:17:16.211869Z",
+    "id": "sr_20261022T191716.147Z_368349ee",
+    "reason": "partial: execution_failed: gitleaks: runner: executing gitleaks: exec: \"gitleaks\": executable file not found in $PATH",
+    "repo": "octo/api",
+    "requested_at": "2026-10-22T19:17:16.147255Z",
+    "requested_by": "pat",
+    "run_id": "M-000001",
+    "source": "web",
+    "started_at": "2026-10-22T19:17:16.190687Z",
+    "status": "finished"
+  }
+]

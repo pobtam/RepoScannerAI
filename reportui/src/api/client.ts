@@ -116,9 +116,15 @@ export function assertNoCredential(path: string, raw: string): void {
   }
 }
 
-async function request<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+async function request<T>(
+  path: string,
+  schema: z.ZodType<T>,
+  init?: { method: 'POST'; body?: string; headers?: Record<string, string> },
+): Promise<T> {
   const res = await fetch(API_BASE + path, {
-    headers: { Accept: 'application/json' },
+    method: init?.method ?? 'GET',
+    headers: { Accept: 'application/json', ...(init?.headers ?? {}) },
+    body: init?.body,
     credentials: 'same-origin',
   });
   const raw = await res.text();
@@ -168,6 +174,38 @@ export function qs(params: Record<string, string | number | boolean | undefined 
   return rendered ? `?${rendered}` : '';
 }
 
+// --- writes ----------------------------------------------------------------
+//
+// The interface's only writes are scan requests. Each carries the caller's
+// CSRF token in X-CSRF-Token: a custom header no other site can send without
+// a CORS preflight this API never answers. The token is fetched once and
+// refetched once if the server says it has gone stale (a restart, or the hour
+// turning twice).
+
+let csrfToken: string | null = null;
+
+async function freshCSRF(): Promise<string> {
+  csrfToken = (await request('/csrf', s.csrfToken)).token;
+  return csrfToken;
+}
+
+async function write<T>(path: string, schema: z.ZodType<T>, body?: unknown): Promise<T> {
+  const send = (token: string) =>
+    request(path, schema, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  try {
+    return await send(csrfToken ?? (await freshCSRF()));
+  } catch (err) {
+    if (err instanceof ApiRequestError && err.status === 403 && /CSRF/i.test(err.message)) {
+      return send(await freshCSRF());
+    }
+    throw err;
+  }
+}
+
 export const api = {
   health: () => request('/health', s.health),
   findings: (query: string) => request(`/findings${query}`, s.findingPage),
@@ -189,4 +227,7 @@ export const api = {
     request(`/metrics/trends${qs({ metric, window, kind })}`, s.trendSeries),
   reports: () => request('/reports', z.array(s.reportSummary)),
   github: () => request('/github', s.githubView),
+  scans: (repo?: string, limit = 20) => request(`/scans${qs({ repo, limit })}`, z.array(s.scanRequest)),
+  requestScan: (repo: string) => write('/scans', s.scanRequestResult, { repo }),
+  requestScanAll: () => write('/scans/all', s.scanBatchResult),
 };

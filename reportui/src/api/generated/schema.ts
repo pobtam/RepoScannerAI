@@ -5,7 +5,7 @@
  * Editing this file by hand re-creates the drift the generation exists to
  * prevent (UI-ADR-05, VM-UI-F-107).
  *
- * Source: http://127.0.0.1:18082/v1/schema/openapi.json
+ * Source: http://127.0.0.1:18084/v1/schema/openapi.json
  */
 export interface paths {
     "/v1/coverage": {
@@ -17,6 +17,23 @@ export interface paths {
         };
         /** Coverage gaps, staleness and escalations */
         get: operations["coverage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A CSRF token for this caller, required in X-CSRF-Token on every write */
+        get: operations["csrf"];
         put?: never;
         post?: never;
         delete?: never;
@@ -314,6 +331,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Scan requests, newest first */
+        get: operations["scans"];
+        put?: never;
+        /** Queue a scan of one registered repository (security owners; same-origin; X-CSRF-Token; body {repo}) */
+        post: operations["requestScan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scans/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Queue a scan of every included repository as one batch (security owners; same-origin; X-CSRF-Token; no body) */
+        post: operations["requestScanAll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waves": {
         parameters: {
             query?: never;
@@ -351,6 +403,11 @@ export interface components {
             state: string;
             ticket_url?: string;
             url?: string;
+        };
+        CSRFToken: {
+            /** Format: date-time */
+            expires_at: string;
+            token: string;
         };
         Classification: {
             cvss?: number;
@@ -1257,6 +1314,7 @@ export interface components {
             degraded?: string[];
             demo: boolean;
             ok: boolean;
+            scan_requests: boolean;
         };
         Identity: {
             aliases?: string[];
@@ -1560,6 +1618,65 @@ export interface components {
             window_days?: number;
             windows_provisional: boolean;
         };
+        ScanBatchResult: {
+            batch_id: string;
+            merged: number;
+            queued: number;
+            requests: {
+                batch_id?: string;
+                /** Format: date-time */
+                finished_at?: string;
+                id: string;
+                reason?: string;
+                repo: string;
+                /** Format: date-time */
+                requested_at: string;
+                requested_by: string;
+                retry_of?: string;
+                run_id?: string;
+                source: string;
+                /** Format: date-time */
+                started_at?: string;
+                status: string;
+            }[];
+        };
+        ScanRequestResult: {
+            merged: boolean;
+            request: {
+                batch_id?: string;
+                /** Format: date-time */
+                finished_at?: string;
+                id: string;
+                reason?: string;
+                repo: string;
+                /** Format: date-time */
+                requested_at: string;
+                requested_by: string;
+                retry_of?: string;
+                run_id?: string;
+                source: string;
+                /** Format: date-time */
+                started_at?: string;
+                status: string;
+            };
+        };
+        ScanRequestView: {
+            batch_id?: string;
+            /** Format: date-time */
+            finished_at?: string;
+            id: string;
+            reason?: string;
+            repo: string;
+            /** Format: date-time */
+            requested_at: string;
+            requested_by: string;
+            retry_of?: string;
+            run_id?: string;
+            source: string;
+            /** Format: date-time */
+            started_at?: string;
+            status: string;
+        };
         ScoreBreakdown: {
             base: number;
             caveat?: string;
@@ -1833,6 +1950,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoverageView"];
+                };
+            };
+        };
+    };
+    csrf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the token */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CSRFToken"];
                 };
             };
         };
@@ -2173,6 +2310,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportSummary"];
+                };
+            };
+        };
+    };
+    scans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanRequestView"][];
+                };
+            };
+        };
+    };
+    requestScan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the request, or the one it merged into */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanRequestResult"];
+                };
+            };
+        };
+    };
+    requestScanAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the batch */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanBatchResult"];
                 };
             };
         };

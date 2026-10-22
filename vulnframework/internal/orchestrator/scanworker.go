@@ -191,33 +191,12 @@ func (w *ScanWorker) RunOnce(ctx context.Context) (did bool, err error) {
 
 // eligible returns the registered repository, or why it may not be scanned.
 func (w *ScanWorker) eligible(ctx context.Context, name string) (store.Repo, string, error) {
-	st := w.Orch.Store
-	repo, err := st.GetRepo(ctx, name)
-	if err != nil {
-		return store.Repo{}, "not a registered repository", nil
+	why, err := store.ScanRefusal(ctx, w.Orch.Store, name)
+	if err != nil || why != "" {
+		return store.Repo{}, why, err
 	}
-	if !repo.Archived {
-		return repo, "", nil
-	}
-	exclusions, err := st.Exclusions(ctx)
-	if err != nil {
-		return store.Repo{}, "", err
-	}
-	for _, e := range exclusions {
-		if e.Name == name {
-			return store.Repo{}, "excluded by " + e.ExcludedBy + ": " + e.Reason, nil
-		}
-	}
-	found, err := st.Discovery(ctx)
-	if err != nil {
-		return store.Repo{}, "", err
-	}
-	for _, d := range found {
-		if d.Name == name && !d.Included {
-			return store.Repo{}, "skipped at discovery: " + d.Detail, nil
-		}
-	}
-	return store.Repo{}, "archived in the registry; it is not in scope", nil
+	repo, err := w.Orch.Store.GetRepo(ctx, name)
+	return repo, "", err
 }
 
 // outcome reads what the run recorded for a repository.
@@ -245,13 +224,18 @@ func (w *ScanWorker) outcome(ctx context.Context, repo, runID string, sweepErr e
 	}
 }
 
+// causeText is a scan result's cause and detail, for the request's reason.
+// The outcome itself is not repeated: the request's status already says it.
 func causeText(r store.RepoScanResult) string {
-	parts := []string{string(r.Outcome)}
+	var parts []string
 	if r.FailureCause != "" {
 		parts = append(parts, r.FailureCause)
 	}
 	if r.FailureDetail != "" {
 		parts = append(parts, r.FailureDetail)
+	}
+	if len(parts) == 0 {
+		return string(r.Outcome)
 	}
 	return strings.Join(parts, ": ")
 }

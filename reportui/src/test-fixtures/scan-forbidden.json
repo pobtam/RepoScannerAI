@@ -1,0 +1,5 @@
+{
+  "detail": "requesting a scan needs the security-owner level",
+  "error": "not permitted",
+  "remedy": "ask a security owner to request it"
+}

@@ -45,6 +45,7 @@ services:
       - "-dsn=postgres://vulnframework:${POSTGRES_PASSWORD}@db:5432/vulnframework?sslmode=disable"
       - "-calibration=/opt/vf/config/calibration.yaml"
       - "-policy=/opt/vf/config/policy.yaml"
+      - "-public-origin=https://${SITE_ADDRESS}"
     depends_on:
       migrate: { condition: service_completed_successfully }
     # No ports: reachable only through web.
@@ -81,6 +82,37 @@ services:
       # Under the scanner home volume, which the scanner user owns; each
       # repository is deleted after its scan.
       - "-download-root=/home/scanner/repos"
+      - "-tools=/opt/vf/config/tools.lock"
+      - "-calibration=/opt/vf/config/calibration.yaml"
+      - "-policy=/opt/vf/config/policy.yaml"
+      - "-kev-url=${KEV_URL:-https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json}"
+      - "-epss-url=${EPSS_URL:-https://epss.empiricalsecurity.com/epss_scores-current.csv.gz}"
+      - "-max-concurrent=${SWEEP_CONCURRENCY:-2}"
+    volumes:
+      - scanhome:/home/scanner
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # The scan worker: drains the scan queue that the interface, vfctl and the
+  # daily timer fill. Long-running, so the GitHub token stays in its
+  # environment for as long as it runs (anyone who can run `docker inspect`
+  # on this host can read it); stopping it removes it. Started and stopped
+  # with deploy/scanworker.sh, behind a profile so `up` never needs the token.
+  scanworker:
+    image: vulnframework-sweep:v1
+    profiles: ["worker"]
+    restart: unless-stopped
+    environment:
+      VULNFRAMEWORK_GITHUB_TOKEN: ${VULNFRAMEWORK_GITHUB_TOKEN:-}
+    command:
+      - "-worker"
+      - "-dsn=postgres://vulnframework:${POSTGRES_PASSWORD}@db:5432/vulnframework?sslmode=disable"
+      - "-github"
+      - "-github-api=${VULNFRAMEWORK_GITHUB_API:-}"
+      - "-download-root=/home/scanner/repos"
+      - "-scan-timeout=${SCAN_TIMEOUT:-15m}"
       - "-tools=/opt/vf/config/tools.lock"
       - "-calibration=/opt/vf/config/calibration.yaml"
       - "-policy=/opt/vf/config/policy.yaml"

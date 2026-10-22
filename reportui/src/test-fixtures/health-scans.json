@@ -1,0 +1,10 @@
+{
+  "backend": "postgres",
+  "degraded": [
+    "static-analysis thresholds are uncalibrated (VM-OQ-06)",
+    "SLA windows are provisional (VM-OQ-02)"
+  ],
+  "demo": false,
+  "ok": true,
+  "scan_requests": true
+}

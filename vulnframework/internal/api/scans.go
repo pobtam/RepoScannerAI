@@ -344,29 +344,7 @@ func (s *Server) handleScanList(w http.ResponseWriter, r *http.Request) {
 
 // refusal says why a registered repository may not be scanned, or "".
 func (s *Server) refusal(ctx context.Context, name string) (string, error) {
-	repo, err := s.cfg.Store.GetRepo(ctx, name)
-	if err != nil || !repo.Archived {
-		return "", err
-	}
-	excl, err := s.cfg.Store.Exclusions(ctx)
-	if err != nil {
-		return "", err
-	}
-	for _, e := range excl {
-		if e.Name == name {
-			return "excluded by " + e.ExcludedBy + ": " + e.Reason, nil
-		}
-	}
-	found, err := s.cfg.Store.Discovery(ctx)
-	if err != nil {
-		return "", err
-	}
-	for _, d := range found {
-		if d.Name == name && !d.Included {
-			return "skipped at discovery: " + d.Detail, nil
-		}
-	}
-	return "archived in the registry; it is not in scope", nil
+	return store.ScanRefusal(ctx, s.cfg.Store, name)
 }
 
 // recordRefusal keeps a refused request as an audit row. A failure to record

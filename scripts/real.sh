@@ -94,6 +94,68 @@ real_verify_image() {
   "$REAL_VF/deploy/scanner/verify-image.sh" "$REAL_SCANNER_IMAGE" "$REAL_VF/config/tools.lock"
 }
 
+# real_prepare_container builds the orchestrator for the scanner image and
+# fills REAL_ARCH, REAL_ARGS and REAL_ENV, shared by the one-shot sweep and
+# the scan worker so both scan with the same image, mounts and flags.
+real_prepare_container() {
+  REAL_ARCH="$(docker image inspect "$REAL_SCANNER_IMAGE" --format '{{.Architecture}}')"
+  mkdir -p "$REAL_BIN/real-runs"
+  (cd "$REAL_VF" && GOOS=linux GOARCH="$REAL_ARCH" CGO_ENABLED=0 go build -o "$REAL_BIN/orchestrator-linux-$REAL_ARCH" ./cmd/orchestrator) ||
+    real_fail "Building the orchestrator for the scan container failed." || return 1
+
+  REAL_ARGS=(
+    -dsn "$REAL_DSN_CONTAINER"
+    -workdir /repos
+    -tools /opt/vf/config/tools.lock
+    -calibration /opt/vf/config/calibration.yaml
+    -policy /opt/vf/config/policy.yaml
+    -kev-url "$REAL_KEV_URL"
+    -epss-url "$REAL_EPSS_URL"
+  )
+  REAL_ENV=(
+    # Semgrep otherwise reports usage metrics and checks for a newer version.
+    -e SEMGREP_SEND_METRICS=off
+    -e SEMGREP_ENABLE_VERSION_CHECK=0
+  )
+  if [ -f "$REAL_FIRSTPARTY" ]; then
+    REAL_ARGS+=(-firstparty /opt/vf/config/firstparty.yaml)
+  fi
+  # AI triage only when BOTH are set. -e NAME with no value passes the key
+  # from this shell without it appearing on a command line.
+  if [ -n "${VULNFRAMEWORK_TRIAGE_MODEL:-}" ] && [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+    REAL_ARGS+=(-triage-model "$VULNFRAMEWORK_TRIAGE_MODEL")
+    REAL_ENV+=(-e ANTHROPIC_API_KEY)
+    printf '%sAI triage is ON (%s): finding details will be sent to the Anthropic API.%s\n' "$real_bold" "$VULNFRAMEWORK_TRIAGE_MODEL" "$real_plain"
+  fi
+}
+
+# real_worker_start CLONES starts the scan worker in the background: it runs
+# the scans requested from the interface ("Scan now") and with
+# ./vfctl.sh scan, from the clones, read-only. No GitHub token is involved in
+# this mode. Stopped by real_worker_stop, which marks any scan it was running
+# as interrupted.
+REAL_WORKER_NAME="${VULNFRAMEWORK_WORKER_CONTAINER:-vulnframework-scanworker}"
+real_worker_start() {
+  local clones="$1"
+  real_prepare_container || return 1
+  docker rm -f "$REAL_WORKER_NAME" >/dev/null 2>&1 || true
+  docker run -d --rm --name "$REAL_WORKER_NAME" \
+    --add-host=host.docker.internal:host-gateway \
+    -v "$clones:/repos:ro" \
+    -v "$REAL_BIN/orchestrator-linux-$REAL_ARCH:/opt/vf/orchestrator:ro" \
+    -v "$REAL_VF/config:/opt/vf/config:ro" \
+    -v vulnframework-scanhome:/home/scanner \
+    "${REAL_ENV[@]}" \
+    --entrypoint /opt/vf/orchestrator \
+    "$REAL_SCANNER_IMAGE" "${REAL_ARGS[@]}" -worker -scan-timeout "${VULNFRAMEWORK_SCAN_TIMEOUT:-15m}" >/dev/null ||
+    real_fail "Starting the scan worker failed." || return 1
+  printf '%s  ✓ scan worker running (container %s); Scan now works in the interface%s\n' "$real_green" "$REAL_WORKER_NAME" "$real_plain"
+}
+
+real_worker_stop() {
+  docker stop "$REAL_WORKER_NAME" >/dev/null 2>&1 || true
+}
+
 # real_sweep CLONES scans every registered repository from CLONES/<name>,
 # inside the scanner image, and runs the post-sweep pass.
 real_sweep() {
@@ -110,36 +172,7 @@ real_sweep() {
     real_fail "Clone the missing repositories into $clones (the folder name must be the last part of the registered name), or archive them with ./vfctl.sh repo remove NAME." || return 1
   fi
 
-  local arch
-  arch="$(docker image inspect "$REAL_SCANNER_IMAGE" --format '{{.Architecture}}')"
-  mkdir -p "$REAL_BIN/real-runs"
-  (cd "$REAL_VF" && GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -o "$REAL_BIN/orchestrator-linux-$arch" ./cmd/orchestrator) ||
-    real_fail "Building the orchestrator for the scan container failed." || return 1
-
-  local args=(
-    -dsn "$REAL_DSN_CONTAINER"
-    -workdir /repos
-    -tools /opt/vf/config/tools.lock
-    -calibration /opt/vf/config/calibration.yaml
-    -policy /opt/vf/config/policy.yaml
-    -kev-url "$REAL_KEV_URL"
-    -epss-url "$REAL_EPSS_URL"
-  )
-  local env=(
-    # Semgrep otherwise reports usage metrics and checks for a newer version.
-    -e SEMGREP_SEND_METRICS=off
-    -e SEMGREP_ENABLE_VERSION_CHECK=0
-  )
-  if [ -f "$REAL_FIRSTPARTY" ]; then
-    args+=(-firstparty /opt/vf/config/firstparty.yaml)
-  fi
-  # AI triage only when BOTH are set. -e NAME with no value passes the key
-  # from this shell without it appearing on a command line.
-  if [ -n "${VULNFRAMEWORK_TRIAGE_MODEL:-}" ] && [ -n "${ANTHROPIC_API_KEY:-}" ]; then
-    args+=(-triage-model "$VULNFRAMEWORK_TRIAGE_MODEL")
-    env+=(-e ANTHROPIC_API_KEY)
-    printf '%sAI triage is ON (%s): finding details will be sent to the Anthropic API.%s\n' "$real_bold" "$VULNFRAMEWORK_TRIAGE_MODEL" "$real_plain"
-  fi
+  real_prepare_container || return 1
 
   local out
   out="$REAL_BIN/real-runs/sweep-$(date +%Y%m%d-%H%M%S).json"
@@ -147,12 +180,12 @@ real_sweep() {
   if ! docker run --rm \
     --add-host=host.docker.internal:host-gateway \
     -v "$clones:/repos:ro" \
-    -v "$REAL_BIN/orchestrator-linux-$arch:/opt/vf/orchestrator:ro" \
+    -v "$REAL_BIN/orchestrator-linux-$REAL_ARCH:/opt/vf/orchestrator:ro" \
     -v "$REAL_VF/config:/opt/vf/config:ro" \
     -v vulnframework-scanhome:/home/scanner \
-    "${env[@]}" \
+    "${REAL_ENV[@]}" \
     --entrypoint /opt/vf/orchestrator \
-    "$REAL_SCANNER_IMAGE" "${args[@]}" >"$out"; then
+    "$REAL_SCANNER_IMAGE" "${REAL_ARGS[@]}" >"$out"; then
     real_fail "The sweep failed; its output so far is in $out." || return 1
   fi
   printf '%s  ✓ sweep complete; the full record is in %s%s\n' "$real_green" "${out#"$REAL_ROOT"/}" "$real_plain"

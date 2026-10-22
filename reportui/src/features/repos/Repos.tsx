@@ -16,6 +16,7 @@ import { api } from '../../api/client';
 import { Absent, Empty, ErrorState, Loading, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
 import { formatDate, pct } from '../../lib/format';
+import { ScanNow, ScanQueue } from '../scans/ScanControls';
 
 export function RepoIndex() {
   const q = useQuery({ queryKey: ['repos'], queryFn: api.repos });
@@ -24,6 +25,8 @@ export function RepoIndex() {
   const repos = q.data!;
 
   return (
+    <>
+    <ScanQueue />
     <Panel title="Repositories" subtitle={`${repos.length} in the registry`}>
       {repos.length === 0 ? (
         <Empty filtered={false} what="repositories" />
@@ -83,6 +86,7 @@ export function RepoIndex() {
         </table>
       )}
     </Panel>
+    </>
   );
 }
 
@@ -102,6 +106,7 @@ export function RepoDetail({ repo }: { repo: string }) {
           tier {r.tier} · {r.languages.join(', ')} · {r.module_topology ?? 'topology unrecorded'} ·
           owners: {r.codeowners?.join(', ') || 'none recorded'}
         </p>
+        <ScanNow repo={r.name} />
       </header>
 
       {!r.has_test_suite && (

@@ -798,3 +798,7 @@ html[data-density='dense'] .panel { padding: var(--s3) var(--s4); }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* --- scan requests ------------------------------------------------------- */
+.scan-now { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); margin-top: var(--s3); }
+.scan-status { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s1); }
