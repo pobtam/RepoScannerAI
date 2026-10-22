@@ -16,10 +16,12 @@ import { api } from '../../api/client';
 import { Absent, Empty, ErrorState, Loading, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
 import { formatDate, pct } from '../../lib/format';
-import { ScanNow, ScanQueue } from '../scans/ScanControls';
+import { ScanNow, ScanQueue, ScanRow, useLatestScans } from '../scans/ScanControls';
 
 export function RepoIndex() {
   const q = useQuery({ queryKey: ['repos'], queryFn: api.repos });
+  // null where no scan worker exists: the column is not shown at all.
+  const latestScans = useLatestScans();
   if (q.isLoading) return <Loading what="repositories" />;
   if (q.error != null) return <ErrorState error={q.error} what="repositories" />;
   const repos = q.data!;
@@ -42,6 +44,7 @@ export function RepoIndex() {
               <th scope="col">Not re-observed</th>
               <th scope="col">Last scan</th>
               <th scope="col">Test suite</th>
+              {latestScans && <th scope="col">Scan</th>}
             </tr>
           </thead>
           <tbody>
@@ -80,6 +83,11 @@ export function RepoIndex() {
                     </span>
                   )}
                 </td>
+                {latestScans && (
+                  <td>
+                    <ScanRow repo={r.name} last={latestScans.get(r.name)} />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

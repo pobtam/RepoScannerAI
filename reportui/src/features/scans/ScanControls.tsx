@@ -16,7 +16,7 @@ import { formatDate } from '../../lib/format';
 
 const ACTIVE = new Set(['queued', 'running']);
 
-function useScansEnabled(): boolean {
+export function useScansEnabled(): boolean {
   const health = useQuery({ queryKey: ['health'], queryFn: api.health, staleTime: 60_000 });
   return health.data?.scan_requests === true;
 }
@@ -114,6 +114,60 @@ export function ScanNow({ repo }: { repo: string }) {
         {last ? <ScanStatus r={last} onRetry={() => request.mutate()} /> : <span className="muted">No scan requested yet.</span>}
       </span>
     </div>
+  );
+}
+
+/**
+ * The latest request for every repository, from one call for the most recent
+ * requests (the API's limit, 500), so the index does not ask once per row. A
+ * repository whose last request is older than that shows none.
+ */
+export function useLatestScans(): Map<string, ScanRequest> | null {
+  const enabled = useScansEnabled();
+  const recent = useQuery({
+    queryKey: ['scans', 'index'],
+    queryFn: () => api.scans(undefined, 500),
+    enabled,
+    refetchInterval: (q) => (q.state.data?.some((r) => ACTIVE.has(r.status)) ? 5000 : false),
+  });
+  if (!enabled) return null;
+  const latest = new Map<string, ScanRequest>();
+  // Newest first, so the first request seen for a repository is its latest.
+  for (const r of recent.data ?? []) {
+    if (!latest.has(r.repo)) latest.set(r.repo, r);
+  }
+  return latest;
+}
+
+/** "Scan now" in a row of the repositories table, with its latest status. */
+export function ScanRow({ repo, last }: { repo: string; last?: ScanRequest }) {
+  const qc = useQueryClient();
+  const request = useMutation({
+    mutationFn: () => api.requestScan(repo),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['scans'] }),
+  });
+  const busy = request.isPending || (last != null && ACTIVE.has(last.status));
+  return (
+    <span className="scan-row" role="status" aria-live="polite">
+      <button
+        type="button"
+        className="small-button"
+        onClick={() => request.mutate()}
+        disabled={busy}
+        aria-label={busy ? `Scan of ${repo} queued` : `Scan ${repo} now`}
+      >
+        {busy ? 'Queued' : 'Scan now'}
+      </button>
+      {request.isError ? (
+        <span className="warn-text small">{errorText(request.error)}</span>
+      ) : (
+        last && (
+          <Badge tone={TONE[last.status]} title={last.reason ?? undefined}>
+            {LABEL[last.status]}
+          </Badge>
+        )
+      )}
+    </span>
   );
 }
 

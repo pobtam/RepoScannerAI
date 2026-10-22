@@ -6,7 +6,9 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../../test-utils';
-import { ScanNow, ScanQueue } from './ScanControls';
+import { ScanNow, ScanQueue, ScanRow } from './ScanControls';
+import { RepoIndex } from '../repos/Repos';
+import repos from '../../test-fixtures/repos.json';
 import healthOff from '../../test-fixtures/health.json';
 import healthOn from '../../test-fixtures/health-scans.json';
 import scans from '../../test-fixtures/scans.json';
@@ -131,5 +133,71 @@ describe('the scan queue', () => {
     expect(post.url).toMatch(/\/v1\/scans\/all$/);
     expect(post.body).toBeUndefined();
     expect(post.headers['X-CSRF-Token']).toBe('tok-1');
+  });
+});
+
+describe('Scan now on every row of the repositories table', () => {
+  it('has no scan column where no scan worker exists', async () => {
+    stub([
+      { path: '/health', body: healthOff },
+      { path: '/repos', body: repos },
+    ]);
+    renderApp(<RepoIndex />);
+    await screen.findByRole('link', { name: repos[0]!.name });
+    expect(screen.queryByRole('columnheader', { name: 'Scan' })).toBeNull();
+    expect(screen.queryAllByRole('button', { name: /Scan .* now/ })).toHaveLength(0);
+  });
+
+  it('offers every repository, and queues the one clicked with the CSRF token', async () => {
+    const calls = stub([
+      { path: '/health', body: healthOn },
+      { path: '/repos', body: repos },
+      { path: '/csrf', body: { token: 'tok-1', expires_at: '2026-10-22T21:00:00Z' } },
+      { method: 'POST', path: '/scans', status: 201, body: queued },
+      { path: '/scans', body: [] },
+    ]);
+    renderApp(<RepoIndex />);
+    await screen.findByRole('columnheader', { name: 'Scan' });
+    for (const r of repos) {
+      expect(screen.getByRole('button', { name: `Scan ${r.name} now` })).toBeTruthy();
+    }
+    // The index asks for the queue once, not once per row.
+    const lists = calls.filter((c) => c.method === 'GET' && /\/v1\/scans\?/.test(c.url) && !c.url.includes('repo='));
+    expect(lists.length).toBeLessThanOrEqual(2); // the row lookup and the queue panel
+
+    const target = repos[1]!.name;
+    fireEvent.click(screen.getByRole('button', { name: `Scan ${target} now` }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    const post = calls.find((c) => c.method === 'POST')!;
+    expect(post.url).toMatch(/\/v1\/scans$/);
+    expect(post.headers['X-CSRF-Token']).toBe('tok-1');
+    expect(JSON.parse(post.body!)).toEqual({ repo: target });
+  });
+
+  it('shows a queued request as queued and does not offer a second', () => {
+    stub([]);
+    renderApp(<ScanRow repo="octo/api" last={queued.request as never} />);
+    const button = screen.getByRole('button', { name: 'Scan of octo/api queued' });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('queued')).toBeTruthy();
+  });
+
+  it('shows the latest outcome as itself, with its reason on hover, and offers a new scan', () => {
+    stub([]);
+    const timedOut = scans.find((r) => r.status === 'timed_out')!;
+    renderApp(<ScanRow repo={timedOut.repo} last={timedOut as never} />);
+    expect((screen.getByRole('button', { name: `Scan ${timedOut.repo} now` }) as HTMLButtonElement).disabled).toBe(false);
+    const badge = screen.getByText('timed out');
+    expect(badge.closest('[title]')?.getAttribute('title')).toBe(timedOut.reason);
+  });
+
+  it('says why when the caller may not request scans', async () => {
+    stub([
+      { path: '/csrf', body: { token: 'tok-1', expires_at: '2026-10-22T21:00:00Z' } },
+      { method: 'POST', path: '/scans', status: 403, body: forbidden },
+    ]);
+    renderApp(<ScanRow repo="octo/api" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Scan octo/api now' }));
+    expect(await screen.findByText(/not permitted: requesting a scan needs the security-owner level/)).toBeTruthy();
   });
 });
