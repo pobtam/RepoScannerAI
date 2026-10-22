@@ -81,6 +81,12 @@ func run() error {
 		maxSizeMB     = flag.Int("max-size-mb", 1024, "account mode: skip repositories GitHub estimates larger than this")
 		inclCollab    = flag.Bool("include-collaborator", false, "account mode: also scan repositories the account is only a collaborator on")
 		inclForks     = flag.Bool("include-forks", false, "account mode: also scan forks")
+
+		// Worker mode: drain the scan queue instead of running one sweep.
+		workerMode    = flag.Bool("worker", false, "run as the scan worker: take requests from the scan queue one at a time until stopped")
+		workerID      = flag.String("worker-id", "", "this worker's name in the queue; empty derives one from the host and process")
+		scanTimeout   = flag.Duration("scan-timeout", 15*time.Minute, "worker mode: time limit per repository scan; a timeout is recorded as a coverage gap")
+		discoverEvery = flag.Duration("discover-every", 24*time.Hour, "worker mode with -github: how often to rediscover the account's repositories")
 	)
 	flag.Parse()
 
@@ -163,6 +169,10 @@ func run() error {
 		}
 	}
 
+	if *workerMode {
+		dispatcher = &orchestrator.TimeoutDispatcher{Inner: dispatcher, Limit: *scanTimeout}
+	}
+
 	o := orchestrator.New(st, dispatcher, orchestrator.NewRateBudget(*credits), orchestrator.Config{
 		MaxConcurrentScans: *concurrent,
 		CreditsPerScan:     *perScan,
@@ -211,6 +221,14 @@ func run() error {
 			log.Warn("exploitation feeds not fully configured; scores will name the missing inputs",
 				"kev", *kevURL != "", "epss", *epssURL != "")
 		}
+	}
+
+	if *workerMode {
+		return runWorker(ctx, log, workerConfig{
+			orch: o, pass: pass, account: account, credits: *credits, id: *workerID,
+			discoverEvery: *discoverEvery,
+			discover:      gh.DiscoverOptions{IncludeCollaborator: *inclCollab, IncludeForks: *inclForks, MaxSizeMB: *maxSizeMB},
+		})
 	}
 
 	var discovered *orchestrator.DiscoverStats
