@@ -49,6 +49,7 @@ type Memory struct {
 	ghConnections map[string]GitHubConnection
 	discovered    map[string]DiscoveredRepo
 	exclusions    map[string]RepoExclusion
+	scanRequests  map[string]ScanRequest
 }
 
 type memFinding struct {
@@ -142,6 +143,7 @@ func (m *Memory) MigrateTo(_ context.Context, version int) error {
 		m.ghConnections = map[string]GitHubConnection{}
 		m.discovered = map[string]DiscoveredRepo{}
 		m.exclusions = map[string]RepoExclusion{}
+		m.scanRequests = map[string]ScanRequest{}
 	}
 	m.schemaVersion = version
 	return nil

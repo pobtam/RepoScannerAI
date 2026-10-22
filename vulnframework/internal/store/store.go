@@ -555,6 +555,8 @@ type Store interface {
 
 	// --- GitHub discovery (migration 0016) ---
 	GitHubStore
+	// --- Scan queue (migration 0017) ---
+	ScanQueue
 
 	// Close releases resources.
 	Close() error
