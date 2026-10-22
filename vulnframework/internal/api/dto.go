@@ -653,6 +653,9 @@ type Health struct {
 	// interface can say so rather than rendering their absence as zero.
 	Degraded []string `json:"degraded,omitempty"`
 	Demo     bool     `json:"demo"`
+	// ScanRequests says whether scans can be requested from the interface:
+	// whether a scan worker drains the queue in this deployment.
+	ScanRequests bool `json:"scan_requests"`
 }
 
 // The overview carries the report package's own structures rather than

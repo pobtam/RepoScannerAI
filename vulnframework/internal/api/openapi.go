@@ -36,6 +36,7 @@ func schemaTypes() []any {
 		Wave{}, TrendSeries{}, TrendPoint{},
 		ReportSummary{}, Health{}, Error{},
 		GitHubView{}, GitHubAccount{}, DiscoveredRepo{}, ExcludedRepo{}, DiscoverySummary{},
+		ScanRequestView{}, ScanRequestResult{}, ScanBatchResult{}, CSRFToken{},
 		Identity{}, Location{}, Versions{}, Classification{}, SLA{},
 		Observation{}, Refs{}, Provenance{}, Triage{}, ScoreBreakdown{}, ScoreInputs{},
 	}
@@ -109,6 +110,9 @@ func (s *Server) openAPI() (map[string]any, error) {
 		"/v1/metrics/trends":         get("trends", "One metric over runs of one kind", jsonResponse("TrendSeries", "the series")),
 		"/v1/reports":                get("reports", "Issued reports", arrayResponse("ReportSummary", "the reports")),
 		"/v1/reports/{id}":           get("report", "One issued report, as issued", jsonResponse("ReportSummary", "the report")),
+		"/v1/csrf":                   get("csrf", "A CSRF token for this caller, required in X-CSRF-Token on every write", jsonResponse("CSRFToken", "the token")),
+		"/v1/scans":                  merge(get("scans", "Scan requests, newest first", arrayResponse("ScanRequestView", "the requests")), post("requestScan", "Queue a scan of one registered repository (security owners; same-origin; X-CSRF-Token; body {repo})", jsonResponse("ScanRequestResult", "the request, or the one it merged into"))),
+		"/v1/scans/all":              post("requestScanAll", "Queue a scan of every included repository as one batch (security owners; same-origin; X-CSRF-Token; no body)", jsonResponse("ScanBatchResult", "the batch")),
 		"/v1/github":                 get("github", "The connected GitHub account and every repository discovery saw, with whether it is scanned", jsonResponse("GitHubView", "the account view")),
 	}
 
@@ -134,6 +138,26 @@ func get(id, summary string, responses map[string]any) map[string]any {
 			"responses":   responses,
 		},
 	}
+}
+
+func post(id, summary string, responses map[string]any) map[string]any {
+	return map[string]any{
+		"post": map[string]any{
+			"operationId": id,
+			"summary":     summary,
+			"responses":   responses,
+		},
+	}
+}
+
+func merge(ops ...map[string]any) map[string]any {
+	out := map[string]any{}
+	for _, o := range ops {
+		for k, v := range o {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 var timeType = reflect.TypeOf(time.Time{})

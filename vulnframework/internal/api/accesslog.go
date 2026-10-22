@@ -57,6 +57,9 @@ type AccessEvent struct {
 	Outcome AccessOutcome `json:"outcome"`
 	// Duration is how long the request took.
 	Duration time.Duration `json:"duration_ms"`
+	// Subject is what a write acted on and what came of it, for example
+	// "repo=octo/api queued sr_...". Empty for reads.
+	Subject string `json:"subject,omitempty"`
 }
 
 // AccessOutcome classifies a logged request.
@@ -122,6 +125,9 @@ func (l SlogAccessLog) Record(_ context.Context, e AccessEvent) {
 	if len(e.Query) > 0 {
 		args = append(args, "filters", strings.Join(e.Query, ","))
 	}
+	if e.Subject != "" {
+		args = append(args, "subject", e.Subject)
+	}
 	// A refusal is logged at WARN. An operator scanning for somebody probing
 	// what they cannot see should not have to filter it out of every
 	// successful read in the fleet.
@@ -162,8 +168,18 @@ type principalHolderKey struct{}
 // The direction is what makes it necessary. Middleware passes context inwards,
 // and the access log needs a value established further in than it sits.
 type principalHolder struct {
-	mu sync.Mutex
-	p  Principal
+	mu      sync.Mutex
+	p       Principal
+	subject string
+}
+
+// recordSubject tells the access log what a write acted on.
+func recordSubject(ctx context.Context, subject string) {
+	if holder, ok := ctx.Value(principalHolderKey{}).(*principalHolder); ok {
+		holder.mu.Lock()
+		holder.subject = subject
+		holder.mu.Unlock()
+	}
 }
 
 func (h *principalHolder) set(p Principal) {
@@ -247,7 +263,11 @@ func (s *Server) withAccessLog(next http.Handler) http.Handler {
 		next.ServeHTTP(rec, r.WithContext(ctx))
 
 		p := holder.get()
+		holder.mu.Lock()
+		subject := holder.subject
+		holder.mu.Unlock()
 		event := AccessEvent{
+			Subject:   subject,
 			At:        started,
 			Principal: p.Recipient.ID,
 			Level:     levelName(p),

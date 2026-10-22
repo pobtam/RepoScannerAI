@@ -64,6 +64,12 @@ func run() error {
 		levelHeader = flag.String("level-header", "X-Auth-Level", "header carrying the privilege level")
 		reposHeader = flag.String("repos-header", "X-Auth-Repos", "header carrying the caller's repositories")
 		demoRuns    = flag.Int("demo-runs", 6, "how many weekly sweeps the demonstration simulates")
+		// Scan requests from the interface (the first write actions). On with
+		// a database, where a scan worker drains the queue; never in the demo,
+		// which has no worker.
+		scanRequests = flag.Bool("scan-requests", true, "with -dsn: let security owners request scans from the interface (needs a running scan worker)")
+		scanRate     = flag.Int("scan-rate", 10, "scan requests allowed per person per minute")
+		publicOrigin = flag.String("public-origin", os.Getenv("VULNFRAMEWORK_PUBLIC_ORIGIN"), "the address users reach the interface at (e.g. https://203.0.113.7), accepted as a write's Origin")
 	)
 	flag.Parse()
 
@@ -78,7 +84,8 @@ func run() error {
 		return fmt.Errorf("loading %s: %w", *policyPath, err)
 	}
 
-	cfg := api.Config{Calibration: cal, Policy: pol, Logger: log}
+	cfg := api.Config{Calibration: cal, Policy: pol, Logger: log,
+		ScanRequests: *scanRequests && !*demoMode, ScanRatePerMinute: *scanRate, PublicOrigin: *publicOrigin}
 
 	// Access logging (VM-UI-F-805), on in both modes.
 	//

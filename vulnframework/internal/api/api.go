@@ -10,6 +10,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/firstparty"
@@ -70,6 +71,19 @@ type Config struct {
 	// it decides whether a merge is sufficient (VM-UI-F-705).
 	Wave2Trigger string
 
+	// ScanRequests enables requesting scans from the interface (scans.go).
+	// Off in the demonstration, which has no scan worker to drain the queue.
+	ScanRequests bool
+	// ScanRatePerMinute bounds scan requests per person. Zero means 10.
+	ScanRatePerMinute int
+	// PublicOrigin is the address users reach the interface at (for example
+	// https://203.0.113.7), accepted as a write's Origin from browsers that
+	// do not send Sec-Fetch-Site. Empty accepts only an Origin matching the
+	// request's Host.
+	PublicOrigin string
+	// CSRFKey signs CSRF tokens. Empty generates a key per process.
+	CSRFKey []byte
+
 	Logger *slog.Logger
 	Clock  func() time.Time
 }
@@ -82,6 +96,9 @@ type Server struct {
 	score   *score.Scorer
 	log     *slog.Logger
 	webhook WebhookConfig
+
+	csrfOnce   sync.Once
+	csrfSecret []byte
 }
 
 // New builds a server and registers its routes.
@@ -163,6 +180,11 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /v1/reports/{id}", s.handleReport)
 
 	s.mux.HandleFunc("GET /v1/github", s.handleGitHub)
+
+	s.mux.HandleFunc("GET /v1/csrf", s.handleCSRF)
+	s.mux.HandleFunc("GET /v1/scans", s.handleScanList)
+	s.mux.HandleFunc("POST /v1/scans", s.handleScanRequest)
+	s.mux.HandleFunc("POST /v1/scans/all", s.handleScanAll)
 }
 
 // --- middleware --------------------------------------------------------------
@@ -355,7 +377,7 @@ func timeParam(r *http.Request, name string) (*time.Time, error) {
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	h := Health{OK: true, Backend: backendName(s.cfg.Store), Demo: s.cfg.Demo}
+	h := Health{OK: true, Backend: backendName(s.cfg.Store), Demo: s.cfg.Demo, ScanRequests: s.cfg.ScanRequests}
 	// Degradation is named rather than implied. A deployment with no
 	// exploitation feeds scores every finding from three of five inputs, and
 	// the interface has to be able to say so at the top of the page rather
