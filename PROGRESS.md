@@ -18,6 +18,132 @@ read this file first and resume from "Next".
   on D12 come first: detection (1a), then the schema and vfctl (1b). The
   semgrep rule work waits for D12.
 
+## Proposed: start a scan from the web app (2026-10-22, not built)
+
+Requested to be built after Phase 1 is committed. This is the design, for
+review first.
+
+**A correction to the brief.** There are no existing Origin/Sec-Fetch checks
+in the API or the Caddy front door. The only ones are in the local
+development proxy (`reportui/scripts/local-auth.ts:104-120`), which decides
+whether to add identity headers on a developer's machine. The API's only
+write endpoint so far is the GitHub webhook, which is verified by signature.
+This feature therefore adds cross-site protection in the API itself.
+
+**Queue (migration 0017, both backends)**
+
+```
+scan_requests
+  id            TEXT PK                -- sr_<time-ordered>
+  repo          TEXT FK repos
+  batch_id      TEXT                   -- one click on "scan all", or one timer firing
+  source        TEXT CHECK IN (web, vfctl, timer)
+  requested_by  TEXT                   -- the principal, or "timer"
+  requested_at  TIMESTAMPTZ
+  status        TEXT CHECK IN (queued, running, finished, failed, timed_out,
+                               interrupted, refused)
+  reason        TEXT                   -- for failed, timed_out, interrupted, refused
+  run_id        TEXT FK runs           -- the run that scanned it
+  worker_id     TEXT, started_at, heartbeat_at, finished_at TIMESTAMPTZ
+  retry_of      TEXT FK scan_requests  -- a retry is a new request pointing at the old one
+UNIQUE (repo) WHERE status IN ('queued','running')   -- duplicates merge
+```
+
+- **Merging duplicates:** a request for a repository with a queued or
+  running request returns that request (HTTP 200, `merged: true`). The
+  database enforces it with the partial unique index, so two API replicas
+  cannot race.
+- **Rate limit:** per principal, at most N requests a minute (default 10,
+  `-scan-rate`), counted in `scan_requests`, so it survives an API restart.
+  "Scan all" counts as one request.
+
+**Worker**
+- `orchestrator -worker` runs in the sweep image as a long-running compose
+  service, `scanworker`.
+- **It claims one request at a time** (`FOR UPDATE SKIP LOCKED` in Postgres,
+  a mutex in memory), marks it running with a heartbeat, and checks the
+  registry. An archived, excluded or unregistered repository is refused with
+  the reason.
+- **It scans through the existing path:** `Orchestrator.Sweep` over one
+  repository, with the account-mode `DownloadDispatcher` (or the clones
+  dispatcher in local real mode), then the same post-sweep pass. Results
+  are recorded exactly as a sweep records them. One request is one run of
+  kind `manual`; a timer batch is one run of kind `sweep`.
+- **Time limit:** `-scan-timeout` (default 15 minutes) per repository. A
+  timeout records the scan as failed with the coverage-gap cause
+  `scan_timed_out`, owner platform, so coverage counts it as a gap, never
+  as clean. The request becomes `timed_out`.
+- **Restarts:** at start-up, any `running` request whose heartbeat is older
+  than 2 minutes becomes `interrupted`, reason "worker restarted during the
+  scan". The interface offers Retry, which creates a new request with
+  `retry_of` set. Nothing is silently lost, and nothing is marked done
+  without a recorded run.
+- **The daily timer** stops running a sweep itself. It enqueues a batch of
+  every included repository (`vfctl scan enqueue --all --source timer`,
+  which needs no token), and the worker drains it. One queue, one code path.
+
+**Token handling**
+- **On the VM,** the worker's systemd unit reads the token from Secret
+  Manager at start-up (as the sweep unit does now) and passes it to the
+  container by name.
+- **Locally,** `deploy/scanworker.sh` reads `VULNFRAMEWORK_GITHUB_TOKEN` at
+  start-up, like `sweep.sh`.
+- **Either way, the token stays in the worker process's environment for as
+  long as it runs.** That is the cost of a worker that can scan on demand.
+  The API never sees it. Stopping the worker removes it:
+  `docker compose stop scanworker`, or `systemctl stop vulnframework-scanworker`.
+- **In `./run.sh --real`** (clones on disk), the worker scans the clones and
+  needs no token.
+
+**API (the first write actions in the interface)**
+- `POST /v1/scans`, body `{"repo": "owner/name"}` only. Unknown fields are
+  refused (strict decoding), and the name is validated against the registry.
+  Returns the request (201, or 200 when merged).
+- `POST /v1/scans/all`, no body: one batch over every included repository.
+  This is a second endpoint, because "scan all" has no repository name. It
+  is flagged here because the brief asked for "a repo name only".
+- `GET /v1/scans?repo=&limit=`: request statuses, with links to the run.
+- **Checks on both POSTs, in order:**
+  1. the principal is determined and at `security_owner` level, otherwise
+     403;
+  2. the cross-site check: refused unless `Sec-Fetch-Site` is
+     `same-origin`, or absent with an `Origin` matching the configured
+     public origin; a cross-site request gets 403;
+  3. the CSRF token: `X-CSRF-Token` must equal an HMAC of the principal and
+     an hourly time window, issued by `GET /v1/csrf`. A custom header also
+     forces a CORS preflight, which the API never answers, so no other site
+     can send it;
+  4. the rate limit, then queue or merge.
+- **Audit:** each accepted, merged or refused request is a `scan_requests`
+  row (who, which repository, when, outcome) and an access-log line.
+  Refusals are logged too, as the access log does now.
+
+**Interface**
+- **A repository page** gets a Scan now button (security owners only;
+  others see why it is disabled) and a status line. The status is queued,
+  running (with the time it started), finished (linking to the run and the
+  repository's findings), failed (with the reason), timed out, or
+  interrupted (with Retry).
+- **The repositories list** gets "Scan all included repositories" and a
+  small queue panel. Both poll every 5 seconds while anything is queued or
+  running.
+- `vfctl scan request REPO`, `vfctl scan list` and
+  `vfctl scan enqueue --all` give the same from the terminal.
+
+**Tests (both backends):**
+- queueing, merging duplicates, refusing excluded repositories;
+- timeout becomes a gap; interrupted becomes retryable;
+- role refusal, CSRF refusal, cross-site refusal, unknown fields refused,
+  rate limit;
+- the timer batch;
+- end to end: a POST through the API, then the compiled worker downloads
+  from `ghfake`, scans and records, and the request becomes finished with
+  its run.
+
+**Documentation:** the usage sections of REAL-REPOS.md and DEPLOY.md.
+
+Estimate: about 1.5-2 weeks.
+
 ## Plan order (updated 2026-10-22)
 
 AI-assisted fixing is now in scope as Phase 8, under the security review's
