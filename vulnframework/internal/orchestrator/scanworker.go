@@ -204,14 +204,23 @@ func (w *ScanWorker) outcome(ctx context.Context, repo, runID string, sweepErr e
 	if sweepErr != nil {
 		return store.ScanFailed, "the run failed: " + sweepErr.Error()
 	}
-	results, err := w.Orch.Store.ScanResults(ctx, repo, 1)
+	// This run's own result, looked up by run rather than assumed to be the
+	// most recent: another run may have recorded one for the repository since.
+	results, err := w.Orch.Store.ScanResults(ctx, repo, 50)
 	if err != nil {
 		return store.ScanFailed, "the scan result could not be read: " + err.Error()
 	}
-	if len(results) == 0 || results[0].RunID != runID {
+	var r store.RepoScanResult
+	found := false
+	for _, x := range results {
+		if x.RunID == runID {
+			r, found = x, true
+			break
+		}
+	}
+	if !found {
 		return store.ScanFailed, "the run recorded no result for this repository"
 	}
-	r := results[0]
 	switch {
 	case r.FailureCause == CauseScanTimedOut:
 		return store.ScanTimedOut, r.FailureDetail

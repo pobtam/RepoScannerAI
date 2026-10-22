@@ -48,10 +48,14 @@ ON CONFLICT (run_id, repo) DO UPDATE SET
   failure_owner = EXCLUDED.failure_owner,
   duration_sec = EXCLUDED.duration_sec`
 
+	// Most recent first by when the run STARTED. Ordering by run_id compared
+	// identifiers as text across run kinds, so every sweep run (S-...) sorted
+	// above every manual run (M-...) whatever their times.
 	qScanResults = `
-SELECT run_id, repo, outcome, tools_ok::text, tools_failed::text,
-       failure_cause, failure_detail, failure_owner, duration_sec
-FROM repo_scan_results WHERE repo = $1 ORDER BY run_id DESC LIMIT $2`
+SELECT s.run_id, s.repo, s.outcome, s.tools_ok::text, s.tools_failed::text,
+       s.failure_cause, s.failure_detail, s.failure_owner, s.duration_sec
+FROM repo_scan_results s JOIN runs r ON r.id = s.run_id
+WHERE s.repo = $1 ORDER BY r.started_at DESC, s.run_id DESC LIMIT $2`
 
 	qInsertFinding = `
 INSERT INTO findings

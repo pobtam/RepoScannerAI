@@ -241,7 +241,16 @@ func (m *Memory) ScanResults(_ context.Context, repo string, limit int) ([]RepoS
 	all := m.scanResults[repo]
 	out := make([]RepoScanResult, len(all))
 	copy(out, all)
-	sort.Slice(out, func(i, j int) bool { return out[i].RunID > out[j].RunID })
+	// Most recent first by when the run started, as the Postgres backend
+	// orders it; run_id breaks ties. (Ordering by run_id alone compared
+	// identifiers across run kinds as text.)
+	sort.Slice(out, func(i, j int) bool {
+		a, b := m.runs[out[i].RunID].StartedAt, m.runs[out[j].RunID].StartedAt
+		if !a.Equal(b) {
+			return a.After(b)
+		}
+		return out[i].RunID > out[j].RunID
+	})
 	if limit > 0 && len(out) > limit {
 		out = out[:limit]
 	}

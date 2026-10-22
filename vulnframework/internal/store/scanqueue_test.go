@@ -151,3 +151,41 @@ func firstID(l []store.ScanRequest) string {
 	}
 	return l[0].ID
 }
+
+// A repository's scan results are most recent first by when the run started,
+// across run kinds. Ordering by run_id compared identifiers as text, so a
+// sweep run (S-...) sorted above a later manual run (M-...).
+func TestScanResultsAreNewestFirstAcrossRunKinds(t *testing.T) {
+	ctx := context.Background()
+	for _, b := range backends(t) {
+		t.Run(b.name, func(t *testing.T) {
+			s := b.open(t)
+			if err := s.UpsertRepo(ctx, store.Repo{Name: "octo/api", Tier: 2}); err != nil {
+				t.Fatal(err)
+			}
+			sweep, err := s.CreateRun(ctx, store.KindSweep, "timer", "img", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			manual, err := s.CreateRun(ctx, store.KindManual, "scan request", "img", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !manual.StartedAt.After(sweep.StartedAt) {
+				t.Fatalf("test setup: manual run %v does not start after sweep run %v", manual.StartedAt, sweep.StartedAt)
+			}
+			for _, run := range []store.Run{sweep, manual} {
+				if err := s.RecordScanResult(ctx, store.RepoScanResult{RunID: run.ID, Repo: "octo/api", Outcome: "complete"}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := s.ScanResults(ctx, "octo/api", 1)
+			if err != nil || len(got) != 1 {
+				t.Fatalf("ScanResults: %v %v", got, err)
+			}
+			if got[0].RunID != manual.ID {
+				t.Errorf("most recent result is %s; want the later manual run %s", got[0].RunID, manual.ID)
+			}
+		})
+	}
+}

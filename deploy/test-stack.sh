@@ -25,7 +25,7 @@ cd "$ROOT"
 WORK="$(mktemp -d)"
 GHFAKE_PID=""
 PROJECT=vf-stacktest
-U=https://localhost:18443
+U=https://localhost:${STACK_HTTPS_PORT:-18543}
 cleanup() {
   if [ -n "$GHFAKE_PID" ]; then kill "$GHFAKE_PID" 2>/dev/null || true; wait "$GHFAKE_PID" 2>/dev/null || true; fi
   if [ -f "$WORK/test.override.yaml" ]; then "${COMPOSE[@]}" down >/dev/null 2>&1 || true; fi
@@ -44,8 +44,8 @@ SITE_ADDRESS=localhost
 TLS=internal
 LOGIN_USER=admin
 LOGIN_HASH='$HASH'
-HTTP_PORT=18480
-HTTPS_PORT=18443
+HTTP_PORT=${STACK_HTTP_PORT:-18580}
+HTTPS_PORT=${STACK_HTTPS_PORT:-18543}
 SWEEP_CONCURRENCY=2
 VULNFRAMEWORK_GITHUB_API=http://host.docker.internal:18090
 EOF
@@ -124,5 +124,32 @@ deploy/vfctl.sh repo exclude octo/payments-web -reason "stack test" -as stacktes
   fail "vfctl repo exclude"
 curl -sk -u "admin:$PW" "$U/v1/github" | grep -q '"stack test"' || fail "the exclusion is not on the GitHub page"
 ok "vfctl runs against the stack; an exclusion shows on the GitHub page"
+
+echo "Scan now, through the front door, run by the scan worker"
+VULNFRAMEWORK_GITHUB_TOKEN=stacktest-token deploy/scanworker.sh start >"$WORK/worker.log" 2>&1 ||
+  fail "starting the scan worker: $(tail -n 5 "$WORK/worker.log")"
+csrf="$(curl -sk -u "admin:$PW" "$U/v1/csrf" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
+[ "$(code -u "admin:$PW" -X POST -H 'Sec-Fetch-Site: cross-site' -H "X-CSRF-Token: $csrf" \
+  -d '{"repo":"octo/go-api"}' "$U/v1/scans")" = "403" ] || fail "a cross-site scan request was accepted"
+[ "$(code -u "admin:$PW" -X POST -H 'Sec-Fetch-Site: same-origin' \
+  -d '{"repo":"octo/go-api"}' "$U/v1/scans")" = "403" ] || fail "a scan request without a CSRF token was accepted"
+[ "$(code -X POST -H 'Sec-Fetch-Site: same-origin' -H "X-CSRF-Token: $csrf" \
+  -d '{"repo":"octo/go-api"}' "$U/v1/scans")" = "401" ] || fail "a scan request without a login was accepted"
+ok "cross-site, missing CSRF token and no login: all refused"
+status="$(code -u "admin:$PW" -X POST -H 'Sec-Fetch-Site: same-origin' -H "X-CSRF-Token: $csrf" \
+  -d '{"repo":"octo/go-api"}' "$U/v1/scans")"
+[ "$status" = "201" ] || fail "Scan now answered $status"
+for _ in $(seq 1 120); do
+  st="$(curl -sk -u "admin:$PW" "$U/v1/scans?repo=octo/go-api&limit=1" | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["status"])')"
+  case "$st" in queued|running) sleep 2 ;; *) break ;; esac
+done
+[ "$st" = "finished" ] || fail "the requested scan ended $st, want finished: $(curl -sk -u "admin:$PW" "$U/v1/scans?repo=octo/go-api&limit=1")"
+ok "Scan now: queued, run by the worker, finished with its run"
+docker logs "$PROJECT-api-1" 2>&1 | grep 'path=/v1/scans' | grep 'method=POST' | grep -q 'subject="repo=octo/go-api queued' ||
+  fail "the access log has no record of who asked for which repository"
+ok "the access log records who asked for which repository"
+deploy/scanworker.sh stop >/dev/null 2>&1
+[ -z "$(docker ps -q --filter "name=$PROJECT-scanworker")" ] || fail "the scan worker is still running after stop"
+ok "stopping the worker removes it, and the token with it"
 
 echo "STACK OK"
