@@ -8,15 +8,15 @@ read this file first and resume from "Next".
 - **Priority changed by you (2026-10-13):** build only what a bare-minimum
   NON-LOCAL demo needs, before resuming Phase 1. See "Demo track" below.
 - **Phase:** demo track complete (D1-D3). Waiting on you for the cloud steps.
-- **Waiting on you (2026-10-20):**
-  - Phase 1 rule sources: your answer on DECISIONS-NEEDED D12 points 1-5
-    (the reply that settled Phase 3 left this as an unfilled placeholder).
+- **Decided 2026-10-22:** D12 approved (points 1-5; legal review of GitLab's
+  Java/Scala ports before release). Order: "Scan now" first, then Phase 1.
 - **Decided 2026-10-20:** Phase 3 uses our own rules (option 2, D13);
   NuGuard's `sbom generate` may be added later as an inventory signal only,
   after a separate check. Evaluation image removed.
-- **Next:** Phase 1 (mixed-language scanning). The parts that do not depend
-  on D12 come first: detection (1a), then the schema and vfctl (1b). The
-  semgrep rule work waits for D12.
+- **Now:** building "start a scan from the web app" (design below), in steps
+  S1 queue store, S2 worker, S3 API and security, S4 interface, vfctl, timer,
+  docs and the end-to-end test.
+- **Then:** Phase 1 (mixed-language scanning), unblocked.
 
 ## Proposed: start a scan from the web app (2026-10-22, not built)
 

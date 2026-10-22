@@ -438,6 +438,10 @@ each be added as a tool instead of, or as well as, our own rules; and whether
 to commission the legal review of GitLab's Java and Scala ports now or before
 release.
 
+**Decided 2026-10-22:** points 1-5 approved as written, with no additional
+tools in Phase 1. The legal review of GitLab's Java and Scala ports happens
+**before release** as a product, not now.
+
 ---
 
 ## D13 — Phase 3: how AI prompt vulnerabilities are found
