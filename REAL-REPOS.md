@@ -11,6 +11,13 @@ container read-only.
 The demonstration (`./run.sh` with no options) is unaffected and still needs
 none of this.
 
+> **Real mode is for quick local trials, not ongoing history.** The history
+> you keep lives in the account-mode stack at https://localhost:18443
+> (compose project `vf-demo`, section 10). Use real mode to try a change or
+> a scanner against your clones; expect its database to be reset or thrown
+> away. Its history up to 27 October 2026 is kept as a read-only archive,
+> `~/.local/share/vulnframework/backups/archive/real-20261027-151412.dump`.
+
 ---
 
 ## 1. Prerequisites
@@ -411,7 +418,11 @@ To keep one continuous history:
 - take a backup before anything on the list above, and regularly anyway.
 
 The local deployment stack at https://localhost:18443 (compose project
-`vf-demo`) is a **separate** database in its own volume, `vf-demo_pgdata`.
+`vf-demo`) is a **separate** database in its own volume, `vf-demo_pgdata`,
+and it is the **main history**: the one to back up and keep. The real-mode
+database above is for trials. To look at the archived real-mode history,
+restore the archive into the real-mode database with `scripts/db.sh restore`;
+the database it replaces is kept, as always.
 Its settings live in `~/.config/vulnframework/demo/env`, outside the
 repository. Pass them to the deploy scripts with
 `VF_ENV_FILE=~/.config/vulnframework/demo/env COMPOSE_PROJECT_NAME=vf-demo`.

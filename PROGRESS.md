@@ -54,6 +54,10 @@ read this file first and resume from "Next".
     stop. First backups taken: real mode, 140 findings; the stack, 165.
   - **`.gitignore`:** now also catches env files and dumps left in the
     repository by mistake.
+- **Decided by you (2026-10-27):** the account-mode stack
+  (https://localhost:18443, compose project `vf-demo`) is the main history.
+  Real mode is for quick local trials; its backup is kept read-only in
+  `~/.local/share/vulnframework/backups/archive/`. Noted in REAL-REPOS.md.
 - **Queued by you (2026-10-27):** after Phase 1 is committed, design
   accounts, login and workspaces (ACCOUNTS-DESIGN.md plus open questions in
   DECISIONS-NEEDED.md), then stop for review. No code for it until then.
