@@ -58,6 +58,14 @@ read this file first and resume from "Next".
   (https://localhost:18443, compose project `vf-demo`) is the main history.
   Real mode is for quick local trials; its backup is kept read-only in
   `~/.local/share/vulnframework/backups/archive/`. Noted in REAL-REPOS.md.
+  - **New login password** for the stack, set with the new
+    `deploy/login.sh reset`: random, kept in
+    `~/.config/vulnframework/demo/login-password` (mode 600), never printed.
+  - **Stack upgraded:** images rebuilt from the current code and the stack
+    recreated. The database migrated from schema 16 to 17; 165 findings
+    before and after (database and API). A backup taken just before,
+    `demo-20261027-165847.dump`, was not needed. The images the old
+    containers ran had already been pruned, so the fallback was the backup.
 - **Queued by you (2026-10-27):** after Phase 1 is committed, design
   accounts, login and workspaces (ACCOUNTS-DESIGN.md plus open questions in
   DECISIONS-NEEDED.md), then stop for review. No code for it until then.
