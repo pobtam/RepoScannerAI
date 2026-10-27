@@ -383,19 +383,78 @@ really been rotated:
 That closes the finding as VERIFIED (`rotation_confirmed`), recorded against
 you. If the secret reappears before that, the "removed" mark is cleared.
 
-## 10. Cleaning up
+## 10. One database across sessions, and backups
+
+### Where your history lives
+
+Everything the scanner has recorded, every finding, run and decision, is in
+one Docker volume, `vulnframework-pgdata`. The database container
+(`vulnframework-pg`) is disposable: `./run.sh --real` creates it when it is
+missing and attaches the same volume, so a new session carries on the same
+history. Closing Docker Desktop, restarting the Mac, or a container
+disappearing loses nothing.
+
+The history is lost only if the **volume** goes, which happens when:
+
+- you run `docker volume rm vulnframework-pgdata` (section 11), or
+  `docker volume prune` / `docker system prune --volumes` while the
+  database is stopped (prune removes volumes no container is using);
+- Docker Desktop's **Troubleshoot → Clean / Purge data** or **Reset to
+  factory defaults** is used: both delete every volume;
+- Docker Desktop is uninstalled, or the Mac is replaced without moving it.
+
+To keep one continuous history:
+
+- always use the defaults: do not set `VULNFRAMEWORK_PG_VOLUME` or
+  `VULNFRAMEWORK_DSN` except deliberately, because a different volume or DSN
+  starts an empty database;
+- take a backup before anything on the list above, and regularly anyway.
+
+The local deployment stack at https://localhost:18443 (compose project
+`vf-demo`) is a **separate** database in its own volume, `vf-demo_pgdata`.
+Its settings live in `~/.config/vulnframework/demo/env`, outside the
+repository. Pass them to the deploy scripts with
+`VF_ENV_FILE=~/.config/vulnframework/demo/env COMPOSE_PROJECT_NAME=vf-demo`.
+
+### Backing up and restoring
+
+```sh
+scripts/db.sh backup                    # the real-mode database
+scripts/db.sh backup --target demo      # the local deployment stack
+scripts/db.sh list   [--target demo]
+scripts/db.sh restore [--target demo] FILE
+```
+
+- **Where backups go:** `~/.local/share/vulnframework/backups/`, readable
+  only by you. `VF_BACKUP_DIR` changes the folder. A backup holds your
+  findings, including where secrets were found but never their values,
+  which are not stored. Copy the folder somewhere off the Mac to survive
+  losing it.
+- **Checked when made:** a backup is checked by reading it back. A backup
+  that can't be read is deleted, and the command fails.
+- **Safe to restore:** a restore never overwrites in place.
+  - It loads the backup into a new database, checks it, and only then swaps
+    the two.
+  - The database it replaced is kept, renamed `vulnframework_before_<time>`,
+    and the command prints how to undo the restore or free that space.
+  - A backup that fails to load changes nothing.
+  - It refuses while the scan worker is running; stop the app first.
+- **Database running or not:** backup works either way. If it starts the
+  database, it stops it again afterwards.
+
+## 11. Cleaning up
 
 | To remove | Command | Notes |
 |---|---|---|
 | Running services | Ctrl-C in the `run.sh` terminal | stops the interface, the API, and the database if `run.sh` started it |
 | The database container, if `vfctl.sh` started it | `docker stop vulnframework-pg` | the data stays in the volume |
-| **All stored findings and history** | `docker stop vulnframework-pg; docker volume rm vulnframework-pgdata` | **cannot be undone** |
+| **All stored findings and history** | `docker stop vulnframework-pg; docker volume rm vulnframework-pgdata` | **cannot be undone** without a backup: run `scripts/db.sh backup` first (section 10) |
 | The scanner cache (~2 GB) | `docker volume rm vulnframework-scanhome` | the next sweep downloads everything again |
 | Saved sweep records and the container build of the orchestrator | `rm -rf vulnframework/bin/real-runs vulnframework/bin/orchestrator-linux-*` | |
 | The scanner image | `docker image rm vulnframework-scanner:v1` | rebuilding takes a while |
 | Local auth | stop `run.sh`, then the `unset` from section 7 | it lives only in the interface process `run.sh` starts |
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 | Message | What to do |
 |---|---|

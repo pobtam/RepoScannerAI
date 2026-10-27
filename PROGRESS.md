@@ -39,6 +39,24 @@ read this file first and resume from "Next".
     page, and included in the CSV export. Verified by unit tests on both
     backends, the API and UI tests, and `scripts/smoke.sh --real`, where 198
     of 198 real findings carried the scanner's words.
+- **Done 2026-10-27, at your request:**
+  - **Settings file:** the local deployment stack's settings file (it held
+    the account-mode settings) was lost when the temporary folder was
+    cleared. It was rebuilt from the stack's own containers at
+    `~/.config/vulnframework/demo/env`, outside the repository, mode 600;
+    compose reads it as identical to what the containers hold. The login
+    password's plain text was never stored, so it is lost: reset it as below.
+  - **Docs:** REAL-REPOS.md section 10 explains keeping one database across
+    sessions.
+  - **Backups:** `scripts/db.sh backup|list|restore` (both the real-mode
+    database and the stack), tested on a throwaway database: backup,
+    restore, undo, corrupt-file refusal, worker-running refusal, start and
+    stop. First backups taken: real mode, 140 findings; the stack, 165.
+  - **`.gitignore`:** now also catches env files and dumps left in the
+    repository by mistake.
+- **Queued by you (2026-10-27):** after Phase 1 is committed, design
+  accounts, login and workspaces (ACCOUNTS-DESIGN.md plus open questions in
+  DECISIONS-NEEDED.md), then stop for review. No code for it until then.
 - **Next:** Phase 1 (mixed-language scanning), unblocked (D12 decided).
 
 ## Start a scan from the web app (designed and built 2026-10-22)
@@ -491,6 +509,16 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
 
 ## Decisions I made
 
+- **Settings and backups live outside the repository:** settings in
+  `~/.config/vulnframework/`, backups in `~/.local/share/vulnframework/backups/`,
+  both readable only by you. The repository's `.gitignore` gains patterns as
+  a second line of defence only.
+- **A restore swaps databases by renaming and never overwrites.** The
+  replaced database is kept until you drop it. This costs disk space; it
+  buys an undo for the one command that could otherwise lose history.
+- **The stack's login was not reset on my own initiative.** Resetting means
+  recreating its web container, and the stack had been stopped on purpose;
+  the command is in the handoff.
 - **Finding descriptions are the scanner's words, never edited.** Our
   fallback is labelled "derived", so it is never passed off as a tool's text.
   A description that matches a credential pattern is dropped whole, not

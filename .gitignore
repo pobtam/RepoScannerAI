@@ -22,9 +22,17 @@ dist/
 /vulnframework/fixworker
 /vulnframework/scanworker
 
-# The stack's secrets
+# The stack's secrets. Local settings belong in ~/.config/vulnframework/,
+# outside the repository; these patterns catch a copy left here by mistake.
 deploy/.env
 deploy/runs/
+.env
+.env.*
+*.env
+env.real
+!deploy/env.example
+# Database backups (scripts/db.sh writes them outside the repository)
+*.dump
 
 # Terraform state, plans, variables and provider caches
 deploy/terraform/**/.terraform/
