@@ -427,6 +427,20 @@ Its settings live in `~/.config/vulnframework/demo/env`, outside the
 repository. Pass them to the deploy scripts with
 `VF_ENV_FILE=~/.config/vulnframework/demo/env COMPOSE_PROJECT_NAME=vf-demo`.
 
+Its login (name `admin`) has a random password kept beside the settings in
+`~/.config/vulnframework/demo/login-password`, readable only by you; the
+settings file holds only its hash. Read or reset it with:
+
+```sh
+deploy/login.sh copy     # to the clipboard, never printed
+deploy/login.sh show     # printed, only on a terminal
+deploy/login.sh reset    # a new one; then recreate the stack:
+docker compose --env-file ~/.config/vulnframework/demo/env -p vf-demo -f deploy/compose.yaml up -d
+```
+
+Neither the password nor its file belongs in the repository, a chat or a
+ticket. Keep a copy in your password manager if you want one.
+
 ### Backing up and restoring
 
 ```sh
