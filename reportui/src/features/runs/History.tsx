@@ -156,6 +156,19 @@ export function RunHistory() {
   );
 }
 
+// The chart's colours are the design system's tokens (styles.css), so it
+// follows the theme, dark mode included, like everything else.
+const C = {
+  line: 'var(--accent)',
+  grid: 'var(--border)',
+  axis: 'var(--border-strong)',
+  tick: 'var(--text-3)',
+  text: 'var(--text)',
+  surface: 'var(--surface)',
+  scanner: 'var(--warn)',
+  partial: 'var(--urgent)',
+};
+
 function TrendChart({
   data,
   onPick,
@@ -177,10 +190,19 @@ function TrendChart({
             const p = e?.activePayload?.[0]?.payload as { run_id?: string } | undefined;
             if (p?.run_id) onPick(p.run_id);
           }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="label" />
-            <YAxis allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={C.grid} />
+            <XAxis dataKey="label" stroke={C.axis} tick={{ fill: C.tick, fontSize: 12 }} />
+            <YAxis allowDecimals={false} stroke={C.axis} tick={{ fill: C.tick, fontSize: 12 }} />
             <Tooltip
+              cursor={{ stroke: C.axis }}
+              contentStyle={{
+                background: C.surface,
+                border: `1px solid ${C.grid}`,
+                borderRadius: 'var(--radius-sm)',
+                color: C.text,
+              }}
+              labelStyle={{ color: C.text }}
+              itemStyle={{ color: C.text }}
               formatter={(value: number) => [value, data.metric]}
               labelFormatter={(label: string) => {
                 const p = points.find((x) => x.label === label);
@@ -192,9 +214,18 @@ function TrendChart({
                 return notes.join(' · ');
               }}
             />
-            <Line type="monotone" dataKey="value" stroke="#2b6cb0" strokeWidth={2} dot />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={C.line}
+              strokeWidth={2}
+              dot={{ r: 3, fill: C.surface, stroke: C.line, strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: C.line, stroke: C.surface }}
+            />
             {/* The annotations that stop a reader attributing a step change to
-                the wrong cause. */}
+                the wrong cause. Told apart by shape as well as colour
+                (VM-UI-F-901): a ring for a scanner change, a solid dot for a
+                partial run. */}
             {points
               .filter((p) => p.scanner_changed)
               .map((p) => (
@@ -203,8 +234,9 @@ function TrendChart({
                   x={p.label}
                   y={p.value}
                   r={7}
-                  fill="#b7791f"
-                  stroke="#744210"
+                  fill="none"
+                  stroke={C.scanner}
+                  strokeWidth={2}
                 />
               ))}
             {points
@@ -215,8 +247,8 @@ function TrendChart({
                   x={p.label}
                   y={p.value}
                   r={4}
-                  fill="#c53030"
-                  stroke="#742a2a"
+                  fill={C.partial}
+                  stroke={C.surface}
                 />
               ))}
           </LineChart>

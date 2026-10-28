@@ -66,6 +66,12 @@ read this file first and resume from "Next".
     before and after (database and API). A backup taken just before,
     `demo-20261027-165847.dump`, was not needed. The images the old
     containers ran had already been pruned, so the fallback was the backup.
+  - **Trend chart:** "Scan all included repositories" (and
+    `vfctl scan enqueue -all`) now runs as a sweep, so it is a point on the
+    trend; a single repository's scan stays a manual run, off it (a5e62f6).
+    The chart is drawn in the design system's colours and follows dark
+    mode; scanner changes are a ring and partial runs a solid dot, so they
+    differ by shape as well as colour. Tests on both backends, UI tests.
 - **Queued by you (2026-10-27):** after Phase 1 is committed, design
   accounts, login and workspaces (ACCOUNTS-DESIGN.md plus open questions in
   DECISIONS-NEEDED.md), then stop for review. No code for it until then.

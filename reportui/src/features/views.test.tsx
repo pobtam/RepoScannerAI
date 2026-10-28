@@ -320,6 +320,34 @@ describe('the run history and trends (U4)', () => {
     expect(legend).toContain(trend.kind);
   });
 
+  // The chart follows the theme: every colour it draws is a design-system
+  // token, never a fixed value that ignores dark mode.
+  it('draws the trend in the design system colours', async () => {
+    // The chart draws only once its container reports a size, which the
+    // global stub never does; this one reports a plausible one.
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(private cb: ResizeObserverCallback) {}
+        observe(el: Element) {
+          this.cb([{ target: el, contentRect: { width: 800, height: 260 } } as unknown as ResizeObserverEntry], this as unknown as ResizeObserver);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    stubApi([['/metrics/trends', trend], ['/runs', runs]]);
+    renderApp(<RunHistory />);
+    await waitFor(() => expect(document.querySelector('.chart .recharts-line-curve')).toBeTruthy());
+    const painted = [...document.querySelectorAll('.chart svg *')].flatMap((el) =>
+      ['fill', 'stroke'].map((a) => el.getAttribute(a)).filter((v): v is string => v != null),
+    );
+    expect(painted.length).toBeGreaterThan(0);
+    const fixed = painted.filter((v) => v !== 'none' && !v.startsWith('var(--'));
+    expect(fixed).toEqual([]);
+    expect(document.querySelector('.chart .recharts-line-curve')!.getAttribute('stroke')).toBe('var(--accent)');
+  });
+
   it('marks a partial run in the run list', async () => {
     stubApi([['/metrics/trends', trend], ['/runs', runs]]);
     renderApp(<RunHistory />);
