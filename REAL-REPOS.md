@@ -133,7 +133,10 @@ this mode.
   now**. Pull the latest changes into its clone first if you want them
   scanned.
 - **Everything:** on Repositories, press **Scan all included repositories**.
-  The whole batch is one run.
+  The whole batch is one run of kind `sweep`, so it is a point on the trend
+  chart under Runs and counts towards coverage. A single repository's scan
+  is a `manual` run and is left off the trend, because one repository's
+  count beside the fleet's would look like the fleet shrinking.
 - **From the terminal:**
   ```sh
   ./vfctl.sh scan request owner/name

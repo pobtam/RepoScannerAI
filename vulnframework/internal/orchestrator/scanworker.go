@@ -158,12 +158,14 @@ func (w *ScanWorker) RunOnce(ctx context.Context) (did bool, err error) {
 		return true, nil
 	}
 
+	// A batch is "scan all included repositories", from the interface, vfctl
+	// or the daily timer: a fleet run, so a sweep, and on the trend. A single
+	// repository's request is a manual run and stays off it, because one
+	// repository's count drawn beside the fleet's looks like the fleet
+	// shrinking (VM-UI-F-310).
 	kind, trigger := store.KindManual, "scan request "+claimed[0].ID
 	if claimed[0].BatchID != "" {
-		trigger = "scan batch " + claimed[0].BatchID
-	}
-	if claimed[0].Source == store.SourceTimer {
-		kind = store.KindSweep
+		kind, trigger = store.KindSweep, "scan batch "+claimed[0].BatchID
 	}
 
 	if w.Credits > 0 {

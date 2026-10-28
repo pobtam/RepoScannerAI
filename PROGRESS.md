@@ -124,7 +124,10 @@ UNIQUE (repo) WHERE status IN ('queued','running')   -- duplicates merge
   repository, with the account-mode `DownloadDispatcher` (or the clones
   dispatcher in local real mode), then the same post-sweep pass. Results
   are recorded exactly as a sweep records them. One request is one run of
-  kind `manual`; a timer batch is one run of kind `sweep`.
+  kind `manual`; a batch ("Scan all included repositories" from the
+  interface or vfctl, or the timer's) is one run of kind `sweep`. (Until
+  2026-10-27 only the timer's batch was a sweep, so the trend had no points
+  locally.)
 - **Time limit:** `-scan-timeout` (default 15 minutes) per repository. A
   timeout records the scan as failed with the coverage-gap cause
   `scan_timed_out`, owner platform, so coverage counts it as a gap, never
@@ -588,6 +591,15 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
 - **The smoke test's throwaway database is deleted after each run.** It is
   created by the script, in a temp folder, never a named Docker volume; the
   "never delete databases" rule is about yours.
+- **Every "scan all" batch is a sweep, not only the web's** (2026-10-27):
+  `vfctl scan enqueue -all` asks for the same thing as the button, so the
+  rule is "a batch is a sweep" rather than a list of sources. Side effect,
+  intended: the Coverage page, which reads sweep runs, now counts them too.
+- **A batch can cover fewer repositories than the fleet** and its point is
+  not marked partial: a repository already queued on its own when Scan all
+  is pressed merges into that request and runs separately. The timer's
+  sweeps already behaved this way; the Coverage page shows the true
+  coverage. Left as is.
 
 ## Open problems
 

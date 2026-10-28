@@ -210,6 +210,36 @@ func TestInterruptedScansAreRetryableNeverLostOrDone(t *testing.T) {
 	})
 }
 
+// "Scan all included repositories" from the interface or vfctl is a fleet run
+// like the timer's: one sweep run, so it is drawn on the trend.
+func TestAScanAllBatchIsOneSweepRun(t *testing.T) {
+	for _, source := range []store.ScanSource{store.SourceWeb, store.SourceVfctl} {
+		t.Run(string(source), func(t *testing.T) {
+			run(t, func(t *testing.T, s store.Store) {
+				ctx := context.Background()
+				fleet(t, s, "org/a", "org/b")
+				queued(t, s, "sr_a", "org/a", "batch-all", source, at)
+				queued(t, s, "sr_b", "org/b", "batch-all", source, at.Add(time.Millisecond))
+				w := worker(s, funcDispatcher(cleanScan), "w1")
+				if _, err := w.RunOnce(ctx); err != nil {
+					t.Fatal(err)
+				}
+				a, b := get(t, s, "sr_a"), get(t, s, "sr_b")
+				if a.Status != store.ScanFinished || b.Status != store.ScanFinished || a.RunID != b.RunID {
+					t.Fatalf("the batch did not run as one run: %+v / %+v", a, b)
+				}
+				if !strings.HasPrefix(a.RunID, store.KindSweep.Prefix()) {
+					t.Errorf("a %s batch ran as %s; want a sweep run", source, a.RunID)
+				}
+				runs, err := s.Runs(ctx, store.RunQuery{Kind: store.KindSweep, Limit: 5})
+				if err != nil || len(runs) != 1 || runs[0].ID != a.RunID || runs[0].TriggerDetail != "scan batch batch-all" {
+					t.Errorf("sweep runs: %+v, %v", runs, err)
+				}
+			})
+		})
+	}
+}
+
 // The daily timer uses the same queue: its batch is one sweep run over every
 // repository in it.
 func TestATimerBatchIsOneSweepRun(t *testing.T) {
