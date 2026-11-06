@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -222,6 +223,13 @@ func (m *Memory) RecordScanResult(_ context.Context, res RepoScanResult) error {
 	defer m.mu.Unlock()
 	if _, ok := m.runs[res.RunID]; !ok {
 		return fmt.Errorf("%w: run %q", ErrNotFound, res.RunID)
+	}
+	// As Postgres stores it: an absent inventory is NULL, and the stored
+	// document is a copy, not the caller's buffer.
+	if len(res.AIInventory) == 0 || string(res.AIInventory) == "null" {
+		res.AIInventory = nil
+	} else {
+		res.AIInventory = append(json.RawMessage(nil), res.AIInventory...)
 	}
 	// Replace any prior result for this (run, repo) so replay is idempotent.
 	existing := m.scanResults[res.Repo]

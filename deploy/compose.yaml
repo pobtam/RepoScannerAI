@@ -30,7 +30,7 @@ services:
       retries: 30
 
   migrate:
-    image: vulnframework-api:v1
+    image: vulnframework-api:${VF_IMAGE_TAG:-v1}
     entrypoint: ["/usr/local/bin/orchestrator"]
     command: ["-dsn", "postgres://vulnframework:${POSTGRES_PASSWORD}@db:5432/vulnframework?sslmode=disable", "-migrate"]
     depends_on:
@@ -38,7 +38,7 @@ services:
     restart: "no"
 
   api:
-    image: vulnframework-api:v1
+    image: vulnframework-api:${VF_IMAGE_TAG:-v1}
     restart: unless-stopped
     command:
       - "-addr=0.0.0.0:8080"
@@ -51,7 +51,7 @@ services:
     # No ports: reachable only through web.
 
   web:
-    image: vulnframework-web:v1
+    image: vulnframework-web:${VF_IMAGE_TAG:-v1}
     restart: unless-stopped
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in deploy/.env}
@@ -71,7 +71,7 @@ services:
   # (a timer runs that daily on the VM). The token is passed in from the
   # caller's environment for this run only and is never written here.
   sweep:
-    image: vulnframework-sweep:v1
+    image: vulnframework-sweep:${VF_IMAGE_TAG:-v1}
     profiles: ["jobs"]
     environment:
       VULNFRAMEWORK_GITHUB_TOKEN: ${VULNFRAMEWORK_GITHUB_TOKEN:-}
@@ -101,11 +101,14 @@ services:
   # on this host can read it); stopping it removes it. Started and stopped
   # with deploy/scanworker.sh, behind a profile so `up` never needs the token.
   scanworker:
-    image: vulnframework-sweep:v1
+    image: vulnframework-sweep:${VF_IMAGE_TAG:-v1}
     profiles: ["worker"]
     restart: unless-stopped
     environment:
       VULNFRAMEWORK_GITHUB_TOKEN: ${VULNFRAMEWORK_GITHUB_TOKEN:-}
+      # NuGuard's API key, from the caller's environment like the token, and
+      # exposed the same way (docker inspect). Empty when NuGuard is off.
+      VULNFRAMEWORK_NUGUARD_API_KEY: ${VULNFRAMEWORK_NUGUARD_API_KEY:-}
     command:
       - "-worker"
       - "-dsn=postgres://vulnframework:${POSTGRES_PASSWORD}@db:5432/vulnframework?sslmode=disable"
@@ -113,6 +116,11 @@ services:
       - "-github-api=${VULNFRAMEWORK_GITHUB_API:-}"
       - "-download-root=/home/scanner/repos"
       - "-scan-timeout=${SCAN_TIMEOUT:-15m}"
+      # NuGuard is off unless NUGUARD_URL is set (deploy/.env).
+      - "-nuguard-url=${NUGUARD_URL:-}"
+      - "-nuguard-tools=${NUGUARD_TOOLS:-}"
+      - "-nuguard-include-posture=${NUGUARD_INCLUDE_POSTURE:-false}"
+      - "-nuguard-timeout=${NUGUARD_TIMEOUT:-10m}"
       - "-tools=/opt/vf/config/tools.lock"
       - "-calibration=/opt/vf/config/calibration.yaml"
       - "-policy=/opt/vf/config/policy.yaml"
@@ -126,8 +134,42 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # NuGuard, the opt-in remote AI code-rule and inventory scanner
+  # (DECISIONS-NEEDED D13 amendment). Off unless NUGUARD_URL is set, and
+  # started with the scan worker by deploy/scanworker.sh.
+  #
+  # A sidecar in the scan worker's network namespace, not a service on the
+  # compose network: it binds 127.0.0.1 there (deploy/nuguard.yaml), so it is
+  # reachable from the worker alone, publishes nothing, and the API key and
+  # the GitHub token in each request cross no network. That is why it needs
+  # neither TLS nor trust_proxy: NuGuard accepts a loopback bind without
+  # either, and the worker's client accepts plain http only to loopback.
+  # Its egress is the worker's: it clones from github.com and, with the
+  # default tools and network: false, reaches nothing else.
+  #
+  # The image is built from the NuGuard repository and must pass its own
+  # readiness check before this is enabled (DEPLOY.md, "NuGuard").
+  nuguard:
+    image: ${NUGUARD_IMAGE:-nuguard-service:0.9.15}
+    profiles: ["nuguard"]
+    network_mode: "service:scanworker"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 4g
+    environment:
+      NUGUARD_SERVICE_KEY_VF_SHA256: ${NUGUARD_API_KEY_SHA256:-}
+      NUGUARD_IMAGE_DIGEST: ${NUGUARD_IMAGE_DIGEST:-}
+    volumes:
+      - nuguard_data:/var/lib/nuguard
+      - ./nuguard.yaml:/etc/nuguard/nuguard.yaml:ro
+    depends_on:
+      - scanworker
+
 volumes:
   pgdata:
   caddy_data:
   caddy_config:
   scanhome:
+  nuguard_data:

@@ -131,7 +131,7 @@ export function FindingDetail({ fingerprint }: { fingerprint: string }) {
                   {f.location.function ? ` · ${f.location.function}` : ''}
                 </span>
               ) : (
-                <Absent why="no pinned tool reports the enclosing symbol, so findings are located to a FILE (OQ-AUDIT-02). This is a known limitation, not a missing value" />
+                <Absent why="the scanner that found this does not report the enclosing symbol (of the pinned tools, only NuGuard does, when configured); findings are located to a FILE (OQ-AUDIT-02). This is a known limitation, not a missing value" />
               )}
             </Field>
             <Field label="Versions">

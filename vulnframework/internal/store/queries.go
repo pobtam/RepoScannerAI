@@ -37,8 +37,9 @@ FROM runs WHERE id = $1`
 
 	qUpsertScanResult = `
 INSERT INTO repo_scan_results
-  (run_id, repo, outcome, tools_ok, tools_failed, failure_cause, failure_detail, failure_owner, duration_sec)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  (run_id, repo, outcome, tools_ok, tools_failed, failure_cause, failure_detail, failure_owner, duration_sec,
+   commit_sha, ai_inventory)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT (run_id, repo) DO UPDATE SET
   outcome = EXCLUDED.outcome,
   tools_ok = EXCLUDED.tools_ok,
@@ -46,14 +47,17 @@ ON CONFLICT (run_id, repo) DO UPDATE SET
   failure_cause = EXCLUDED.failure_cause,
   failure_detail = EXCLUDED.failure_detail,
   failure_owner = EXCLUDED.failure_owner,
-  duration_sec = EXCLUDED.duration_sec`
+  duration_sec = EXCLUDED.duration_sec,
+  commit_sha = EXCLUDED.commit_sha,
+  ai_inventory = EXCLUDED.ai_inventory`
 
 	// Most recent first by when the run STARTED. Ordering by run_id compared
 	// identifiers as text across run kinds, so every sweep run (S-...) sorted
 	// above every manual run (M-...) whatever their times.
 	qScanResults = `
 SELECT s.run_id, s.repo, s.outcome, s.tools_ok::text, s.tools_failed::text,
-       s.failure_cause, s.failure_detail, s.failure_owner, s.duration_sec
+       s.failure_cause, s.failure_detail, s.failure_owner, s.duration_sec,
+       s.commit_sha, s.ai_inventory::text
 FROM repo_scan_results s JOIN runs r ON r.id = s.run_id
 WHERE s.repo = $1 ORDER BY r.started_at DESC, s.run_id DESC LIMIT $2`
 

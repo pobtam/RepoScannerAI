@@ -123,8 +123,8 @@ func TestEveryResponseFieldHasAProducer(t *testing.T) {
 					Why:      "this census runs as a security owner, who sees every record in full",
 				},
 				"Location.Function": {
-					Producer: "nothing — no pinned tool reports the enclosing symbol",
-					Why:      "OQ-AUDIT-02: an honest writer gap, recorded rather than guessed",
+					Producer: "internal/scan/adapters.NuGuard, opt-in and absent from this corpus; no default tool reports the enclosing symbol",
+					Why:      "OQ-AUDIT-02: displayed where a tool names it, never guessed, and never part of identity",
 				},
 				"Location.Package": {
 					Producer: "nothing — no pinned tool reports it",
@@ -210,6 +210,12 @@ func TestEveryResponseFieldHasAProducer(t *testing.T) {
 				"SLABreached": {
 					Producer: "internal/score.SLA via orchestrator.TriageAndRoute",
 					Why:      "nothing in this two-day-old pipeline has passed its window yet",
+				},
+				"LastCommitSHA": {
+					Producer: "internal/orchestrator.DownloadDispatcher (the resolved head) and " +
+						"LocalDispatcher (scan.GitHead), recorded by Orchestrator.record",
+					Why: "this pipeline dispatches through the fake, which has no checkout and so " +
+						"no commit; both real producers are tested in internal/orchestrator",
 				},
 			},
 		},

@@ -503,10 +503,14 @@ type RawFinding struct {
 func ResidualWarning(c Category) string {
 	switch c {
 	case CategoryCode:
-		return "This finding is located to a FILE, not to a function: no scanner in the pinned tool " +
-			"set reports the enclosing symbol. Two occurrences of the same rule in the same file are " +
-			"therefore one finding, so this verification may have confirmed the reported occurrence " +
-			"while another in the same file remains. Check the file, not just the fix (OQ-AUDIT-02)."
+		// Still true where a scanner names the enclosing function (NuGuard,
+		// when configured): identity is file-level by decision, so that one
+		// defect seen by two tools stays one finding (OQ-AUDIT-02, VM-F-106).
+		return "This finding is located to a FILE, not to a function: its identity is the rule and " +
+			"the file, even where a scanner also names the enclosing function. Two occurrences of " +
+			"the same rule in the same file are therefore one finding, so this verification may " +
+			"have confirmed the reported occurrence while another in the same file remains. Check " +
+			"the file, not just the fix (OQ-AUDIT-02)."
 	case CategorySecret:
 		return "This finding is located to a FILE. Two credentials in the same file are one finding, " +
 			"so this verification may have confirmed one rotation while another credential in the " +

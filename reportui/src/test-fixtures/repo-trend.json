@@ -1,0 +1,61 @@
+{
+  "metric": "observed_findings",
+  "kind": "sweep",
+  "points": [
+    {
+      "run_id": "S-000001",
+      "at": "2026-09-30T02:00:00Z",
+      "value": 3,
+      "partial": false,
+      "scanner_changed": false,
+      "live": false,
+      "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809"
+    },
+    {
+      "run_id": "S-000002",
+      "at": "2026-10-07T02:00:00Z",
+      "value": 3,
+      "partial": false,
+      "scanner_changed": false,
+      "live": false,
+      "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809"
+    },
+    {
+      "run_id": "S-000003",
+      "at": "2026-10-14T02:00:00Z",
+      "value": 3,
+      "partial": false,
+      "scanner_changed": false,
+      "live": false,
+      "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809"
+    },
+    {
+      "run_id": "S-000004",
+      "at": "2026-10-21T02:00:00Z",
+      "value": 3,
+      "partial": false,
+      "scanner_changed": false,
+      "live": false,
+      "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809"
+    },
+    {
+      "run_id": "S-000005",
+      "at": "2026-10-28T02:00:00Z",
+      "value": 3,
+      "partial": false,
+      "scanner_changed": true,
+      "live": false,
+      "scanner_image": "demo-scanner@sha256:2f8c1b9e4a7d6c5b3e2a1f0d9c8b7a6e5d4c3b2a1908f7e6d5c4b3a291807f6e"
+    },
+    {
+      "run_id": "S-000006",
+      "at": "2026-11-04T02:00:00Z",
+      "value": 0,
+      "partial": true,
+      "scanner_changed": false,
+      "live": false,
+      "scanner_image": "demo-scanner@sha256:2f8c1b9e4a7d6c5b3e2a1f0d9c8b7a6e5d4c3b2a1908f7e6d5c4b3a291807f6e"
+    }
+  ],
+  "note": "counts are per run of ONE kind; a run that did not cover the repository is marked partial, because a dip caused by a failed scan looks identical to one caused by a fix"
+}

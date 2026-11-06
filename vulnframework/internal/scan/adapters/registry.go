@@ -28,3 +28,29 @@ func All(r runner.CommandRunner, lock scan.ToolsLock) []scan.Adapter {
 func NewRegistry(r runner.CommandRunner, lock scan.ToolsLock) (*scan.Registry, error) {
 	return scan.NewRegistry(All(r, lock)...)
 }
+
+// Optional holds the opt-in adapters a deployment configured. A nil field is
+// an adapter that is off: not registered, not on the run's tool list, and
+// nothing about any scan changes (VM-NF-502).
+type Optional struct {
+	// NuGuard is the remote AI code-rule and inventory adapter, configured
+	// with -nuguard-url.
+	NuGuard *NuGuard
+}
+
+// AllWith builds every adapter All does, plus the configured opt-in ones.
+// The registry orders adapters by name, so a scan's tool set stays
+// deterministic whatever is added.
+func AllWith(r runner.CommandRunner, lock scan.ToolsLock, opt Optional) []scan.Adapter {
+	out := All(r, lock)
+	if opt.NuGuard != nil {
+		out = append(out, opt.NuGuard)
+	}
+	return out
+}
+
+// NewRegistryWith builds a registry of every adapter plus the configured
+// opt-in ones.
+func NewRegistryWith(r runner.CommandRunner, lock scan.ToolsLock, opt Optional) (*scan.Registry, error) {
+	return scan.NewRegistry(AllWith(r, lock, opt)...)
+}

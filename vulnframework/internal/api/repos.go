@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -81,6 +82,7 @@ func (s *Server) repoSummary(ctx context.Context, name string) (RepoSummary, err
 	if len(results) > 0 {
 		out.LastScannedRun = results[0].RunID
 		out.LastOutcome = string(results[0].Outcome)
+		out.LastCommitSHA = results[0].CommitSHA
 		if run, err := s.cfg.Store.GetRun(ctx, results[0].RunID); err == nil {
 			at := run.StartedAt
 			out.LastScannedAt = &at
@@ -157,7 +159,51 @@ func (s *Server) handleRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out.Coverage = emptyIfNil(hist)
+
+	if out.AIComponents, err = s.aiComponents(ctx, name); err != nil {
+		s.failStore(w, r, err)
+		return
+	}
 	s.write(w, r, http.StatusOK, out)
+}
+
+// aiComponents reads the AI inventory the latest scan recorded.
+func (s *Server) aiComponents(ctx context.Context, name string) (AIComponents, error) {
+	results, err := s.cfg.Store.ScanResults(ctx, name, 1)
+	if err != nil {
+		return AIComponents{}, err
+	}
+	if len(results) == 0 {
+		return AIComponents{Note: "not measured: this repository has not been scanned"}, nil
+	}
+	latest := results[0]
+	out := AIComponents{RunID: latest.RunID}
+	if len(latest.AIInventory) == 0 {
+		out.Note = "not measured in the latest scan: the AI inventory comes from NuGuard, which is " +
+			"opt-in and was not configured or did not run. Not measured is not none"
+		return out, nil
+	}
+	var inv struct {
+		Source              string         `json:"source"`
+		RulepackSHA256      string         `json:"rulepack_sha256"`
+		ImageDigest         string         `json:"image_digest"`
+		NodeCounts          map[string]int `json:"node_counts"`
+		EdgeCount           int            `json:"edge_count"`
+		Frameworks          []string       `json:"frameworks"`
+		ModelProviders      []string       `json:"model_providers"`
+		PostureObservations map[string]int `json:"posture_observations"`
+	}
+	if err := json.Unmarshal(latest.AIInventory, &inv); err != nil {
+		out.Note = "not measured: the recorded inventory could not be read"
+		return out, nil
+	}
+	out.Measured = true
+	out.Note = "an inventory signal, not findings: what " + inv.Source + " found of this repository's AI use"
+	out.Source, out.RulepackSHA256, out.ImageDigest = inv.Source, inv.RulepackSHA256, inv.ImageDigest
+	out.NodeCounts, out.EdgeCount = emptyMapIfNil(inv.NodeCounts), &inv.EdgeCount
+	out.Frameworks, out.ModelProviders = emptyIfNil(inv.Frameworks), emptyIfNil(inv.ModelProviders)
+	out.PostureObservations = inv.PostureObservations
+	return out, nil
 }
 
 // consumersOf lists the repositories depending on a module this one owns.

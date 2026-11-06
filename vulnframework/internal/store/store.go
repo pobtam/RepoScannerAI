@@ -93,6 +93,14 @@ type RepoScanResult struct {
 	FailureDetail string      `json:"failure_detail,omitempty"`
 	FailureOwner  string      `json:"failure_owner,omitempty"`
 	DurationSec   int         `json:"duration_sec,omitempty"`
+
+	// CommitSHA is the commit the scanned tree was taken at; empty where
+	// nothing recorded it.
+	CommitSHA string `json:"commit_sha,omitempty"`
+	// AIInventory is the AI component inventory as the adapter reported it
+	// (scan.AIInventory, kept as a document so the store does not depend on
+	// the scanner). Nil is "not measured", never "none".
+	AIInventory json.RawMessage `json:"ai_inventory,omitempty"`
 }
 
 // Report is an issued report record (VM-ADR-15).

@@ -490,6 +490,9 @@ type RepoSummary struct {
 	LastScannedRun string         `json:"last_scanned_run,omitempty"`
 	LastScannedAt  *time.Time     `json:"last_scanned_at,omitempty"`
 	LastOutcome    string         `json:"last_outcome,omitempty"`
+	// LastCommitSHA is the commit the latest scan read, where it was
+	// recorded.
+	LastCommitSHA string `json:"last_commit_sha,omitempty"`
 	// NoTestSuiteNote states what the absence constrains, because it decides
 	// what the framework may do there (VM-UI-F-607).
 	NoTestSuiteNote string `json:"no_test_suite_note,omitempty"`
@@ -510,6 +513,35 @@ type RepoDetail struct {
 	// repository owns (VM-UI-F-606).
 	Consumers []Consumer            `json:"consumers,omitempty"`
 	Coverage  []RepoCoverageHistory `json:"coverage,omitempty"`
+
+	// AIComponents is what the latest scan found of the repository's AI
+	// use. Always present, because "not measured" must be said, not implied
+	// by absence or rendered as zero (OQ-AUDIT-01's discipline).
+	AIComponents AIComponents `json:"ai_components"`
+}
+
+// AIComponents is an AI component inventory: an inventory signal, never
+// findings. Nothing here is a defect, and nothing here is scored or routed.
+type AIComponents struct {
+	// Measured is false where the latest scan reported no inventory: the
+	// adapter that produces one (NuGuard) is not configured, or did not run.
+	Measured bool   `json:"measured"`
+	Note     string `json:"note"`
+	RunID    string `json:"run_id,omitempty"`
+
+	// Source names the producing tool and version; RulepackSHA256 and
+	// ImageDigest pin it further.
+	Source         string         `json:"source,omitempty"`
+	RulepackSHA256 string         `json:"rulepack_sha256,omitempty"`
+	ImageDigest    string         `json:"image_digest,omitempty"`
+	NodeCounts     map[string]int `json:"node_counts,omitempty"`
+	EdgeCount      *int           `json:"edge_count,omitempty"`
+	Frameworks     []string       `json:"frameworks,omitempty"`
+	ModelProviders []string       `json:"model_providers,omitempty"`
+	// PostureObservations counts posture observations by rule, where they
+	// were requested. Not findings: they describe the components' shape and
+	// do not tell safe code from vulnerable code.
+	PostureObservations map[string]int `json:"posture_observations,omitempty"`
 }
 
 // Dependency is one module in a repository's manifest.

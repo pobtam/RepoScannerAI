@@ -13,12 +13,15 @@ import (
 	"github.com/wanaware/vulnframework/internal/firstparty"
 	"github.com/wanaware/vulnframework/internal/gh"
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguard"
+	"github.com/wanaware/vulnframework/internal/nuguard/nuguardfake"
 	"github.com/wanaware/vulnframework/internal/orchestrator"
 	"github.com/wanaware/vulnframework/internal/policy"
 	"github.com/wanaware/vulnframework/internal/remediate"
 	"github.com/wanaware/vulnframework/internal/remediate/guard"
 	"github.com/wanaware/vulnframework/internal/report"
 	"github.com/wanaware/vulnframework/internal/scan"
+	"github.com/wanaware/vulnframework/internal/scan/adapters"
 	"github.com/wanaware/vulnframework/internal/score"
 	"github.com/wanaware/vulnframework/internal/store"
 	"github.com/wanaware/vulnframework/internal/tracker"
@@ -125,7 +128,10 @@ func exerciseEveryStoreProducer(t *testing.T) storeRun {
 		// DurationSec have exactly one producer — internal/scan.Worker, when a
 		// tool dies under it — and a fake dispatcher that simply returned the
 		// fields would prove nothing about whether that code still writes them.
-		partial.Name: {Worker: partialScanWorker(t), Dir: writeGoModFor(t)},
+		// Likewise CommitSHA (the real LocalDispatcher reading the checkout's
+		// .git) and AIInventory (the real NuGuard adapter, against the fake
+		// service).
+		partial.Name: {Worker: partialScanWorker(t), Dir: withGitHead(t, writeGoModFor(t))},
 	}}
 
 	o := orchestrator.New(s, d, orchestrator.NewRateBudget(500), orchestrator.Config{
@@ -398,9 +404,22 @@ type realScan struct {
 
 func (d *routedDispatcher) Dispatch(ctx context.Context, job orchestrator.Job) (scan.Result, error) {
 	if real, ok := d.real[job.Repo]; ok {
-		return real.Worker.Scan(ctx, job.RunID, job.Repo, real.Dir, job.Profile, job.Opts)
+		local := &orchestrator.LocalDispatcher{Worker: real.Worker, WorkDir: func(string) string { return real.Dir }}
+		return local.Dispatch(ctx, job)
 	}
 	return d.fake.Dispatch(ctx, job)
+}
+
+// withGitHead makes dir a checkout at a commit, as a clone is.
+func withGitHead(t *testing.T, dir string) string {
+	t.Helper()
+	if err := os.MkdirAll(dir+"/.git", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dir+"/.git/HEAD", []byte("5d0c7e9a1b2c3d4e5f60718293a4b5c6d7e8f901\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dir
 }
 
 // partialScanWorker is a real scan worker over one adapter that works and one
@@ -408,7 +427,18 @@ func (d *routedDispatcher) Dispatch(ctx context.Context, job orchestrator.Job) (
 // duration_sec come to be written.
 func partialScanWorker(t *testing.T) *scan.Worker {
 	t.Helper()
-	reg, err := scan.NewRegistry(quietAdapter{}, dyingAdapter{})
+	// The real NuGuard adapter, against the fake service serving a captured
+	// result: the only producer of an AI inventory.
+	result, err := os.ReadFile("../../testdata/fixtures/nuguard/ai-code.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fake := nuguardfake.New("census-key", "0.9.15")
+	t.Cleanup(fake.Close)
+	fake.Default = &nuguardfake.Script{Result: result}
+	ng := adapters.NewNuGuard(&nuguard.Client{BaseURL: fake.URL, APIKey: func() (string, error) { return "census-key", nil }},
+		"0.9.15", nil)
+	reg, err := scan.NewRegistry(quietAdapter{}, dyingAdapter{}, ng)
 	if err != nil {
 		t.Fatalf("NewRegistry: %v", err)
 	}

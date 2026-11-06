@@ -243,7 +243,8 @@ func (p *Postgres) RecordScanResult(ctx context.Context, res RepoScanResult) err
 		res.RunID, res.Repo, string(res.Outcome),
 		pgTextArray(res.ToolsOK), pgTextArray(res.ToolsFailed),
 		nullString(res.FailureCause), nullString(res.FailureDetail),
-		nullString(res.FailureOwner), res.DurationSec)
+		nullString(res.FailureOwner), res.DurationSec,
+		nullString(res.CommitSHA), nullJSON(res.AIInventory))
 	if err != nil {
 		return fmt.Errorf("store: record scan result %s/%s: %w", res.RunID, res.Repo, err)
 	}
@@ -269,9 +270,15 @@ func (p *Postgres) ScanResults(ctx context.Context, repo string, limit int) ([]R
 			cause, detail sql.NullString
 			owner         sql.NullString
 			duration      sql.NullInt64
+			commit, inv   sql.NullString
 		)
-		if err := rows.Scan(&r.RunID, &r.Repo, &outcome, &ok, &failed, &cause, &detail, &owner, &duration); err != nil {
+		if err := rows.Scan(&r.RunID, &r.Repo, &outcome, &ok, &failed, &cause, &detail, &owner, &duration,
+			&commit, &inv); err != nil {
 			return nil, err
+		}
+		r.CommitSHA = commit.String
+		if inv.Valid {
+			r.AIInventory = json.RawMessage(inv.String)
 		}
 		r.Outcome = ScanOutcome(outcome)
 		r.ToolsOK, r.ToolsFailed = parseTextArray(ok), parseTextArray(failed)
@@ -866,6 +873,15 @@ func nullString(s string) any {
 		return nil
 	}
 	return s
+}
+
+// nullJSON stores an absent document as NULL, so "not measured" stays
+// distinguishable from an empty one.
+func nullJSON(b json.RawMessage) any {
+	if len(b) == 0 || string(b) == "null" {
+		return nil
+	}
+	return string(b)
 }
 
 // pgTextArray renders a Go slice as a Postgres text array literal. Written by

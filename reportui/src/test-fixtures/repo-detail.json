@@ -1,0 +1,127 @@
+{
+  "repo": {
+    "name": "demo-org/checkout-web",
+    "tier": 2,
+    "languages": [
+      "javascript",
+      "go"
+    ],
+    "has_test_suite": true,
+    "module_topology": "single",
+    "codeowners": [
+      "team-checkout"
+    ],
+    "open_findings": 3,
+    "by_severity": {
+      "CRITICAL": 1,
+      "HIGH": 2
+    },
+    "by_category": {
+      "code": 1,
+      "dependency": 2
+    },
+    "sla_breached": 1,
+    "not_reobserved": 3,
+    "last_scanned_run": "S-000006",
+    "last_scanned_at": "2026-11-04T02:00:00Z",
+    "last_outcome": "partial"
+  },
+  "sla_windows": {
+    "1": {
+      "P0": "24h",
+      "P1": "168h",
+      "P2": "720h",
+      "P3": "2160h"
+    },
+    "2": {
+      "P0": "48h",
+      "P1": "336h",
+      "P2": "1440h",
+      "P3": "4320h"
+    },
+    "3": {
+      "P0": "72h",
+      "P1": "720h",
+      "P2": "2160h",
+      "P3": "8760h"
+    }
+  },
+  "sla_windows_provisional": true,
+  "dependencies": [
+    {
+      "module": "example.com/demo-org/platform-common",
+      "version": "v1.6.2",
+      "direct": true,
+      "replaced": false
+    },
+    {
+      "module": "example.com/json-stream",
+      "version": "v2.1.0",
+      "direct": true,
+      "replaced": false
+    }
+  ],
+  "open_prs": [
+    {
+      "branch": "security/fix-0592cf",
+      "fix_group_id": "0592cf",
+      "repo": "demo-org/checkout-web",
+      "number": 2,
+      "url": "https://github.com/demo-org/checkout-web/pull/2",
+      "state": "open",
+      "merged": false,
+      "opened_at": "2026-09-30T02:00:00Z",
+      "findings": [
+        "778f7185639b53ce"
+      ],
+      "ticket_url": "https://github.example/demo-org/checkout-web/5",
+      "confirmed_at": "2026-11-04T02:00:00Z"
+    }
+  ],
+  "consumers": [
+    {
+      "repo": "demo-org/edge-proxy",
+      "version": "v0.31.0",
+      "tier": 1,
+      "reachable": "unknown"
+    },
+    {
+      "repo": "demo-org/payments-api",
+      "version": "v0.31.0",
+      "tier": 1,
+      "reachable": "unknown"
+    },
+    {
+      "repo": "demo-org/platform-common",
+      "version": "v0.31.0",
+      "tier": 1,
+      "reachable": "unknown"
+    }
+  ],
+  "coverage": [
+    {
+      "repo": "demo-org/checkout-web",
+      "outcomes": [
+        "partial",
+        "complete",
+        "complete",
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "runs": [
+        "S-000006",
+        "S-000005",
+        "S-000004",
+        "S-000003",
+        "S-000002",
+        "S-000001"
+      ]
+    }
+  ],
+  "ai_components": {
+    "measured": false,
+    "note": "not measured in the latest scan: the AI inventory comes from NuGuard, which is opt-in and was not configured or did not run. Not measured is not none",
+    "run_id": "S-000006"
+  }
+}

@@ -387,6 +387,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AIComponents: {
+            edge_count?: number;
+            frameworks?: string[];
+            image_digest?: string;
+            measured: boolean;
+            model_providers?: string[];
+            node_counts?: {
+                [key: string]: number;
+            };
+            note: string;
+            posture_observations?: {
+                [key: string]: number;
+            };
+            rulepack_sha256?: string;
+            run_id?: string;
+            source?: string;
+        };
         Attempt: {
             branch: string;
             /** Format: date-time */
@@ -1470,6 +1487,23 @@ export interface components {
             runs: string[];
         };
         RepoDetail: {
+            ai_components: {
+                edge_count?: number;
+                frameworks?: string[];
+                image_digest?: string;
+                measured: boolean;
+                model_providers?: string[];
+                node_counts?: {
+                    [key: string]: number;
+                };
+                note: string;
+                posture_observations?: {
+                    [key: string]: number;
+                };
+                rulepack_sha256?: string;
+                run_id?: string;
+                source?: string;
+            };
             consumers?: {
                 excluded?: boolean;
                 reachable: string;
@@ -1518,6 +1552,7 @@ export interface components {
                 codeowners?: string[];
                 has_test_suite: boolean;
                 languages: string[];
+                last_commit_sha?: string;
                 last_outcome?: string;
                 /** Format: date-time */
                 last_scanned_at?: string;
@@ -1548,6 +1583,7 @@ export interface components {
             codeowners?: string[];
             has_test_suite: boolean;
             languages: string[];
+            last_commit_sha?: string;
             last_outcome?: string;
             /** Format: date-time */
             last_scanned_at?: string;

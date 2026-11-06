@@ -1,0 +1,42 @@
+# deploy/nuguard.yaml — the NuGuard Remote Scan service's settings, for the
+# sidecar in deploy/compose.yaml. Mounted read-only at
+# /etc/nuguard/nuguard.yaml. ${VAR} is interpolated by NuGuard itself.
+#
+# It binds loopback inside the scan worker's network namespace, so only the
+# worker can reach it; NuGuard refuses a non-loopback bind without TLS or a
+# trusted proxy, and needs neither here.
+service:
+  bind: 127.0.0.1
+  port: 8085
+  public_base_url: http://127.0.0.1:8085
+  api_keys:
+    # The hash of the key in VULNFRAMEWORK_NUGUARD_API_KEY; the key itself
+    # is never stored. Generate both with: nuguard serve keygen --id vulnframework
+    - id: vulnframework
+      sha256: ${NUGUARD_SERVICE_KEY_VF_SHA256}
+      max_concurrent_scans: 2
+      max_queued_scans: 50
+  git:
+    allowed_hosts: [github.com]
+    clone_timeout_s: 120
+    max_repo_bytes: 524288000
+  jobs:
+    max_concurrent: 2
+    # Inside the worker's -nuguard-timeout (10 minutes), which is inside the
+    # scan's own limit (15), so NuGuard ends its own job first.
+    job_timeout_s: 540
+    queue_limit: 50
+    result_ttl_hours: 24
+    scratch_dir: /var/lib/nuguard/scratch
+    db_path: /var/lib/nuguard/service.db
+  analysis_defaults:
+    min_severity: low
+    # The AI code rules only, and no network: dependencies, IaC and
+    # containers are this project's own tools' job, and asking NuGuard too
+    # would duplicate findings under other identifiers.
+    network: false
+    tools: [nga-rules, atlas, semgrep]
+  llm:
+    enabled: false
+  webhooks:
+    allowed_hosts: []

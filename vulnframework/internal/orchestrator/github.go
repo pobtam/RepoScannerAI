@@ -141,6 +141,14 @@ type Downloader interface {
 	Download(ctx context.Context, repo, ref string, w io.Writer, maxBytes int64) (int64, error)
 }
 
+// CommitResolver resolves a repository's default branch to a commit. A
+// Downloader that is also one (gh.TokenClient) has the tarball fetched at
+// that commit, and the commit recorded on the scan, so every adapter, local
+// or remote, scans the same tree.
+type CommitResolver interface {
+	HeadCommit(ctx context.Context, repo string) (string, error)
+}
+
 // DownloadDispatcher downloads each repository, scans it, and deletes it.
 type DownloadDispatcher struct {
 	Worker *scan.Worker
@@ -169,7 +177,19 @@ func (d *DownloadDispatcher) Dispatch(ctx context.Context, job Job) (scan.Result
 	}
 	defer os.RemoveAll(dir)
 
-	if err := d.fetch(ctx, job.Repo, dir); err != nil {
+	// The commit first, then the tarball at that commit: a push between the
+	// two would otherwise give the scan a tree that is not the commit it
+	// records.
+	ref := ""
+	if cr, ok := d.GitHub.(CommitResolver); ok {
+		sha, err := cr.HeadCommit(ctx, job.Repo)
+		if err != nil {
+			return downloadGap(job, dir, fmt.Errorf("resolving the head commit: %w", err)), nil
+		}
+		ref = sha
+		job.Opts.CommitSHA = sha
+	}
+	if err := d.fetch(ctx, job.Repo, ref, dir); err != nil {
 		return downloadGap(job, dir, err), nil
 	}
 
@@ -185,7 +205,7 @@ func (d *DownloadDispatcher) Dispatch(ctx context.Context, job Job) (scan.Result
 
 func downloadGap(job Job, dir string, err error) scan.Result {
 	return scan.Result{
-		RunID: job.RunID, Repo: job.Repo, Dir: dir,
+		RunID: job.RunID, Repo: job.Repo, Dir: dir, CommitSHA: job.Opts.CommitSHA,
 		Outcome:     model.ScanFailed,
 		ToolsFailed: []string{"download"},
 		Gaps: []scan.CoverageGap{{
@@ -198,7 +218,7 @@ func downloadGap(job Job, dir string, err error) scan.Result {
 	}
 }
 
-func (d *DownloadDispatcher) fetch(ctx context.Context, repo, dir string) error {
+func (d *DownloadDispatcher) fetch(ctx context.Context, repo, ref, dir string) error {
 	if err := os.RemoveAll(dir); err != nil {
 		return err
 	}
@@ -216,7 +236,7 @@ func (d *DownloadDispatcher) fetch(ctx context.Context, repo, dir string) error 
 	if maxDownload <= 0 {
 		maxDownload = 512 << 20
 	}
-	if _, err := d.GitHub.Download(ctx, repo, "", tmp, maxDownload); err != nil {
+	if _, err := d.GitHub.Download(ctx, repo, ref, tmp, maxDownload); err != nil {
 		return err
 	}
 	if _, err := tmp.Seek(0, io.SeekStart); err != nil {

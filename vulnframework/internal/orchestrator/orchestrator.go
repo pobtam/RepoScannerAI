@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -452,7 +453,14 @@ func (o *Orchestrator) record(ctx context.Context, res scan.Result) error {
 	scanResult := store.RepoScanResult{
 		RunID: res.RunID, Repo: res.Repo, Outcome: res.Outcome,
 		ToolsOK: res.ToolsOK, ToolsFailed: res.ToolsFailed,
-		DurationSec: res.DurationSec,
+		DurationSec: res.DurationSec, CommitSHA: res.CommitSHA,
+	}
+	if res.AIInventory != nil {
+		inv, err := json.Marshal(res.AIInventory)
+		if err != nil {
+			return fmt.Errorf("encoding the AI inventory for %s: %w", res.Repo, err)
+		}
+		scanResult.AIInventory = inv
 	}
 	if len(res.Gaps) > 0 {
 		g := res.Gaps[0]

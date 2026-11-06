@@ -72,6 +72,33 @@ read this file first and resume from "Next".
     The chart is drawn in the design system's colours and follows dark
     mode; scanner changes are a ring and partial runs a solid dot, so they
     differ by shape as well as colour. Tests on both backends, UI tests.
+- **Built 2026-11-03, at your request: NuGuard as an opt-in remote adapter**
+  (branch `feature/nuguard-adapter`, **not committed**, as the brief asked).
+  - **What:**
+    - a client for NuGuard's Remote Scan API (`internal/nuguard`) and a
+      fake service (`nuguardfake`);
+    - the adapter: code findings with our own fingerprints, each lost
+      NuGuard tool its own gap, the AI inventory as a signal;
+    - every adapter now scans one recorded commit (resolved before the
+      download, or read from `.git`);
+    - migration 0018 (`commit_sha`, `ai_inventory`), on both backends;
+    - an "AI components detected" panel on the repository page;
+    - flags on both commands and a compose sidecar.
+  - **Verified:**
+    - the Go suite on both backends, `-race` on scan, nuguard and
+      orchestrator, and the 138 UI tests with the typecheck;
+    - `scripts/smoke.sh` (demo);
+    - `deploy/test-stack.sh` with a fake NuGuard in the sidecar's place:
+      code finding, partial as a gap, down as a gap;
+    - NuGuard's `openapi.json` enums, checked in both directions.
+  - **Proof that NuGuard off changes nothing:** a golden captured before
+    any change, `testdata/worker/no-nuguard.golden.json`, still matches.
+  - **Not verified:**
+    - a real NuGuard service: its service code is uncommitted upstream, and
+      its image has never been built;
+    - a live GitHub run;
+    - the opt-in end-to-end test (`VF_NUGUARD_E2E=1`).
+  - **Awaiting you:** the D13 amendment in DECISIONS-NEEDED.md.
 - **Queued by you (2026-10-27):** after Phase 1 is committed, design
   accounts, login and workspaces (ACCOUNTS-DESIGN.md plus open questions in
   DECISIONS-NEEDED.md), then stop for review. No code for it until then.
@@ -601,6 +628,41 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
   `vfctl scan enqueue -all` asks for the same thing as the button, so the
   rule is "a batch is a sweep" rather than a list of sources. Side effect,
   intended: the Coverage page, which reads sweep runs, now counts them too.
+- **NuGuard choices** (2026-11-03; deviations from the brief are also in
+  the hand-over):
+  - **Sidecar:** NuGuard runs in the scan worker's network namespace on
+    loopback, not on the compose network. That needs neither TLS nor
+    `trust_proxy`, and the key and token cross no network.
+  - **Names:**
+    - the gap cause for a failed clone reuses `download_failed` rather than
+      adding `fetch_failed`;
+    - annotation keys are version-tagged (`nuguard/0.9.15/fingerprint`), as
+      `osv-scanner`'s are, not `nuguard.fingerprint`;
+    - the empty fixture is `empty.json`, which the envelope tests require,
+      not `empty-succeeded.json`.
+  - **Interfaces:**
+    - `GapReporter` is `SubTools(out) (ok, gaps, err)`, so a report names the
+      NuGuard tools that ran as well as those lost;
+    - `RunOpts` also gained `RunID`, which the idempotency key needs.
+  - **Recording:**
+    - the run's tool list is now the registered adapters, not every
+      `tools.lock` entry, so an unconfigured NuGuard is not recorded on any
+      run; today the two sets are identical;
+    - the inventory shows on the repository page and API, not in issued
+      reports, which are content-hashed under `fleet.v1`; adding it there
+      needs a template version change of its own;
+    - only the first coverage gap of a scan is stored (an existing Phase 1
+      issue), so a scan with several NuGuard gaps stores the first.
+  - **Time:** `-nuguard-timeout` defaults to 10 minutes, inside the
+    15-minute scan limit, so a slow NuGuard cannot cost the local tools'
+    results.
+  - **Images:** `deploy/build.sh` and the compose file take `VF_IMAGE_TAG`
+    (default `v1`). The stack test of this branch was built as
+    `nuguard-test`, so your account-mode stack's `v1` images were not
+    touched.
+  - **Python (step 6) not done:** an adapter cannot see which other tools
+    covered a repository, so the "NuGuard alone is not a full scan" gap
+    needs a worker-level rule. Listed in NOW-VS-LATER.md.
 - **A batch can cover fewer repositories than the fleet** and its point is
   not marked partial: a repository already queued on its own when Scan all
   is pressed merges into that request and runs separately. The timer's

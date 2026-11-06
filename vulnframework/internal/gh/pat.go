@@ -224,6 +224,36 @@ func (c *TokenClient) Download(ctx context.Context, repo, ref string, w io.Write
 	return n, nil
 }
 
+// HeadCommit returns the commit at the head of a repository's default
+// branch. Resolved before the download, so the tarball is fetched at exactly
+// this commit and every adapter, local or remote, scans the same one.
+//
+// One read: GET /repos/{repo}/commits/HEAD with GitHub's SHA media type,
+// which answers the bare commit id.
+func (c *TokenClient) HeadCommit(ctx context.Context, repo string) (string, error) {
+	if !validRepoName(repo) {
+		return "", fmt.Errorf("gh: %q is not an owner/name repository", repo)
+	}
+	resp, err := c.get(ctx, "/repos/"+repo+"/commits/HEAD", "application/vnd.github.sha")
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	b, err := io.ReadAll(io.LimitReader(resp.Body, 256))
+	if err != nil {
+		return "", fmt.Errorf("gh: reading the head commit of %s: %w", repo, err)
+	}
+	sha := strings.ToLower(strings.TrimSpace(string(b)))
+	if !commitSHA.MatchString(sha) {
+		return "", fmt.Errorf("gh: the head commit of %s is not a commit id", repo)
+	}
+	return sha, nil
+}
+
+// commitSHA is a full commit id: SHA-1, or SHA-256 for a repository that
+// uses it.
+var commitSHA = regexp.MustCompile(`^([0-9a-f]{40}|[0-9a-f]{64})$`)
+
 var repoName = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
 
 func validRepoName(s string) bool {

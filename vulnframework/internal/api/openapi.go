@@ -32,7 +32,7 @@ func schemaTypes() []any {
 		Timeline{}, Transition{}, RunObservation{}, Attempt{},
 		RunSummary{}, RunPage{}, Overview{}, Comparison{}, StateChange{},
 		CoverageView{}, CoverageGap{}, RepoCoverageHistory{},
-		RepoSummary{}, RepoDetail{}, Dependency{}, Consumer{},
+		RepoSummary{}, RepoDetail{}, Dependency{}, Consumer{}, AIComponents{},
 		Wave{}, TrendSeries{}, TrendPoint{},
 		ReportSummary{}, Health{}, Error{},
 		GitHubView{}, GitHubAccount{}, DiscoveredRepo{}, ExcludedRepo{}, DiscoverySummary{},

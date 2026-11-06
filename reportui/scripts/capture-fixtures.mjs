@@ -58,6 +58,8 @@ async function main() {
     'overview-snapshot.json': await get(`/v1/runs/${oldest.id}`),
     'coverage.json': await get('/v1/coverage'),
     'repos.json': await get('/v1/repos'),
+    'repo-detail.json': await get('/v1/repos/demo-org/checkout-web'),
+    'repo-trend.json': await get('/v1/repos/demo-org/checkout-web/trend'),
     'waves.json': await get('/v1/waves'),
     'trend.json': await get('/v1/metrics/trends?metric=open'),
     'reports.json': await get('/v1/reports'),

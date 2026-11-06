@@ -1,0 +1,6 @@
+{
+  "tool": "nuguard",
+  "tool_version": "0.9.15",
+  "image": "nuguard-service (local build, no image digest)",
+  "captured_from": "hand-made from the structure of quickstart-partial.json: code findings with symbols, several locations, one rule twice in one file, an empty description"
+}

@@ -430,6 +430,7 @@ export const repoSummary = z.object({
   last_scanned_run: z.string().optional(),
   last_scanned_at: z.string().optional(),
   last_outcome: z.string().optional(),
+  last_commit_sha: z.string().optional(),
   no_test_suite_note: z.string().optional(),
 });
 
@@ -450,6 +451,25 @@ export const consumer = z.object({
   reason: z.string().optional(),
 });
 
+/**
+ * What the latest scan found of a repository's AI use: an inventory signal,
+ * never findings. "Not measured" is its own state, said in words, never
+ * rendered as zero.
+ */
+export const aiComponents = z.object({
+  measured: z.boolean(),
+  note: z.string(),
+  run_id: z.string().optional(),
+  source: z.string().optional(),
+  rulepack_sha256: z.string().optional(),
+  image_digest: z.string().optional(),
+  node_counts: openMap.optional(),
+  edge_count: z.number().optional(),
+  frameworks: z.array(z.string()).optional(),
+  model_providers: z.array(z.string()).optional(),
+  posture_observations: openMap.optional(),
+});
+
 export const repoDetail = z.object({
   repo: repoSummary,
   sla_windows: z.record(z.string(), z.record(z.string(), z.string())),
@@ -458,6 +478,7 @@ export const repoDetail = z.object({
   open_prs: z.array(attempt).optional(),
   consumers: z.array(consumer).optional(),
   coverage: z.array(repoCoverageHistory),
+  ai_components: aiComponents,
 });
 
 export const wave = z.object({

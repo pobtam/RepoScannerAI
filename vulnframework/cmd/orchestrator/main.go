@@ -88,6 +88,8 @@ func run() error {
 		scanTimeout   = flag.Duration("scan-timeout", 15*time.Minute, "worker mode: time limit per repository scan; a timeout is recorded as a coverage gap")
 		discoverEvery = flag.Duration("discover-every", 24*time.Hour, "worker mode with -github: how often to rediscover the account's repositories")
 	)
+	// NuGuard, the opt-in remote AI code-rule and inventory adapter.
+	nuguardFlags := adapters.RegisterNuGuardFlags(flag.CommandLine)
 	flag.Parse()
 
 	if *dsn == "" {
@@ -121,7 +123,17 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	reg, err := adapters.NewRegistry(runner.Exec{}, lock)
+	// NuGuard is given the token account mode already holds, and in local
+	// mode one only if the environment has it (public repositories need none).
+	ngToken := adapters.OptionalToken(githubTokenEnv)
+	if *githubMode {
+		ngToken = githubToken
+	}
+	ng, err := nuguardFlags.Build(ctx, lock, ngToken, log)
+	if err != nil {
+		return err
+	}
+	reg, err := adapters.NewRegistryWith(runner.Exec{}, lock, adapters.Optional{NuGuard: ng})
 	if err != nil {
 		return err
 	}
@@ -137,9 +149,14 @@ func run() error {
 		}
 	}
 
+	// The run records the tools it can run: the registered adapters. An
+	// opt-in adapter that is off (NuGuard with no URL) is pinned in
+	// tools.lock but is not on the run, so a run without it is recorded
+	// exactly as before it existed.
 	toolVersions := map[string]string{}
-	for _, name := range lock.Names() {
-		toolVersions[name] = lock.MustVersion(name)
+	for _, name := range reg.Names() {
+		a, _ := reg.Get(name)
+		toolVersions[name] = a.Version()
 	}
 
 	var dispatcher orchestrator.Dispatcher = &orchestrator.LocalDispatcher{

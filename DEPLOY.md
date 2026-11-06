@@ -179,6 +179,83 @@ queue until it starts again.
 
 ---
 
+## NuGuard (opt-in AI code rules and inventory)
+
+Off unless you turn it on. Turning it on is an owner decision
+(DECISIONS-NEEDED.md, "D13 amendment"), and nothing below has been done
+against a real NuGuard yet. The adapter was built and tested against a fake
+of NuGuard's published API.
+
+**What it does.** The scan worker asks a NuGuard Remote Scan service to scan
+each repository at the commit the other tools scanned. NuGuard's AI code
+findings become ordinary findings. Its AI component inventory shows on the
+repository page as "AI components detected", and is never turned into
+findings. If NuGuard fails, is down, or answers for another version or
+commit, that is a coverage gap, never a clean result.
+
+**How it runs.** As a sidecar in the scan worker's network namespace
+(`nuguard` in `deploy/compose.yaml`), bound to `127.0.0.1:8085`
+(`deploy/nuguard.yaml`):
+- It publishes no port, and only the worker can reach it.
+- The API key and the GitHub token in each request cross no network, so it
+  needs neither TLS nor `trust_proxy`.
+- Its egress is the worker's. With the default tools and `network: false`,
+  it needs `github.com`, `api.github.com` and `codeload.github.com` only.
+- It starts and stops with the worker (`deploy/scanworker.sh`). If the
+  worker restarts, restart NuGuard too, because it shares the worker's
+  network.
+
+**Before enabling it:**
+
+1. **Build the image** from the NuGuard repository, at a release that
+   contains the Remote Scan service:
+   ```sh
+   docker build -f deploy/service/Dockerfile -t nuguard-service:0.9.15 .   # in the NuGuard checkout
+   ```
+2. **Check it is ready** before anything depends on it. For example, run it
+   alone with `deploy/nuguard.yaml` and a test key, then:
+   ```sh
+   curl -s http://127.0.0.1:8085/v1/readyz    # {"status":"ok",...}
+   ```
+   Pin the image by digest, and set `NUGUARD_IMAGE_DIGEST` so every result
+   records it.
+3. **Generate the key.** This prints it once, with its SHA-256:
+   ```sh
+   nuguard serve keygen --id vulnframework
+   ```
+   Put the SHA-256 in `deploy/.env` as `NUGUARD_API_KEY_SHA256`. Keep the
+   key itself in your password manager, or on the VM in Secret Manager. It
+   is never written to `deploy/.env`.
+4. **Pin the version.** `vulnframework/config/tools.lock` pins
+   `nuguard 0.9.15`. If the image reports another version, the worker
+   refuses to start, and every result from another version is a gap.
+   Change the pin deliberately.
+5. **Turn it on** in `deploy/.env`, and start the worker with the key in
+   its environment, as the GitHub token is:
+   ```sh
+   NUGUARD_URL=http://127.0.0.1:8085                     # in deploy/.env
+   VULNFRAMEWORK_GITHUB_TOKEN=... VULNFRAMEWORK_NUGUARD_API_KEY=... deploy/scanworker.sh start
+   ```
+   The key stays in the worker container's environment while it runs:
+   anyone who can run `docker inspect` on the host can read it, as with the
+   token.
+
+**Settings** (`deploy/.env`):
+- `NUGUARD_TOOLS`: default `nga-rules,atlas,semgrep`.
+- `NUGUARD_INCLUDE_POSTURE`: default `false`. When on, posture observations
+  are only counted in the inventory.
+- `NUGUARD_TIMEOUT`: default `10m`, inside the 15-minute scan limit. The
+  service's own `job_timeout_s` is 540, inside that.
+
+**Known blocker for proxied networks:** NuGuard's clone step drops
+`HTTPS_PROXY` and the CA variables (`_INHERITED_ENV` in
+`nuguard/sbom/extractor/git_clone.py`), so it cannot clone through an egress
+proxy. This VM uses a port firewall, not a proxy. A deployment behind a
+proxy must wait for the upstream fix.
+
+**To turn it off:** empty `NUGUARD_URL` and restart the worker. Scans then
+record no inventory, and the page says "not measured".
+
 ## Day to day
 
 | Task | How |

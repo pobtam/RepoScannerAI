@@ -1,0 +1,202 @@
+[
+  {
+    "Repo": "acme/support-agent",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "nuguard",
+    "RuleID": "NGA-PROMPT-INJ-001",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "ImportPath": null,
+    "Package": "",
+    "Function": "buildSystemPrompt",
+    "File": "src/agent/chat.ts",
+    "ResourceKey": "",
+    "Line": 42,
+    "CredentialType": "",
+    "Description": "Untrusted request input is concatenated into the system prompt without a delimiter or role separation, so a user can override the model's instructions.",
+    "Versions": {},
+    "Classification": {
+      "severity": "HIGH",
+      "kev": false,
+      "epss_available": false,
+      "kev_available": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "0.9.15",
+    "AdvisoryURL": "https://genai.owasp.org/llmrisk/llm01-prompt-injection/",
+    "Annotations": {
+      "nuguard/0.9.15/fingerprint": "nf1_1a1b1c1d1e1f10111213141516171819",
+      "nuguard/0.9.15/mitre_atlas_technique": "AML.T0051",
+      "nuguard/0.9.15/owasp_llm_ref": "LLM01",
+      "nuguard/0.9.15/source_tool": "nga-rules"
+    },
+    "Raw": {
+      "affected_component": null,
+      "description": "Untrusted request input is concatenated into the system prompt without a delimiter or role separation, so a user can override the model's instructions.",
+      "fingerprint": "nf1_1a1b1c1d1e1f10111213141516171819",
+      "kind": "code",
+      "locations": [
+        {
+          "end_line": 42,
+          "path": "src/agent/chat.ts",
+          "start_line": 42,
+          "symbol": "buildSystemPrompt"
+        },
+        {
+          "end_line": 57,
+          "path": "src/agent/chat.ts",
+          "start_line": 57,
+          "symbol": "buildSystemPrompt"
+        }
+      ],
+      "mitre_atlas_technique": "AML.T0051",
+      "owasp_asi_ref": null,
+      "owasp_llm_ref": "LLM01",
+      "references": [
+        "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
+      ],
+      "remediation": null,
+      "rule_id": "NGA-PROMPT-INJ-001",
+      "severity": "high",
+      "source_tool": "nga-rules",
+      "title": "User input concatenated into the system prompt"
+    }
+  },
+  {
+    "Repo": "acme/support-agent",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "nuguard",
+    "RuleID": "ATLAS-TOOL-SCOPE-002",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "ImportPath": null,
+    "Package": "",
+    "Function": "",
+    "File": "src/tools/files.ts",
+    "ResourceKey": "",
+    "Line": 7,
+    "CredentialType": "",
+    "Description": "Agent tool can write files with no path allow-list",
+    "Versions": {},
+    "Classification": {
+      "severity": "MEDIUM",
+      "kev": false,
+      "epss_available": false,
+      "kev_available": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "0.9.15",
+    "AdvisoryURL": "",
+    "Annotations": {
+      "nuguard/0.9.15/fingerprint": "nf1_4a4b4c4d4e4f40414243444546474849",
+      "nuguard/0.9.15/source_tool": "atlas"
+    },
+    "Raw": {
+      "affected_component": null,
+      "description": "",
+      "fingerprint": "nf1_4a4b4c4d4e4f40414243444546474849",
+      "kind": "code",
+      "locations": [
+        {
+          "end_line": 7,
+          "path": "src/tools/files.ts",
+          "start_line": 7,
+          "symbol": null
+        },
+        {
+          "end_line": 31,
+          "path": "src/tools/files.ts",
+          "start_line": 31,
+          "symbol": null
+        }
+      ],
+      "mitre_atlas_technique": null,
+      "owasp_asi_ref": null,
+      "owasp_llm_ref": null,
+      "references": [],
+      "remediation": null,
+      "rule_id": "ATLAS-TOOL-SCOPE-002",
+      "severity": "medium",
+      "source_tool": "atlas",
+      "title": "Agent tool can write files with no path allow-list"
+    }
+  },
+  {
+    "Repo": "acme/support-agent",
+    "Category": "code",
+    "PrimaryID": "",
+    "Aliases": null,
+    "Tool": "nuguard",
+    "RuleID": "nuguard.ai.model-output-to-shell",
+    "DetectorRuleID": "",
+    "CheckID": "",
+    "Module": "",
+    "ModuleMajor": "",
+    "ImportPath": null,
+    "Package": "",
+    "Function": "runTool",
+    "File": "src/tools/run.ts",
+    "ResourceKey": "",
+    "Line": 19,
+    "CredentialType": "",
+    "Description": "The model's reply reaches child_process.exec without validation, so a prompt that steers the model can run commands on the server.",
+    "Versions": {},
+    "Classification": {
+      "severity": "CRITICAL",
+      "kev": false,
+      "epss_available": false,
+      "kev_available": false,
+      "reachable": "true",
+      "dep_class": "n/a",
+      "transitive": false,
+      "first_party_path": null
+    },
+    "ToolVersion": "0.9.15",
+    "AdvisoryURL": "https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/",
+    "Annotations": {
+      "nuguard/0.9.15/fingerprint": "nf1_3a3b3c3d3e3f30313233343536373839",
+      "nuguard/0.9.15/owasp_asi_ref": "ASI02",
+      "nuguard/0.9.15/owasp_llm_ref": "LLM05",
+      "nuguard/0.9.15/source_tool": "semgrep"
+    },
+    "Raw": {
+      "affected_component": null,
+      "description": "The model's reply reaches child_process.exec without validation, so a prompt that steers the model can run commands on the server.",
+      "fingerprint": "nf1_3a3b3c3d3e3f30313233343536373839",
+      "kind": "code",
+      "locations": [
+        {
+          "end_line": 19,
+          "path": "src/tools/run.ts",
+          "start_line": 19,
+          "symbol": "runTool"
+        }
+      ],
+      "mitre_atlas_technique": null,
+      "owasp_asi_ref": "ASI02",
+      "owasp_llm_ref": "LLM05",
+      "references": [
+        "https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/"
+      ],
+      "remediation": "Never execute model output; map it to an allow-listed set of commands.",
+      "rule_id": "nuguard.ai.model-output-to-shell",
+      "severity": "critical",
+      "source_tool": "semgrep",
+      "title": "Model output passed to a shell"
+    }
+  }
+]

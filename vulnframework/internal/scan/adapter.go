@@ -78,6 +78,20 @@ type RunOpts struct {
 
 	// APICredits is the rate budget granted for this invocation (VM-AD §7.2).
 	APICredits int
+
+	// RunID, Repo and CommitSHA name exactly what is being scanned: the run,
+	// the repository as owner/name, and the commit its tree on disk was taken
+	// at. An adapter that scans remotely (NuGuard) uses them to scan the same
+	// commit the local tools see. None is a credential, and no credential is
+	// ever added to RunOpts (VM-F-206): a credential an adapter needs reaches
+	// it through a function, as gh.TokenClient.Token does.
+	//
+	// The worker fills RunID and Repo from its own arguments. CommitSHA is
+	// set by the dispatcher, and empty where nothing recorded the commit (a
+	// checkout with no .git, a download that resolved none).
+	RunID     string
+	Repo      string
+	CommitSHA string
 }
 
 // RawOutput is a tool's verbatim output plus the context needed to normalise
@@ -102,6 +116,13 @@ type RawOutput struct {
 	// keeps normalisation a pure function of bytes, which is what makes the
 	// fixture tests meaningful.
 	Aux map[string][]byte
+
+	// Versions records what the tool reported about itself beyond its pinned
+	// version, keyed as Result.ToolVersions is: "nuguard" (the version the
+	// service reported), "nuguard/rulepack", "nuguard/image". The worker
+	// merges it into the result's ToolVersions (VM-F-202). Nil for a tool
+	// with nothing further to report.
+	Versions map[string]string
 }
 
 // Adapter is the scanner contract (VM-AD §8.4).
