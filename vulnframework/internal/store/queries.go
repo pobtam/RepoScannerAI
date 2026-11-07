@@ -86,6 +86,23 @@ ON CONFLICT (fingerprint, run_id, tool) DO UPDATE SET
 SELECT source FROM finding_observations WHERE fingerprint = $1 ORDER BY run_id, tool`
 
 	// Unresolved findings in a repository that the given run did not observe.
+	qReconcileResult = `
+SELECT outcome, tools_ok::text, tools_failed::text
+FROM repo_scan_results WHERE run_id = $1 AND repo = $2`
+
+	// Every source that has observed each absent finding: what tool-aware
+	// reconciliation checks against the scan's ToolsOK (VM-F-160).
+	qAbsentSources = `
+SELECT DISTINCT o.fingerprint, o.tool, COALESCE(o.source->>'sub_tool', '') AS sub
+FROM finding_observations o
+JOIN findings f ON f.fingerprint = o.fingerprint
+WHERE f.repo = $1
+  AND NOT EXISTS (
+    SELECT 1 FROM finding_observations x
+    WHERE x.fingerprint = f.fingerprint AND x.run_id = $2
+  )
+ORDER BY o.fingerprint, o.tool, sub`
+
 	qAbsentFindings = `
 SELECT f.fingerprint, f.state, f.category
 FROM findings f

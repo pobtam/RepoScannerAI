@@ -388,8 +388,8 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 	defer tx.Rollback()
 
 	var outcome string
-	err = tx.QueryRowContext(ctx,
-		`SELECT outcome FROM repo_scan_results WHERE run_id = $1 AND repo = $2`, runID, repo).Scan(&outcome)
+	var okText, failedText string
+	err = tx.QueryRowContext(ctx, qReconcileResult, runID, repo).Scan(&outcome, &okText, &failedText)
 	if errors.Is(err, sql.ErrNoRows) {
 		return stats, fmt.Errorf("%w: no scan result for repo %q in run %q; reconciliation requires one (VM-ADR-12)",
 			ErrNotFound, repo, runID)
@@ -418,8 +418,16 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 	if err := rows.Err(); err != nil {
 		return stats, err
 	}
+	toolsOK, toolsFailed := parseTextArray(okText), parseTextArray(failedText)
+	sources, err := absentSources(ctx, tx, repo, runID)
+	if err != nil {
+		return stats, err
+	}
+	for i := range absent {
+		absent[i].Sources = sources[absent[i].Fingerprint]
+	}
 
-	actions := resolveGapLinks(PlanReconcile(ScanOutcome(outcome), absent), runID)
+	actions := resolveGapLinks(PlanReconcile(ScanOutcome(outcome), toolList(toolsOK, toolsFailed), absent), runID)
 	now := p.clock()
 
 	stateOf := map[string]model.State{}
@@ -467,8 +475,30 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 		if a.RetainedUnverified {
 			stats.RetainedUnverified++
 		}
+		if a.SourceNotRun {
+			stats.SourceNotRun++
+		}
 	}
 	return stats, tx.Commit()
+}
+
+// absentSources is, for each finding of repo the run did not observe, every
+// source that has ever observed it (SourceObservation.Source), sorted.
+func absentSources(ctx context.Context, tx *sql.Tx, repo, runID string) (map[string][]string, error) {
+	rows, err := tx.QueryContext(ctx, qAbsentSources, repo, runID)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading the sources of absent findings: %w", err)
+	}
+	defer rows.Close()
+	out := map[string][]string{}
+	for rows.Next() {
+		var fp, tool, sub string
+		if err := rows.Scan(&fp, &tool, &sub); err != nil {
+			return nil, err
+		}
+		out[fp] = append(out[fp], SourceName(tool, sub))
+	}
+	return out, rows.Err()
 }
 
 func (p *Postgres) GetFinding(ctx context.Context, fp string) (model.Finding, error) {

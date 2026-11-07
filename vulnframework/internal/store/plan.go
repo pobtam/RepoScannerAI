@@ -47,6 +47,11 @@ type FindingState struct {
 	// pure function, rather than looked up separately by each backend — which
 	// is how the two came to disagree about state history in Phase 2.
 	Category model.Category
+	// Sources are every source that has observed the finding, named as a
+	// scan result names them in ToolsOK (SourceObservation.Source). A
+	// finding verifies only where each of them ran ok in the scan that no
+	// longer sees it (VM-F-160).
+	Sources []string
 }
 
 // ReconcileAction is what a reconciliation does to one absent finding.
@@ -84,6 +89,13 @@ type ReconcileAction struct {
 	// attribution (VM-AD §6.1.1). Only meaningful when Verify is set.
 	VerificationReason model.VerificationReason
 
+	// SourceNotRun marks a finding the scan completed without observing, but
+	// one of whose sources did not run ok in it — not requested, not
+	// applicable, or switched off. Its absence is no evidence, so it is
+	// handled exactly as a coverage gap: retained, flagged, linked to the
+	// run (VM-F-160/161).
+	SourceNotRun bool
+
 	// SecretRemoved marks a secret a complete scan no longer sees. It is NOT
 	// verified: removal from the files is not remediation, the secret is
 	// still in history, and the credential is live until rotated (VM-F-856).
@@ -101,9 +113,31 @@ type ReconcileAction struct {
 // improve, the risk does not, and the failure is invisible precisely because it
 // looks like success.
 //
+// It is tool-aware (VM-F-160): a complete scan is evidence only about the
+// tools that ran in it. A finding whose sources did not all run ok — NuGuard
+// switched off, a sub-tool not chosen, an adapter that no longer applies —
+// is not verified by its absence. toolsOK is the scan result's ToolsOK; nil
+// means the result recorded no tool list (no scan worker produced it), and
+// the outcome alone decides, as it did before tool lists were consulted.
+//
 // Findings observed by the run are not passed here; only the absent ones are.
-func PlanReconcile(outcome ScanOutcome, absent []FindingState) []ReconcileAction {
+func PlanReconcile(outcome ScanOutcome, toolsOK []string, absent []FindingState) []ReconcileAction {
 	scanSucceeded := outcome.Succeeded()
+	ran := map[string]bool{}
+	for _, t := range toolsOK {
+		ran[t] = true
+	}
+	covered := func(f FindingState) bool {
+		if toolsOK == nil {
+			return true
+		}
+		for _, s := range f.Sources {
+			if !ran[s] {
+				return false
+			}
+		}
+		return true
+	}
 
 	actions := make([]ReconcileAction, 0, len(absent))
 	for _, f := range absent {
@@ -122,6 +156,16 @@ func PlanReconcile(outcome ScanOutcome, absent []FindingState) []ReconcileAction
 		canVerify := model.CanTransition(f.State, model.Verified)
 
 		switch {
+		case scanSucceeded && !covered(f):
+			// The scan completed, but not with every tool that has seen this
+			// finding: its absence says nothing. Exactly a coverage gap,
+			// whatever the outcome (VM-F-160/161) — and never a removed
+			// secret, which needs the detector to have looked.
+			a.SourceNotRun = true
+			a.NotReobserved = true
+			a.GapRunID = gapSentinel
+			a.RetainedUnverified = canVerify
+
 		case scanSucceeded && f.Category == model.CategorySecret:
 			// A secret is never verified by disappearing (VM-F-856). Flag it
 			// as not re-observed, and record the removal for a human to
@@ -158,6 +202,21 @@ func PlanReconcile(outcome ScanOutcome, absent []FindingState) []ReconcileAction
 		actions = append(actions, a)
 	}
 	return actions
+}
+
+// toolList is the tool list PlanReconcile checks sources against: a scan
+// result's ToolsOK, or nil where the result recorded no tool lists at all.
+// A scan worker's result always lists at least one tool; a result with none
+// was recorded by something else (a plan close, a test), and is judged by its
+// outcome alone, as before reconciliation consulted tools.
+func toolList(ok, failed []string) []string {
+	if len(ok) == 0 && len(failed) == 0 {
+		return nil
+	}
+	if ok == nil {
+		return []string{}
+	}
+	return ok
 }
 
 // gapRunFor returns a sentinel the caller replaces with the run identifier. It

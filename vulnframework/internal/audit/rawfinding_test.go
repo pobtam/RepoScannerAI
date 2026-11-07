@@ -44,6 +44,7 @@ func realAdapterOutput(t *testing.T) []model.RawFinding {
 		{"semgrep", "semgrep", "1.144.0", adapters.NewSemgrep(nil, "1.144.0").Normalize},
 		{"npm-audit", "npm-audit", "10.9.4", adapters.NewNPMAudit(nil, "10.9.4").Normalize},
 		{"actions-pin", "actions-pin", "v1", adapters.NewActionsPin(nil, "v1").Normalize},
+		{"nuguard", "nuguard", "0.9.15", adapters.NewNuGuard(nil, "0.9.15", nil).Normalize},
 	}
 
 	var all []model.RawFinding
@@ -139,12 +140,14 @@ var rawFindingExemptions = map[audit.FieldPath]audit.Exemption{
 		Producer: "internal/scan/adapters (govulncheck only, from trace depth)",
 		Why:      "a boolean whose false value is indistinguishable from unwritten",
 	},
-	// Location.Function and Location.Package.
+	// Location.Package (and, until NuGuard, Location.Function).
 	//
-	// NOT exempted away: no code-analysis tool pinned in tools.lock emits
-	// either. gosec, staticcheck and semgrep all report file, line and column
-	// and nothing about the enclosing symbol — verified against the captured
-	// fixtures, not assumed.
+	// NOT exempted away: no local code-analysis tool pinned in tools.lock
+	// emits either. gosec, staticcheck and semgrep all report file, line and
+	// column and nothing about the enclosing symbol — verified against the
+	// captured fixtures, not assumed. NuGuard reports the enclosing function,
+	// so Function now has a producer; it is display only (fingerprint.go), and
+	// the paragraph below still holds.
 	//
 	// The consequence is real and worth stating plainly: fingerprint.Location
 	// PREFERS "Package#Function" for a code finding and falls back to the file
@@ -156,10 +159,6 @@ var rawFindingExemptions = map[audit.FieldPath]audit.Exemption{
 	// Deriving a function name by parsing gosec's code snippet would be a
 	// guess feeding a fingerprint, which is the one place this system refuses
 	// to guess.
-	"Function": {
-		Producer: "nothing — no pinned code-analysis tool reports it",
-		Why:      "see OQ-AUDIT-02: the fingerprint's Package#Function branch is unreachable",
-	},
 	"Package": {
 		Producer: "nothing — no pinned code-analysis tool reports it",
 		Why:      "see OQ-AUDIT-02",

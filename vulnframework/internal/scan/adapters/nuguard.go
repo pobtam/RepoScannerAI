@@ -257,7 +257,10 @@ func (a *NuGuard) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 			// id NuGuard shares with the local semgrep adapter cannot collide
 			// with it: no prefix is needed.
 			RuleID: f.RuleID,
-			File:   relPath(loc.Path, out.Dir),
+			// Which of NuGuard's tools saw it: reconciliation verifies the
+			// finding only in a scan where that tool ran (VM-F-160).
+			SubTool: f.SourceTool,
+			File:    relPath(loc.Path, out.Dir),
 			Classification: model.Classification{
 				Severity: severityFromBand(string(f.Severity)),
 				// Same convention as the semgrep adapter: a rule matched in

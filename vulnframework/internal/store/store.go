@@ -171,6 +171,11 @@ type ReconcileStats struct {
 	// RetainedUnverified counts findings that would have verified had the scan
 	// succeeded. This is the number VM-F-216 requires reported alongside a gap.
 	RetainedUnverified int
+	// SourceNotRun counts findings a complete scan did not observe while one
+	// of their sources did not run ok in it: retained and flagged, as for a
+	// gap, because the scan did not look (VM-F-160). Each is also counted in
+	// NotReobserved.
+	SourceNotRun int
 	// SecretsRemoved counts secrets a complete scan no longer saw, held open
 	// for a human to confirm rotation rather than verified (VM-F-856).
 	SecretsRemoved int
@@ -263,9 +268,10 @@ type Store interface {
 
 	// Reconcile applies the absence rules after a repository's scan completes.
 	//
-	// Findings absent from a successful scan verify. Findings absent because the
-	// scan did not complete retain their state and are flagged not re-observed
-	// (VM-ADR-12, VM-F-160/161).
+	// Findings absent from a successful scan verify, provided every source
+	// that has observed them ran ok in it. Findings absent because the scan
+	// did not complete, or because a source of theirs did not run, retain
+	// their state and are flagged not re-observed (VM-ADR-12, VM-F-160/161).
 	Reconcile(ctx context.Context, runID, repo string) (ReconcileStats, error)
 
 	// GetFinding returns the merged view of one finding.

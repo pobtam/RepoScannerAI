@@ -429,12 +429,19 @@ type RawFinding struct {
 	Category Category
 
 	// Identity inputs. Which are populated depends on Category (VM-AD §5).
-	PrimaryID      string   // dependency: advisory id, before alias resolution
-	Aliases        []string // dependency: alias set, e.g. from the OSV aliases field
-	Tool           string   // code: reporting tool name
-	RuleID         string   // code: tool rule id
-	DetectorRuleID string   // secret: detector rule id
-	CheckID        string   // config: check id
+	PrimaryID string   // dependency: advisory id, before alias resolution
+	Aliases   []string // dependency: alias set, e.g. from the OSV aliases field
+	Tool      string   // code: reporting tool name
+
+	// SubTool names the tool inside a wrapping adapter that reported this —
+	// "semgrep" for nuguard/semgrep — and is empty for an adapter that is
+	// one tool. Not identity: it is what tool-aware reconciliation needs to
+	// know which source must have run before the finding's absence means
+	// anything (VM-F-160).
+	SubTool        string `json:",omitempty"`
+	RuleID         string // code: tool rule id
+	DetectorRuleID string // secret: detector rule id
+	CheckID        string // config: check id
 
 	// Location inputs.
 	Module      string // dependency: module path
