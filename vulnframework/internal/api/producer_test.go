@@ -195,6 +195,10 @@ func TestEveryResponseFieldHasAProducer(t *testing.T) {
 					Producer: "internal/scan.Worker's coverage gap detail",
 					Why:      "the verbatim tool output of a failure; a silent worker produces none",
 				},
+				"ToolsNotRequested": {
+					Producer: "internal/scan.Worker via NotRequestedReporter (NuGuard off or narrowed for the scan)",
+					Why:      "this fixture has no NuGuard; internal/orchestrator's NuGuard tests write it through the real worker",
+				},
 			},
 		},
 		{
@@ -329,6 +333,18 @@ func TestEveryResponseFieldHasAProducer(t *testing.T) {
 				},
 			},
 		},
+	}
+
+	// A finding's NuGuard section is on the DETAIL view only: a list row
+	// never carries it, and this corpus has no NuGuard finding. Every leaf
+	// under it is exempt here for that one reason.
+	for _, f := range audit.Fields(reflect.TypeOf(api.Finding{})) {
+		if strings.HasPrefix(string(f), "NuGuard.") {
+			censuses[0].exempt[f] = audit.Exemption{
+				Producer: "internal/api.nuguardDetail on GET /v1/findings/{fp}, for a finding NuGuard reported",
+				Why:      "detail view only, never a list row; internal/api's NuGuard tests read it from a real NuGuard finding",
+			}
+		}
 	}
 
 	for _, c := range censuses {

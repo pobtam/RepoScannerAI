@@ -51,6 +51,7 @@ type Memory struct {
 	discovered    map[string]DiscoveredRepo
 	exclusions    map[string]RepoExclusion
 	scanRequests  map[string]ScanRequest
+	ng            memNuGuard
 }
 
 type memFinding struct {
@@ -381,7 +382,7 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 	}
 	sort.Slice(absent, func(i, j int) bool { return absent[i].Fingerprint < absent[j].Fingerprint })
 
-	actions := resolveGapLinks(PlanReconcile(outcome, toolList(result.ToolsOK, result.ToolsFailed), absent), runID)
+	actions := resolveGapLinks(PlanReconcile(outcome, toolList(result.ToolsOK, result.ToolsFailed, len(result.ToolsNotRequested)), absent), runID)
 
 	now := m.clock()
 	var stats ReconcileStats

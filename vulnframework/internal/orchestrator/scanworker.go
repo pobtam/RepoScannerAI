@@ -76,7 +76,10 @@ type ScanWorker struct {
 	// AfterRun is the post-sweep pass (enrich, triage, score, route), run
 	// for the repositories a run scanned. Optional.
 	AfterRun func(ctx context.Context, runID string, repos []store.Repo) error
-	Log      *slog.Logger
+	// NuGuard is the worker's NuGuard ceiling and status probe. Nil leaves
+	// NuGuard to the adapter's own configuration and publishes no status.
+	NuGuard *NuGuardControl
+	Log     *slog.Logger
 }
 
 // Recover marks requests orphaned by a worker that died as interrupted, so
@@ -94,6 +97,10 @@ func (w *ScanWorker) Run(ctx context.Context) error {
 	if _, err := w.Recover(ctx); err != nil {
 		return err
 	}
+	if err := w.PublishNuGuardStatus(ctx); err != nil {
+		w.log().Error("NuGuard status", "error", err)
+	}
+	go w.publishNuGuardStatusEvery(ctx)
 	for {
 		did, err := w.RunOnce(ctx)
 		if ctx.Err() != nil {
@@ -158,6 +165,19 @@ func (w *ScanWorker) RunOnce(ctx context.Context) (did bool, err error) {
 		return true, nil
 	}
 
+	// Each repository's NuGuard options, resolved now, at claim: a setting
+	// changed while the request waited applies (VM-UI-F-1204).
+	sweepOpts, err := w.resolveNuGuard(ctx, byRepo)
+	if err != nil {
+		for _, r := range byRepo {
+			if ferr := st.FinishScan(ctx, r.ID, w.ID, store.ScanFailed,
+				"the NuGuard settings could not be read: "+err.Error(), "", w.Orch.clock()); ferr != nil {
+				return true, ferr
+			}
+		}
+		return true, err
+	}
+
 	// A batch is "scan all included repositories", from the interface, vfctl
 	// or the daily timer: a fleet run, so a sweep, and on the trend. A single
 	// repository's request is a manual run and stays off it, because one
@@ -171,7 +191,7 @@ func (w *ScanWorker) RunOnce(ctx context.Context) (did bool, err error) {
 	if w.Credits > 0 {
 		w.Orch.Budget.Refresh(w.Credits)
 	}
-	stats, sweepErr := w.Orch.Sweep(ctx, kind, trigger, repos, DefaultSelector)
+	stats, sweepErr := w.Orch.SweepWith(ctx, kind, trigger, repos, DefaultSelector, sweepOpts)
 	if ctx.Err() != nil {
 		// Stopped mid-run: stop() marks these interrupted.
 		return true, ctx.Err()

@@ -240,12 +240,33 @@ commit, that is a coverage gap, never a clean result.
    anyone who can run `docker inspect` on the host can read it, as with the
    token.
 
-**Settings** (`deploy/.env`):
+**Defaults** (`deploy/.env`), for a fleet nobody has configured in the
+interface yet:
 - `NUGUARD_TOOLS`: default `nga-rules,atlas,semgrep`.
 - `NUGUARD_INCLUDE_POSTURE`: default `false`. When on, posture observations
   are only counted in the inventory.
 - `NUGUARD_TIMEOUT`: default `10m`, inside the 15-minute scan limit. The
   service's own `job_timeout_s` is 540, inside that.
+
+**The ceiling** (`deploy/.env`). Security owners control NuGuard from the
+interface ("AI scanning (NuGuard)"): on or off for the fleet, a repository
+or one scan, its tools and posture. They choose within what these flags on
+the scan worker allow, never beyond:
+
+| Setting | Flag | Default | What it lets users do |
+|---|---|---|---|
+| `NUGUARD_URL` | `-nuguard-url` | empty | Anything at all. Empty means NuGuard is unavailable everywhere, and the interface says so in one line. |
+| `NUGUARD_ALLOW_TOOLS` | `-nuguard-allow-tools` | `nga-rules,atlas,semgrep` | Which of NuGuard's AI tools they may choose. Only those three can be listed: dependency, IaC and container scanning stay with this project's own tools. |
+| `NUGUARD_ALLOW_POSTURE` | `-nuguard-allow-posture` | `true` | Whether they may ask for posture observations (counted into the inventory, never findings). |
+| `NUGUARD_MAX_TIMEOUT` | `-nuguard-max-timeout` | `10m` | The longest time limit they may set. |
+| `NUGUARD_SBOM_MAX_BYTES` | `-nuguard-sbom-max-bytes` | `4194304` | The largest AI-SBOM a scan may keep. A larger one is not stored, and the scan says why. |
+
+The worker refuses to start if a default exceeds the ceiling. If you lower
+the ceiling under a stored setting, every scan clips the stored value to the
+ceiling and records the clip, with the reason, on the scan. It is never
+silently honoured. The worker checks NuGuard at start-up and every 5 minutes
+(every 30 seconds while it cannot be reached), and publishes what it finds
+for the interface: the API never talks to NuGuard and holds no key.
 
 **Known blocker for proxied networks:** NuGuard's clone step drops
 `HTTPS_PROXY` and the CA variables (`_INHERITED_ENV` in
@@ -253,8 +274,12 @@ commit, that is a coverage gap, never a clean result.
 proxy. This VM uses a port firewall, not a proxy. A deployment behind a
 proxy must wait for the upstream fix.
 
-**To turn it off:** empty `NUGUARD_URL` and restart the worker. Scans then
-record no inventory, and the page says "not measured".
+**To turn it off:** for the whole deployment, empty `NUGUARD_URL` and
+restart the worker. Scans then record no inventory, and the page says "not
+measured". A security owner can also switch it off in the interface, for the
+fleet or one repository, without a restart. Either way NuGuard's open
+findings stay open, flagged not re-observed: absence from a scan that did
+not run NuGuard is not evidence of a fix.
 
 ## Day to day
 

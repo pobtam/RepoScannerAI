@@ -29,6 +29,7 @@ import { api } from '../../api/client';
 import type { Finding } from '../../api/schemas';
 import { Absent, Badge, Caveat, CopyButton, ErrorState, Loading, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
+import { NuGuardFindingSection } from '../nuguard/NuGuard';
 import {
   epssLabel,
   formatDate,
@@ -181,6 +182,8 @@ export function FindingDetail({ fingerprint }: { fingerprint: string }) {
             </Field>
           </dl>
         </Panel>
+
+        {f.nuguard && <NuGuardFindingSection d={f.nuguard} />}
 
         <Panel title="Risk">
           <dl className="record">

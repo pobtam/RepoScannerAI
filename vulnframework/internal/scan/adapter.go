@@ -7,10 +7,12 @@ package scan
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 )
 
 // Language identifies a repository language for adapter selection.
@@ -92,6 +94,12 @@ type RunOpts struct {
 	RunID     string
 	Repo      string
 	CommitSHA string
+
+	// NuGuard is the NuGuard options this repository's scan resolved to
+	// (nuguardopt.ResolveNuGuardOptions, run by the scan worker), or nil
+	// where nothing resolved any and the adapter's own configuration
+	// applies. No secret: tools, posture, timeout and where each came from.
+	NuGuard *nuguardopt.Effective
 }
 
 // RawOutput is a tool's verbatim output plus the context needed to normalise
@@ -123,6 +131,15 @@ type RawOutput struct {
 	// merges it into the result's ToolVersions (VM-F-202). Nil for a tool
 	// with nothing further to report.
 	Versions map[string]string
+
+	// Requested names the tools a wrapping adapter asked for in this run, so
+	// SubTools can tell a tool that was asked for and is missing from one
+	// that was not asked for. Nil for a one-tool adapter.
+	Requested []string
+
+	// SBOM is a document the tool returned beside its findings because the
+	// scan asked to keep it (NuGuard's AI-SBOM). Nil when not asked for.
+	SBOM json.RawMessage
 }
 
 // Adapter is the scanner contract (VM-AD §8.4).

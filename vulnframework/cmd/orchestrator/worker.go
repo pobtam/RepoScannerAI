@@ -29,6 +29,7 @@ type workerConfig struct {
 	id            string
 	discoverEvery time.Duration
 	discover      gh.DiscoverOptions
+	nuguard       *orchestrator.NuGuardControl
 }
 
 func runWorker(ctx context.Context, log *slog.Logger, c workerConfig) error {
@@ -37,7 +38,7 @@ func runWorker(ctx context.Context, log *slog.Logger, c workerConfig) error {
 		host, _ := os.Hostname()
 		id = fmt.Sprintf("%s-%d-%s", host, os.Getpid(), time.Now().UTC().Format("20060102T150405Z"))
 	}
-	w := &orchestrator.ScanWorker{Orch: c.orch, ID: id, Credits: c.credits, Log: log}
+	w := &orchestrator.ScanWorker{Orch: c.orch, ID: id, Credits: c.credits, Log: log, NuGuard: c.nuguard}
 	if c.pass != nil {
 		w.AfterRun = func(ctx context.Context, runID string, repos []store.Repo) error {
 			_, err := c.pass.Run(ctx, runID, repos)

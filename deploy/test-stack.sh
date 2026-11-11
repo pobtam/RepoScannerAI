@@ -17,15 +17,21 @@
 #     and an AI inventory; a NuGuard scan that is partial, recorded as a
 #     gap; and NuGuard down, recorded as a gap with the scan otherwise
 #     complete. The real NuGuard image is not used: see DEPLOY.md.
+#   * NuGuard controls: a security owner turns NuGuard off for a
+#     repository, scans it, and its open NuGuard finding stays open, flagged
+#     not re-observed; an engineer sees the settings read-only and cannot
+#     change them (403); a scan asking for fewer tools records the narrowing
+#     on the run.
 #
 # Run deploy/build.sh first (SKIP_SCANNER=1 deploy/build.sh if the scanner
 # image is already built). To test a branch without touching the v1 images a
 # running stack uses, build and test under another tag:
 #   VF_IMAGE_TAG=branch-test SKIP_SCANNER=1 deploy/build.sh
-#   VF_IMAGE_TAG=branch-test deploy/test-stack.sh The test's database lives in memory (tmpfs), so
-# each run starts empty and leaves no database volume. The stack is stopped
-# at the end; its other Docker
-# volumes (vf-stacktest_*) are kept, as nothing here deletes volumes.
+#   VF_IMAGE_TAG=branch-test deploy/test-stack.sh
+#
+# The test's database lives in memory (tmpfs), so each run starts empty and
+# leaves no database volume. The stack is stopped at the end; its other
+# Docker volumes (vf-stacktest_*) are kept, as nothing here deletes volumes.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -204,6 +210,85 @@ grep -q 'NGA-PROMPT-INJ-001' "$WORK/code.json" || fail "NuGuard's prompt-injecti
 ok "a scan with a NuGuard code finding and an AI inventory"
 if grep -q 'stacktest-nuguard-key\|stacktest-token' "$WORK/code.json"; then fail "a credential was served"; fi
 ok "neither credential is served"
+
+echo "NuGuard controls"
+# put PATH BODY: a security owner's settings write through the front door.
+put() {
+  local csrf
+  csrf="$(curl -sk -u "admin:$PW" "$U/v1/csrf" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
+  code -u "admin:$PW" -X PUT -H 'Sec-Fetch-Site: same-origin' -H "X-CSRF-Token: $csrf" -d "$2" "$U$1"
+}
+# as_engineer METHOD PATH: the API as an engineer, from inside the compose
+# network (the front door has one login, a security owner, and strips any
+# identity header a client sends). Prints the status, then the body.
+as_engineer() {
+  docker exec "$PROJECT-scanworker-1" curl -s -w '\n%{http_code}' -X "$1" \
+    -H 'X-Auth-User: eng' -H 'X-Auth-Level: engineer' -H 'Sec-Fetch-Site: same-origin' \
+    -H 'Content-Type: application/json' -d "${3:-}" "http://api:8080$2"
+}
+# ng_finding prints the NuGuard prompt-injection finding's state, and
+# whether it is flagged not re-observed.
+ng_finding() {
+  curl -sk -u "admin:$PW" "$U/v1/findings?scope=all&repo=octo/go-api&found_by=nuguard&limit=500" |
+    python3 -c 'import json,sys
+fs=[f for f in json.load(sys.stdin)["findings"] if f["identity"].get("rule_id")=="NGA-PROMPT-INJ-001"]
+print((fs[0]["state"] if fs else "missing"), "flagged" if fs and fs[0]["observation"]["not_reobserved"] else "unflagged")'
+}
+st_json() { curl -sk -u "admin:$PW" "$U/v1/nuguard" | python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
+# The worker checked at start-up, before the sidecar listened, and re-checks
+# every 30 seconds while NuGuard cannot be reached.
+for _ in $(seq 1 45); do
+  [ "$(st_json 'd["configured"] and d["status"].get("reachable") and d["status"].get("version_ok")')" = "True" ] && break
+  sleep 2
+done
+[ "$(st_json 'd["configured"] and d["status"].get("reachable") and d["status"].get("version_ok")')" = "True" ] ||
+  fail "the worker's NuGuard status is not configured, reachable and on the pinned version: $(curl -sk -u "admin:$PW" "$U/v1/nuguard" | head -c 400)"
+ok "the scan worker publishes NuGuard's status: configured, reachable, pinned version"
+
+out="$(as_engineer GET /v1/nuguard)"
+[ "$(printf '%s' "$out" | tail -n1)" = "200" ] || fail "an engineer cannot read the NuGuard page: $out"
+printf '%s' "$out" | sed '$d' | grep -q '"can_edit":false' || fail "the NuGuard page is not read-only for an engineer: $out"
+out="$(as_engineer PUT /v1/nuguard/settings '{"enabled":false,"tools":[],"include_posture":false,"timeout_s":60}')"
+[ "$(printf '%s' "$out" | tail -n1)" = "403" ] || fail "an engineer changed NuGuard's settings: $out"
+printf '%s' "$out" | grep -q 'security-owner level' || fail "the engineer's refusal does not say why: $out"
+out="$(as_engineer PUT /v1/repos/octo/go-api/nuguard '{"mode":"off"}')"
+[ "$(printf '%s' "$out" | tail -n1)" = "403" ] || fail "an engineer set a repository override: $out"
+ok "an engineer sees NuGuard read-only and is refused a change (403)"
+
+before="$(ng_finding | cut -d' ' -f1)"
+case "$before" in missing|VERIFIED) fail "the NuGuard finding is $before before the test" ;; esac
+[ "$(put /v1/repos/octo/go-api/nuguard '{"mode":"off","reason":"stack test"}')" = "200" ] ||
+  fail "a security owner could not turn NuGuard off for octo/go-api"
+st="$(scan_now)"
+case "$st" in "finished|") ;; *) fail "the scan with NuGuard off ended '$st'" ;; esac
+[ "$(ng_finding)" = "$before flagged" ] ||
+  fail "turning NuGuard off changed its finding: $(ng_finding); want it still $before, flagged not re-observed"
+curl -sk -u "admin:$PW" "$U/v1/repos/octo/go-api/nuguard" | python3 -c '
+import json,sys
+r=json.load(sys.stdin)["recent"][0]
+assert r["effective"]["enabled"] is False and r["effective"]["reason"]=="off for this repository", r
+assert {"tool":"nuguard","reason":"off for this repository"} in r["not_requested"], r' ||
+  fail "the scan with NuGuard off does not record it as not requested"
+ok "NuGuard off for a repository: not run, recorded not requested, and its open finding stays open, flagged"
+[ "$(put /v1/repos/octo/go-api/nuguard '{"mode":"inherit"}')" = "200" ] || fail "clearing the override"
+
+csrf="$(curl -sk -u "admin:$PW" "$U/v1/csrf" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
+[ "$(code -u "admin:$PW" -X POST -H 'Sec-Fetch-Site: same-origin' -H "X-CSRF-Token: $csrf" \
+  -d '{"repo":"octo/go-api","nuguard":{"mode":"on","tools":["atlas"]}}' "$U/v1/scans")" = "201" ] ||
+  fail "a scan asking NuGuard for fewer tools was not accepted"
+for _ in $(seq 1 120); do
+  st="$(curl -sk -u "admin:$PW" "$U/v1/scans?repo=octo/go-api&limit=1" | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["status"])')"
+  case "$st" in queued|running) sleep 2 ;; *) break ;; esac
+done
+run="$(curl -sk -u "admin:$PW" "$U/v1/scans?repo=octo/go-api&limit=1" | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["run_id"])')"
+curl -sk -u "admin:$PW" "$U/v1/runs/$run" | python3 -c '
+import json,sys
+ng=[n for n in json.load(sys.stdin).get("nuguard",[]) if n["repo"]=="octo/go-api"]
+assert ng and ng[0]["effective"]["tools"]==["atlas"], ng
+tools={n["tool"] for n in ng[0].get("not_requested",[])}
+assert {"nuguard/nga-rules","nuguard/semgrep"} <= tools, ng' ||
+  fail "the run $run does not record the scan's narrowing: $(curl -sk -u "admin:$PW" "$U/v1/runs/$run" | head -c 600)"
+ok "a scan asking for fewer tools records the narrowing on its run ($run)"
 
 st="$(scan_now)"
 case "$st" in "finished|partial: tool_failed: nuguard/osv"*) ;; *) fail "a partial NuGuard scan ended '$st'" ;; esac

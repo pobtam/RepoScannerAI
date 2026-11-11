@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 	"github.com/wanaware/vulnframework/internal/report"
 	"github.com/wanaware/vulnframework/internal/store"
 )
@@ -56,6 +57,9 @@ type ScanRequestView struct {
 	StartedAt   *time.Time `json:"started_at,omitempty"`
 	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 	RetryOf     string     `json:"retry_of,omitempty"`
+	// NuGuard is what the request asked of NuGuard; absent asked nothing,
+	// and the repository and fleet settings applied (VM-UI-F-1204).
+	NuGuard *nuguardopt.Request `json:"nuguard,omitempty"`
 }
 
 // ScanRequestResult is the answer to a scan request.
@@ -87,7 +91,7 @@ func viewOf(r store.ScanRequest) ScanRequestView {
 	return ScanRequestView{
 		ID: r.ID, Repo: r.Repo, BatchID: r.BatchID, Source: string(r.Source), RequestedBy: r.RequestedBy,
 		RequestedAt: r.RequestedAt, Status: string(r.Status), Reason: r.Reason, RunID: r.RunID,
-		StartedAt: r.StartedAt, FinishedAt: r.FinishedAt, RetryOf: r.RetryOf,
+		StartedAt: r.StartedAt, FinishedAt: r.FinishedAt, RetryOf: r.RetryOf, NuGuard: r.NuGuard,
 	}
 }
 
@@ -167,6 +171,28 @@ func (s *Server) sameOrigin(r *http.Request) (bool, string) {
 	}
 }
 
+// checkOwnerWrite runs checks 1-3, shared by every write: the
+// security-owner level, the same origin and the CSRF token. needs, ask and
+// from word the refusals for the write in hand.
+func (s *Server) checkOwnerWrite(w http.ResponseWriter, r *http.Request, needs, ask, from string) bool {
+	p := principalFrom(r.Context())
+	if p.Recipient.Level < report.LevelSecurityOwner {
+		s.fail(w, r, http.StatusForbidden, "not permitted", needs, ask)
+		return false
+	}
+	if ok, why := s.sameOrigin(r); !ok {
+		s.fail(w, r, http.StatusForbidden, "cross-site request refused", why, from)
+		return false
+	}
+	if !s.validCSRF(p.Recipient.ID, r.Header.Get(CSRFHeader)) {
+		s.fail(w, r, http.StatusForbidden, "missing or invalid CSRF token",
+			"a write must carry "+CSRFHeader+" from GET /v1/csrf",
+			"reload the page and retry")
+		return false
+	}
+	return true
+}
+
 // guardWrite runs checks 1-4. It writes the refusal and returns false when
 // the request may not proceed.
 func (s *Server) guardWrite(w http.ResponseWriter, r *http.Request) (store.ScanSource, string, bool) {
@@ -177,21 +203,8 @@ func (s *Server) guardWrite(w http.ResponseWriter, r *http.Request) (store.ScanS
 			"run real mode or the deployed stack, where a scan worker drains the queue")
 		return "", "", false
 	}
-	if p.Recipient.Level < report.LevelSecurityOwner {
-		s.fail(w, r, http.StatusForbidden, "not permitted",
-			"requesting a scan needs the security-owner level",
-			"ask a security owner to request it")
-		return "", "", false
-	}
-	if ok, why := s.sameOrigin(r); !ok {
-		s.fail(w, r, http.StatusForbidden, "cross-site request refused", why,
-			"request scans from this application's own pages, or with vfctl")
-		return "", "", false
-	}
-	if !s.validCSRF(p.Recipient.ID, r.Header.Get(CSRFHeader)) {
-		s.fail(w, r, http.StatusForbidden, "missing or invalid CSRF token",
-			"a write must carry "+CSRFHeader+" from GET /v1/csrf",
-			"reload the page and retry")
+	if !s.checkOwnerWrite(w, r, "requesting a scan needs the security-owner level",
+		"ask a security owner to request it", "request scans from this application's own pages, or with vfctl") {
 		return "", "", false
 	}
 	n, err := s.cfg.Store.CountScanRequests(r.Context(), p.Recipient.ID, s.now().Add(-time.Minute))
@@ -226,11 +239,12 @@ func (s *Server) handleScanRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Repo string `json:"repo"`
+		Repo    string           `json:"repo"`
+		NuGuard *scanNuGuardBody `json:"nuguard"`
 	}
 	if err := strictJSON(r, &body); err != nil {
 		s.fail(w, r, http.StatusBadRequest, "bad request", err.Error(),
-			`send {"repo": "owner/name"} and nothing else`)
+			`send {"repo": "owner/name"}, optionally with "nuguard": {"mode", "tools"?, "include_posture"?, "keep_sbom"?}, and nothing else`)
 		return
 	}
 	if !repoNameRe.MatchString(body.Repo) || strings.Contains(body.Repo, "..") {
@@ -257,10 +271,15 @@ func (s *Server) handleScanRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ng, ok := s.scanNuGuard(w, r, body.NuGuard)
+	if !ok {
+		return
+	}
+
 	got, merged, err := s.cfg.Store.EnqueueScan(ctx, store.ScanRequest{
 		ID: store.NewScanRequestID(s.now()), Repo: body.Repo, Source: source,
 		RequestedBy: who, RequestedAt: s.now(), Status: store.ScanQueued,
-		RetryOf: retryOf(ctx, s.cfg.Store, body.Repo),
+		RetryOf: retryOf(ctx, s.cfg.Store, body.Repo), NuGuard: ng,
 	})
 	if err != nil {
 		s.failStore(w, r, err)
@@ -281,8 +300,18 @@ func (s *Server) handleScanAll(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := emptyBody(r); err != nil {
-		s.fail(w, r, http.StatusBadRequest, "bad request", err.Error(), "send no body")
+	// No body, or {"nuguard": {...}}: one scan-level option for every
+	// repository in the batch (VM-UI-F-1204).
+	var body struct {
+		NuGuard *scanNuGuardBody `json:"nuguard"`
+	}
+	if err := optionalJSON(r, &body); err != nil {
+		s.fail(w, r, http.StatusBadRequest, "bad request", err.Error(),
+			`send no body, or {"nuguard": {"mode", "tools"?, "include_posture"?, "keep_sbom"?}} and nothing else`)
+		return
+	}
+	ng, ok := s.scanNuGuard(w, r, body.NuGuard)
+	if !ok {
 		return
 	}
 	ctx := r.Context()
@@ -303,7 +332,7 @@ func (s *Server) handleScanAll(w http.ResponseWriter, r *http.Request) {
 		}
 		got, merged, err := s.cfg.Store.EnqueueScan(ctx, store.ScanRequest{
 			ID: store.NewScanRequestID(s.now()), Repo: name, BatchID: out.BatchID, Source: source,
-			RequestedBy: who, RequestedAt: s.now(), Status: store.ScanQueued,
+			RequestedBy: who, RequestedAt: s.now(), Status: store.ScanQueued, NuGuard: ng,
 		})
 		if err != nil {
 			s.failStore(w, r, err)
@@ -392,6 +421,19 @@ func strictJSON(r *http.Request, into any) error {
 		return errors.New("the body has more than one JSON value")
 	}
 	return nil
+}
+
+// optionalJSON is strictJSON for a body that may also be empty.
+func optionalJSON(r *http.Request, into any) error {
+	raw, err := io.ReadAll(io.LimitReader(r.Body, 1025))
+	if err != nil {
+		return err
+	}
+	if len(bytes.TrimSpace(raw)) == 0 {
+		return nil
+	}
+	r.Body = io.NopCloser(bytes.NewReader(raw))
+	return strictJSON(r, into)
 }
 
 func emptyBody(r *http.Request) error {

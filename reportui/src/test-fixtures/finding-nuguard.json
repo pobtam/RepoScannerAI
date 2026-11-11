@@ -1,0 +1,120 @@
+{
+  "annotations": {
+    "nuguard/0.9.15/fingerprint": "nf1_1a1b1c1d1e1f10111213141516171819",
+    "nuguard/0.9.15/mitre_atlas_technique": "AML.T0051",
+    "nuguard/0.9.15/owasp_llm_ref": "LLM01",
+    "nuguard/0.9.15/source_tool": "nga-rules"
+  },
+  "category": "code",
+  "classification": {
+    "dep_class": "n/a",
+    "exploit_intel_unavailable": [
+      "EPSS (exploit prediction): nothing answered for this finding's identifiers, so the absence is not a score of zero",
+      "KEV (CISA known-exploited): the catalogue was not consulted for this finding, so the absence is not a determination that it is unexploited"
+    ],
+    "reachable": "true",
+    "severity": "HIGH",
+    "transitive": false
+  },
+  "description": "Untrusted request input is concatenated into the system prompt without a delimiter or role separation, so a user can override the model's instructions.",
+  "description_source": "nuguard",
+  "fingerprint": "e184414e81b24670",
+  "identity": {
+    "rule_id": "NGA-PROMPT-INJ-001"
+  },
+  "location": {
+    "file": "src/agent/chat.ts",
+    "function": "buildSystemPrompt",
+    "line": 42
+  },
+  "nuguard": {
+    "effective": {
+      "clips": [
+        {
+          "asked": "semgrep",
+          "field": "tools",
+          "used": "left out",
+          "why": "not offered by the service"
+        }
+      ],
+      "enabled": true,
+      "from": "scan",
+      "include_posture": true,
+      "keep_sbom": true,
+      "not_requested": [
+        {
+          "reason": "not offered by the service",
+          "tool": "nuguard/semgrep"
+        }
+      ],
+      "timeout_s": 300,
+      "tools": [
+        "nga-rules",
+        "atlas"
+      ]
+    },
+    "function": "buildSystemPrompt",
+    "last_run": "M-000001",
+    "mitre_atlas_technique": "AML.T0051",
+    "owasp_llm_ref": "LLM01",
+    "rule": "NGA-PROMPT-INJ-001",
+    "sub_tool": "nga-rules",
+    "version": "0.9.15"
+  },
+  "observation": {
+    "first_seen_at": "2026-11-07T00:34:38.578699Z",
+    "first_seen_run": "M-000001",
+    "last_seen_at": "2026-11-07T00:34:38.578699Z",
+    "last_seen_run": "M-000001",
+    "not_reobserved": false
+  },
+  "partition": "unresolved",
+  "provenance": {
+    "tools": [
+      "nuguard"
+    ]
+  },
+  "refs": {
+    "advisory_url": "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
+  },
+  "repo": "octo/api",
+  "score": {
+    "base": 7.5,
+    "caveat": "This priority rests on 3 of 5 declared inputs: KEV (CISA known-exploited) and EPSS (exploit prediction) are unavailable because no feed is wired (OQ-AUDIT-01). Those two answer whether the vulnerability is being exploited now and how likely it is to be — the questions that most often change what a human does — so this score is not merely less precise, it is missing the input that would have argued loudest. Treat it as a floor, not an assessment.",
+    "dep_multiplier": 1,
+    "epss_boost": 0,
+    "explain": [
+      "base=7.50 from severity HIGH (no CVSS)",
+      "kev UNAVAILABLE: nothing answered for this finding's identifiers, so kev_boost=+3.00 can never apply. This is not kev=false — nobody looked (OQ-AUDIT-01)",
+      "epss UNAVAILABLE: nothing answered for this finding's identifiers, so the epss coefficient of 2.00 can never apply. This is not epss=0 — nobody looked (OQ-AUDIT-01, VM-OQ-07)",
+      "reach=×1.00 (true)",
+      "dep_class=×1.00 (n/a)",
+      "tier=×1.00 (tier 2)",
+      "score=7.5000 priority=P1"
+    ],
+    "fanout_multiplier": 1,
+    "inputs": {
+      "available": 3,
+      "declared": 5,
+      "unavailable": [
+        "KEV (CISA known-exploited)",
+        "EPSS (exploit prediction)"
+      ]
+    },
+    "kev_boost": 0,
+    "priority": "P1",
+    "reach_multiplier": 1,
+    "recomputed": true,
+    "score": 7.5,
+    "thresholds_calibrated": false,
+    "tier_multiplier": 1
+  },
+  "sla": {
+    "age_days": 0,
+    "caveat": "no SLA has been computed for this finding, so it is neither within its window nor breached — those figures are absent, not zero",
+    "computed": false,
+    "windows_provisional": true
+  },
+  "state": "DETECTED",
+  "versions": {}
+}

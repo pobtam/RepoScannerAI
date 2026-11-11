@@ -38,8 +38,8 @@ FROM runs WHERE id = $1`
 	qUpsertScanResult = `
 INSERT INTO repo_scan_results
   (run_id, repo, outcome, tools_ok, tools_failed, failure_cause, failure_detail, failure_owner, duration_sec,
-   commit_sha, ai_inventory)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+   commit_sha, ai_inventory, effective_nuguard, tools_not_requested)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 ON CONFLICT (run_id, repo) DO UPDATE SET
   outcome = EXCLUDED.outcome,
   tools_ok = EXCLUDED.tools_ok,
@@ -49,7 +49,9 @@ ON CONFLICT (run_id, repo) DO UPDATE SET
   failure_owner = EXCLUDED.failure_owner,
   duration_sec = EXCLUDED.duration_sec,
   commit_sha = EXCLUDED.commit_sha,
-  ai_inventory = EXCLUDED.ai_inventory`
+  ai_inventory = EXCLUDED.ai_inventory,
+  effective_nuguard = EXCLUDED.effective_nuguard,
+  tools_not_requested = EXCLUDED.tools_not_requested`
 
 	// Most recent first by when the run STARTED. Ordering by run_id compared
 	// identifiers as text across run kinds, so every sweep run (S-...) sorted
@@ -57,7 +59,7 @@ ON CONFLICT (run_id, repo) DO UPDATE SET
 	qScanResults = `
 SELECT s.run_id, s.repo, s.outcome, s.tools_ok::text, s.tools_failed::text,
        s.failure_cause, s.failure_detail, s.failure_owner, s.duration_sec,
-       s.commit_sha, s.ai_inventory::text
+       s.commit_sha, s.ai_inventory::text, s.effective_nuguard::text, s.tools_not_requested::text
 FROM repo_scan_results s JOIN runs r ON r.id = s.run_id
 WHERE s.repo = $1 ORDER BY r.started_at DESC, s.run_id DESC LIMIT $2`
 
@@ -87,7 +89,7 @@ SELECT source FROM finding_observations WHERE fingerprint = $1 ORDER BY run_id, 
 
 	// Unresolved findings in a repository that the given run did not observe.
 	qReconcileResult = `
-SELECT outcome, tools_ok::text, tools_failed::text
+SELECT outcome, tools_ok::text, tools_failed::text, COALESCE(jsonb_array_length(tools_not_requested), 0)
 FROM repo_scan_results WHERE run_id = $1 AND repo = $2`
 
 	// Every source that has observed each absent finding: what tool-aware

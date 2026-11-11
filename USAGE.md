@@ -89,6 +89,10 @@ wondering whether the filter is broken.
 all in the URL, so you can copy the address and send someone exactly what you
 are looking at.
 
+**Found by** filters on the tool that reported a finding: NuGuard, or any of
+this project's own scanners. Its options carry no counts (the API does not
+count this dimension yet), and the panel says so.
+
 ### Reading a row
 
 * **Priority** — P0 is most urgent. A ⚠ next to it means the figure rests on
@@ -154,6 +158,18 @@ A repository that has **never** been scanned says "never scanned" rather than
 "0 hours", because an age that does not exist should not be rendered as a
 small one.
 
+**Not requested is not failed.** A tool a scan did not ask for (NuGuard
+switched off for a repository or a scan, or one of its tools not chosen) is
+listed under "Tools not requested", with the reason, apart from the gaps:
+
+* *failed* means the tool was asked and lost: a coverage gap, and the scan
+  is partial;
+* *not requested* means nobody asked: the scan can still be complete.
+
+Either way, the findings that tool reported before are **not** closed by its
+silence. They keep their state and are flagged not re-observed until a scan
+with that tool looks again.
+
 ---
 
 ## History
@@ -182,6 +198,51 @@ requests, and the remediation windows in force.
 A repository with **no test suite** is flagged prominently. It matters because
 without tests there is no way to prove a fix worked, so the system does not
 attempt automated fixes there at all.
+
+The header shows the **commit** the latest scan read, short; hover for the
+full SHA, and copy it with the button beside it.
+
+Where NuGuard is configured, the **NuGuard** section says what a scan of this
+repository would use now, and where each part comes from (this repository,
+the fleet setting, or the scan worker's default), with the last ten scans'
+options. Security owners can set an override here: on, off, or inherit, with
+this repository's own tools if wanted. Where a scan kept its AI-SBOM, the "AI
+components detected" panel offers it for download.
+
+---
+
+## AI scanning (NuGuard)
+
+In the navigation for engineers and security owners only; the public does not
+see it. NuGuard adds AI code rules and an AI component inventory. Dependency,
+IaC and container scanning stay with this project's own tools.
+
+Where the deployment has no NuGuard, the page says one line, "NuGuard is not
+configured on this deployment", and nothing else.
+
+* **Status:** what the scan worker last found: reachable, the service's
+  version against the pinned one, and when it checked. If the worker has not
+  reported for 15 minutes, the page says the status is unknown rather than
+  showing old values as current.
+* **Fleet settings:** on or off, the tools, posture (counted into the
+  inventory, never findings) and the time limit. A tool the operator does not
+  allow, or the service does not offer, is shown greyed out with the reason.
+  **Save** asks you to confirm, and says how many repositories the change
+  affects; repositories with their own on/off override keep it.
+* **Repository overrides** and the **settings history:** every change, who
+  made it, when, before and after, and the reason given. Kept forever.
+
+Engineers see all of it read-only.
+
+**Options for one scan.** "Scan now" and "Scan all" have a collapsed
+**NuGuard options** section: default, on or off, and when on, the tools,
+posture and "Keep the AI-SBOM". With options chosen, the page shows what the
+scan would use before you start it, including anything the operator's limits
+cut ("semgrep → left out (not offered by the service)"). Leave it closed and
+"Scan now" is the same one click it always was.
+
+**Turning NuGuard off does not close its findings.** They stay open, flagged
+not re-observed, until a scan with NuGuard looks again.
 
 ---
 

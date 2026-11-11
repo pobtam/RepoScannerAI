@@ -48,6 +48,9 @@ type Script struct {
 	// Then is what a resubmission under a released key does; nil repeats this
 	// script without its ErrorCode.
 	Then *Script
+	// SBOM is the AI-SBOM served when include_sbom is asked; nil serves a
+	// small generated one.
+	SBOM []byte
 }
 
 // Submission is one POST /v1/scans as the fake received it.
@@ -73,6 +76,7 @@ type job struct {
 	script    *Script
 	polls     int
 	status    string
+	options   map[string]any
 }
 
 // Server is the fake.
@@ -88,6 +92,10 @@ type Server struct {
 	ToolsAllowed []string
 	// NotReady makes readiness answer 503.
 	NotReady bool
+	// Narrow serves only the tools a submission asked for, as the service
+	// does. Off by default: a captured result is then replayed verbatim,
+	// whatever was asked, which is what the fixtures record.
+	Narrow bool
 	// RateLimitOnce makes the next submission answer 429 with this
 	// Retry-After, in seconds, once.
 	RateLimitOnce int
@@ -160,6 +168,13 @@ func (s *Server) Requests() []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return append([]string(nil), s.requests...)
+}
+
+// SetNotReady changes readiness while the server is serving.
+func (s *Server) SetNotReady(v bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.NotReady = v
 }
 
 // Headers lists every request's headers, in order.
@@ -292,6 +307,7 @@ func (s *Server) submit(w http.ResponseWriter, r *http.Request) {
 	j := &job{
 		id: fmt.Sprintf("scn_FAKE%022d", s.seq), repoURL: body.RepoURL, ref: body.Ref,
 		clientRef: body.ClientReference, key: key, token: body.GitHubToken, script: sc, polls: sc.Polls, status: "queued",
+		options: body.Options,
 	}
 	s.jobs[j.id] = j
 	if key != "" {
@@ -395,7 +411,59 @@ func (s *Server) result(w http.ResponseWriter, j *job) {
 	if cov, ok := doc["coverage"].(map[string]any); ok && j.script.EchoToken {
 		cov["gaps"] = []any{"clone used token " + j.token}
 	}
+	if s.Narrow {
+		narrow(doc, j.options)
+	}
+	if keep, _ := j.options["include_sbom"].(bool); keep {
+		sbom := j.script.SBOM
+		if sbom == nil {
+			sbom = []byte(`{"bomFormat":"NuGuard-AI-SBOM","specVersion":"1","components":[{"type":"model-provider","name":"openai"}]}`)
+		}
+		doc["sbom"] = json.RawMessage(sbom)
+	}
 	writeJSON(w, http.StatusOK, doc)
+}
+
+// narrow serves only what the submission asked for, as the service does:
+// the tool runs and findings of the tools in options.tools. A captured
+// result names every tool it ran; with Narrow, a scan that asked for fewer
+// is not answered with the others' findings.
+func narrow(doc map[string]any, options map[string]any) {
+	asked, ok := options["tools"].([]any)
+	if !ok {
+		return
+	}
+	want := map[string]bool{}
+	for _, t := range asked {
+		if s, ok := t.(string); ok {
+			want[s] = true
+		}
+	}
+	if cov, ok := doc["coverage"].(map[string]any); ok {
+		if runs, ok := cov["tool_runs"].([]any); ok {
+			kept := []any{}
+			for _, r := range runs {
+				if m, ok := r.(map[string]any); ok && want[fmt.Sprint(m["tool"])] {
+					kept = append(kept, r)
+				}
+			}
+			cov["tool_runs"] = kept
+		}
+	}
+	if findings, ok := doc["findings"].([]any); ok {
+		kept := []any{}
+		for _, f := range findings {
+			m, ok := f.(map[string]any)
+			if !ok {
+				continue
+			}
+			if src, ok := m["source_tool"].(string); ok && src != "" && !want[src] {
+				continue
+			}
+			kept = append(kept, f)
+		}
+		doc["findings"] = kept
+	}
 }
 
 func terminal(status string) bool { return status != "queued" && status != "running" }

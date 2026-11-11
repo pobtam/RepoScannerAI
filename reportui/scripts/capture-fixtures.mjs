@@ -64,9 +64,21 @@ async function main() {
     'trend.json': await get('/v1/metrics/trends?metric=open'),
     'reports.json': await get('/v1/reports'),
     'github.json': await get('/v1/github'),
+    // NuGuard on a deployment without it: the one line, and nothing else
+    // (VM-UI-F-1211). The configured views come from the Go test that drives
+    // the real worker against the fake NuGuard:
+    //   UPDATE_UI_FIXTURES=1 go test ./internal/api -run TestNuGuardViewsFromTheRealServer
+    'nuguard-demo.json': await get('/v1/nuguard'),
+    'repo-nuguard-demo.json': await get('/v1/repos/demo-org/checkout-web/nuguard'),
   };
 
+  // ONLY=name.json,other.json captures just those, leaving the rest as they
+  // were captured: the demonstration's dates move with the clock, and a full
+  // recapture rewrites fixtures whose content other tests rely on.
+  const only = process.env.ONLY?.split(',');
+
   for (const [name, body] of Object.entries(fixtures)) {
+    if (only && !only.includes(name)) continue;
     writeFileSync(`${out}/${name}`, JSON.stringify(body, null, 2) + '\n');
     console.log(`wrote ${out}/${name}`);
   }

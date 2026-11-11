@@ -96,6 +96,12 @@ func (s *Server) parseSearch(r *http.Request) (store.SearchQuery, error) {
 	for _, raw := range listParam(r, "depClass") {
 		f.DepClasses = append(f.DepClasses, model.DepClass(raw))
 	}
+	for _, raw := range listParam(r, "found_by") {
+		if !knownTool(raw) {
+			return q, fmt.Errorf("unknown found_by %q; the tools are %v", raw, KnownTools)
+		}
+		f.FoundBy = append(f.FoundBy, raw)
+	}
 
 	var err error
 	if f.Transitive, err = boolParam(r, "transitive"); err != nil {
@@ -329,7 +335,9 @@ func (s *Server) handleFinding(w http.ResponseWriter, r *http.Request) {
 			"ask the security owner group; the record is counted in every aggregate you can see")
 		return
 	}
-	s.write(w, r, http.StatusOK, s.findingDTO(r.Context(), f, true))
+	out := s.findingDTO(r.Context(), f, true)
+	out.NuGuard = s.nuguardDetail(r.Context(), f)
+	s.write(w, r, http.StatusOK, out)
 }
 
 // findingDTO renders a finding, with every honesty distinction intact.

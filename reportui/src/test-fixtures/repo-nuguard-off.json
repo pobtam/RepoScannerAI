@@ -1,0 +1,59 @@
+{
+  "can_edit": false,
+  "configured": true,
+  "effective": {
+    "enabled": false,
+    "from": "repository",
+    "include_posture": true,
+    "keep_sbom": false,
+    "not_requested": [
+      {
+        "reason": "off for this repository",
+        "tool": "nuguard"
+      }
+    ],
+    "reason": "off for this repository",
+    "timeout_s": 300,
+    "tools": [
+      "nga-rules",
+      "atlas"
+    ]
+  },
+  "override": {
+    "changed_at": "2026-10-22T10:00:00Z",
+    "changed_by": "pat",
+    "mode": "off",
+    "repo": "octo/web"
+  },
+  "recent": [
+    {
+      "effective": {
+        "enabled": false,
+        "from": "repository",
+        "include_posture": true,
+        "keep_sbom": false,
+        "not_requested": [
+          {
+            "reason": "off for this repository",
+            "tool": "nuguard"
+          }
+        ],
+        "reason": "off for this repository",
+        "timeout_s": 300,
+        "tools": [
+          "nga-rules",
+          "atlas"
+        ]
+      },
+      "not_requested": [
+        {
+          "reason": "off for this repository",
+          "tool": "nuguard"
+        }
+      ],
+      "run_at": "2026-11-07T00:34:38.578959Z",
+      "run_id": "M-000002"
+    }
+  ],
+  "repo": "octo/web"
+}

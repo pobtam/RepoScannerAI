@@ -197,6 +197,7 @@ func run() error {
 		ToolVersions:       toolVersions,
 		LeaseDuration:      *leaseFor,
 		FirstParty:         owners,
+		SBOMMaxBytes:       nuguardFlags.SBOMMaxBytes(),
 	})
 
 	// The lease sweeper runs alongside the sweep. It is the only thing
@@ -241,8 +242,22 @@ func run() error {
 	}
 
 	if *workerMode {
+		// The NuGuard ceiling, from this worker's flags: Build has already
+		// refused a default above it.
+		ceiling, err := nuguardFlags.Ceiling()
+		if err != nil {
+			return err
+		}
+		control := &orchestrator.NuGuardControl{Ceiling: ceiling, Pinned: lock.MustVersion("nuguard")}
+		if ng != nil {
+			control.Probe = func(ctx context.Context) orchestrator.NuGuardProbe {
+				p := ng.Probe(ctx)
+				return orchestrator.NuGuardProbe{Reachable: p.Reachable, ServiceVersion: p.ServiceVersion,
+					ToolsAllowed: p.ToolsAllowed, Err: p.Err}
+			}
+		}
 		return runWorker(ctx, log, workerConfig{
-			orch: o, pass: pass, account: account, credits: *credits, id: *workerID,
+			orch: o, pass: pass, account: account, credits: *credits, id: *workerID, nuguard: control,
 			discoverEvery: *discoverEvery,
 			discover:      gh.DiscoverOptions{IncludeCollaborator: *inclCollab, IncludeForks: *inclForks, MaxSizeMB: *maxSizeMB},
 		})

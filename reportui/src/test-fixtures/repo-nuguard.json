@@ -1,0 +1,59 @@
+{
+  "can_edit": true,
+  "configured": true,
+  "effective": {
+    "enabled": true,
+    "from": "fleet",
+    "include_posture": true,
+    "keep_sbom": false,
+    "not_requested": [
+      {
+        "reason": "not chosen (tools from the fleet setting)",
+        "tool": "nuguard/semgrep"
+      }
+    ],
+    "timeout_s": 300,
+    "tools": [
+      "nga-rules",
+      "atlas"
+    ]
+  },
+  "recent": [
+    {
+      "effective": {
+        "clips": [
+          {
+            "asked": "semgrep",
+            "field": "tools",
+            "used": "left out",
+            "why": "not offered by the service"
+          }
+        ],
+        "enabled": true,
+        "from": "scan",
+        "include_posture": true,
+        "keep_sbom": true,
+        "not_requested": [
+          {
+            "reason": "not offered by the service",
+            "tool": "nuguard/semgrep"
+          }
+        ],
+        "timeout_s": 300,
+        "tools": [
+          "nga-rules",
+          "atlas"
+        ]
+      },
+      "not_requested": [
+        {
+          "reason": "not offered by the service",
+          "tool": "nuguard/semgrep"
+        }
+      ],
+      "run_at": "2026-11-07T00:34:38.577311Z",
+      "run_id": "M-000001"
+    }
+  ],
+  "repo": "octo/api"
+}

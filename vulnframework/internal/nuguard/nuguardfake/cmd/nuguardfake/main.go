@@ -29,6 +29,7 @@ func (s *scripts) Set(v string) error { *s = append(*s, v); return nil }
 func main() {
 	addr := flag.String("addr", "127.0.0.1:8085", "listen address")
 	version := flag.String("version", "0.9.15", "the NuGuard version capabilities and results report")
+	narrow := flag.Bool("narrow", false, "serve only the tools each submission asked for, as the service does")
 	var sc scripts
 	flag.Var(&sc, "script", "repo-url=result.json; repeatable")
 	flag.Parse()
@@ -38,6 +39,7 @@ func main() {
 		log.Fatal("NUGUARD_FAKE_KEY must be set: the API key clients must present")
 	}
 	fake := nuguardfake.NewHandler(key, *version)
+	fake.Narrow = *narrow
 	for _, s := range sc {
 		url, file, ok := strings.Cut(s, "=")
 		if !ok {

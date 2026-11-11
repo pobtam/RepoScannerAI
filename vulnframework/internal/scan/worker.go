@@ -2,6 +2,7 @@ package scan
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 )
 
 // Worker runs a repository's applicable scanners and assembles the result
@@ -59,6 +61,15 @@ type Result struct {
 	// AIInventory is the AI component inventory, from an adapter that reports
 	// one (InventoryReporter). Nil is "not measured", never "none found".
 	AIInventory *AIInventory `json:"ai_inventory,omitempty"`
+
+	// EffectiveNuGuard is the NuGuard options this scan ran with (RunOpts),
+	// recorded as provenance (VM-F-202); nil where none were resolved.
+	EffectiveNuGuard *nuguardopt.Effective `json:"effective_nuguard,omitempty"`
+	// ToolsNotRequested are the tools this scan did not ask for, with the
+	// reason: neither ok nor failed (NotRequestedReporter).
+	ToolsNotRequested []NotRequested `json:"tools_not_requested,omitempty"`
+	// AISBOM is the AI-SBOM the scan asked to keep, as the tool returned it.
+	AISBOM *KeptSBOM `json:"ai_sbom,omitempty"`
 
 	// Deps is the repository's dependency manifest (VM-F-602, VM-AD §8.1).
 	//
@@ -111,7 +122,7 @@ func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile Repo
 
 	res := Result{
 		RunID: runID, Repo: repo, Dir: dir, CommitSHA: opts.CommitSHA,
-		ToolVersions: map[string]string{},
+		ToolVersions: map[string]string{}, EffectiveNuGuard: opts.NuGuard,
 	}
 
 	adapters := w.Registry.For(profile)
@@ -125,6 +136,16 @@ func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile Repo
 	}
 
 	for _, a := range adapters {
+		// A tool this scan did not ask for is recorded as such, and an
+		// adapter switched off is not run: neither ok nor failed, so its
+		// findings are neither verified nor counted as a gap's (VM-F-160).
+		if nr, ok := a.(NotRequestedReporter); ok {
+			list := nr.NotRequested(opts)
+			res.ToolsNotRequested = append(res.ToolsNotRequested, list...)
+			if namesTool(list, a.Name()) {
+				continue
+			}
+		}
 		res.ToolVersions[a.Name()] = a.Version()
 
 		raw, err := a.Run(ctx, dir, opts)
@@ -179,6 +200,9 @@ func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile Repo
 		if ir, ok := a.(InventoryReporter); ok {
 			res.AIInventory = ir.Inventory(raw)
 		}
+		if raw.SBOM != nil {
+			res.AISBOM = &KeptSBOM{Tool: a.Name(), Version: raw.Versions[a.Name()], Document: raw.SBOM}
+		}
 
 		// Code, secret and config findings are diff-scoped where a diff is
 		// supplied; dependency findings stay repository-wide, because a pull
@@ -224,6 +248,22 @@ func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile Repo
 	res.DurationSec = int(w.clock().Sub(started).Seconds())
 
 	return res, nil
+}
+
+// KeptSBOM is an SBOM a tool returned because the scan asked to keep it.
+type KeptSBOM struct {
+	Tool     string          `json:"tool"`
+	Version  string          `json:"version"`
+	Document json.RawMessage `json:"document"`
+}
+
+func namesTool(list []NotRequested, tool string) bool {
+	for _, n := range list {
+		if n.Tool == tool {
+			return true
+		}
+	}
+	return false
 }
 
 // gapFor records an adapter's failure as a coverage gap: with the cause and

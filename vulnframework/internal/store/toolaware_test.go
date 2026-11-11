@@ -2,6 +2,8 @@ package store_test
 
 import (
 	"context"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/wanaware/vulnframework/internal/model"
@@ -163,6 +165,30 @@ func TestAnAdapterThatDidNotRunVerifiesNothing(t *testing.T) {
 	})
 }
 
+// A scan whose every tool was not requested ran nothing: it has a tool list
+// (the not-requested one), so it is not judged by its outcome alone, and it
+// verifies nothing.
+func TestAScanThatRanNothingVerifiesNothing(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		seed := seedToolAware(t, s)
+		r := newRun(t, s, store.KindSweep)
+		if err := s.RecordScanResult(context.Background(), store.RepoScanResult{
+			RunID: r.ID, Repo: testRepo, Outcome: model.ScanComplete,
+			ToolsNotRequested: []store.ToolNotRequested{{Tool: "nuguard", Reason: "off for this repository"}},
+		}); err != nil {
+			t.Fatal(err)
+		}
+		stats, err := s.Reconcile(context.Background(), r.ID, testRepo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if stats.Verified != 0 || stats.SourceNotRun != 3 {
+			t.Errorf("stats = %+v, want nothing verified: nothing ran", stats)
+		}
+		wantRetained(t, s, seed.semgrep, "the nuguard/semgrep finding", r.ID)
+	})
+}
+
 // A secret is never "removed" by a scan in which its detector did not look.
 func TestASecretIsNotRemovedByAScanWithoutItsDetector(t *testing.T) {
 	run(t, func(t *testing.T, s store.Store) {
@@ -191,6 +217,39 @@ func TestASecretIsNotRemovedByAScanWithoutItsDetector(t *testing.T) {
 		}
 		if f.RemovedUnrotated != nil {
 			t.Errorf("secret removal recorded by a scan whose detector did not run: %+v", f.RemovedUnrotated)
+		}
+	})
+}
+
+// "Found by" filters on the tools that reported a finding (VM-UI-F-1207).
+func TestFindingsFilterByTheToolThatFoundThem(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		seed := seedToolAware(t, s)
+		for _, tc := range []struct {
+			by   []string
+			want []string
+		}{
+			{[]string{"nuguard"}, []string{seed.atlas, seed.semgrep}},
+			{[]string{"gosec"}, []string{seed.gosec}},
+			{[]string{"gosec", "nuguard"}, []string{seed.atlas, seed.gosec, seed.semgrep}},
+			{[]string{"trivy"}, nil},
+		} {
+			page, err := s.Search(context.Background(), store.SearchQuery{Scope: store.ScopeOpen,
+				Filter: store.Filter{FoundBy: tc.by}, Limit: 50,
+				Sort: store.Sort{Field: store.SortPriority, Dir: store.SortDesc}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got []string
+			for _, f := range page.Findings {
+				got = append(got, f.Fingerprint)
+			}
+			sort.Strings(got)
+			want := append([]string(nil), tc.want...)
+			sort.Strings(want)
+			if strings.Join(got, ",") != strings.Join(want, ",") {
+				t.Errorf("found by %v = %v, want %v", tc.by, got, want)
+			}
 		}
 	})
 }

@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 	"github.com/wanaware/vulnframework/internal/report"
 	"github.com/wanaware/vulnframework/internal/store"
 )
@@ -235,6 +236,10 @@ type Finding struct {
 	Provenance  Provenance        `json:"provenance"`
 	Triage      *Triage           `json:"triage,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
+	// NuGuard is a NuGuard finding's own detail, read out of its
+	// version-tagged annotations, with the options of the scan that last
+	// observed it; detail view only (VM-UI-F-1208).
+	NuGuard *NuGuardDetail `json:"nuguard,omitempty"`
 
 	// Score is the decomposition, present on the detail view and on list rows
 	// (the caveat has to travel with the priority wherever the priority goes).
@@ -408,6 +413,35 @@ type Overview struct {
 	// inline wherever the figure they qualify appears; this copy is for a
 	// reader who starts at the top.
 	Caveats []string `json:"caveats,omitempty"`
+	// NuGuard is each repository's NuGuard options in this run, with clip
+	// notes, where any were recorded (VM-UI-F-1206). Provenance, read from
+	// the scan results, not from the snapshot.
+	NuGuard []RunNuGuard `json:"nuguard,omitempty"`
+}
+
+// RunNuGuard is one repository's NuGuard options in a run.
+type RunNuGuard struct {
+	Repo         string                    `json:"repo"`
+	Effective    nuguardopt.Effective      `json:"effective"`
+	NotRequested []nuguardopt.NotRequested `json:"not_requested,omitempty"`
+}
+
+// NuGuardDetail is a NuGuard finding's own detail.
+type NuGuardDetail struct {
+	Version string `json:"version"`
+	Rule    string `json:"rule"`
+	// SubTool is which of NuGuard's tools reported it (nga-rules, atlas,
+	// semgrep).
+	SubTool             string `json:"sub_tool,omitempty"`
+	OWASPLLMRef         string `json:"owasp_llm_ref,omitempty"`
+	OWASPASIRef         string `json:"owasp_asi_ref,omitempty"`
+	MITREAtlasTechnique string `json:"mitre_atlas_technique,omitempty"`
+	Function            string `json:"function,omitempty"`
+	// LastRun is the run that last observed it, and Effective its options;
+	// absent where that scan recorded none, and Note says so.
+	LastRun   string                `json:"last_run,omitempty"`
+	Effective *nuguardopt.Effective `json:"effective,omitempty"`
+	Note      string                `json:"note,omitempty"`
 }
 
 // CoverageGap is one repository's missing or partial coverage (VM-UI-F-75x).
@@ -428,6 +462,9 @@ type CoverageGap struct {
 	// lost, which is what makes a partial gap actionable (VM-F-212).
 	ToolsOK     []string `json:"tools_ok,omitempty"`
 	ToolsFailed []string `json:"tools_failed,omitempty"`
+	// ToolsNotRequested are tools the scan did not ask for, with the reason:
+	// neither ok nor failed, and never a gap's cause (VM-UI-F-1206).
+	ToolsNotRequested []nuguardopt.NotRequested `json:"tools_not_requested,omitempty"`
 
 	// ConsecutiveRuns is how many runs in a row have produced no qualifying
 	// scan, and LastQualifyingRun the last one that did. A single-run view
@@ -463,6 +500,17 @@ type CoverageView struct {
 	// History is the per-repository outcome across recent runs, so coverage
 	// decay is visible without reading individual gaps (VM-UI-F-756).
 	History []RepoCoverageHistory `json:"history,omitempty"`
+	// NotRequested lists repositories whose latest scan did not ask for a
+	// tool, with the reason, apart from the gaps (VM-UI-F-1206).
+	NotRequested []CoverageNotRequested `json:"not_requested"`
+}
+
+// CoverageNotRequested is one repository's tools its latest scan did not
+// ask for.
+type CoverageNotRequested struct {
+	Repo  string                    `json:"repo"`
+	RunID string                    `json:"run_id"`
+	Tools []nuguardopt.NotRequested `json:"tools"`
 }
 
 // RepoCoverageHistory is one repository's recent scan outcomes, newest first.
@@ -542,6 +590,19 @@ type AIComponents struct {
 	// were requested. Not findings: they describe the components' shape and
 	// do not tell safe code from vulnerable code.
 	PostureObservations map[string]int `json:"posture_observations,omitempty"`
+	// AISBOM is the AI-SBOM this scan kept, or why it was not kept; absent
+	// where the scan did not ask to keep one.
+	AISBOM *AISBOMRef `json:"ai_sbom,omitempty"`
+}
+
+// AISBOMRef describes a kept AI-SBOM, served at
+// /v1/repos/{repo}/ai-sbom/{run_id}.
+type AISBOMRef struct {
+	Stored    bool   `json:"stored"`
+	SizeBytes int64  `json:"size_bytes"`
+	SHA256    string `json:"sha256"`
+	// Withheld says why it was not stored (over the size cap).
+	Withheld string `json:"withheld,omitempty"`
 }
 
 // Dependency is one module in a repository's manifest.

@@ -72,8 +72,66 @@ read this file first and resume from "Next".
     The chart is drawn in the design system's colours and follows dark
     mode; scanner changes are a ring and partial runs a solid dot, so they
     differ by shape as well as colour. Tests on both backends, UI tests.
+- **Built 2026-11-06, at your request: NuGuard controls in the interface**
+  (branch `feature/nuguard-ui-controls`, from `feature/nuguard-adapter`).
+  - **Committed:** the adapter work as `9042e4e` on `feature/nuguard-adapter`
+    (the new brief asked for it to be committed first), and tool-aware
+    reconciliation alone as `a71d69e`, as the brief asked. Everything else is
+    **not committed**.
+  - **What:**
+    - **Tool-aware reconciliation** (VM-F-160/161): an absent finding
+      verifies only if every source that observed it (adapter, or
+      `nuguard/<tool>`) ran ok in that scan. Otherwise it keeps its state,
+      flagged not re-observed and linked to the run. The same code covers
+      every adapter.
+    - **Resolution:** one pure function, `nuguardopt.ResolveNuGuardOptions`
+      (scan request → repository → fleet → worker defaults, then clipped to
+      the ceiling). The worker uses it at claim time, and the API's preview
+      uses it through `store.ResolveNuGuard`.
+    - **Ceiling flags:** `-nuguard-allow-tools`, `-nuguard-allow-posture`,
+      `-nuguard-max-timeout` and `-nuguard-sbom-max-bytes`. The worker
+      refuses to start with a default above the ceiling.
+    - **The scan worker:**
+      - publishes NuGuard's status every 5 minutes (every 30 seconds while
+        unreachable);
+      - skips NuGuard when it is off, recording it as not requested;
+      - records the effective options and clip notes on every repository
+        scan;
+      - keeps the AI-SBOM when a scan asks, under a size cap.
+    - **Migration 0019** (both backends): the settings, the overrides, an
+      audit table, the status row, `scan_requests.nuguard`,
+      `effective_nuguard` and `tools_not_requested` on scan results, and
+      `ai_sbom`.
+    - **API:**
+      - `GET /v1/nuguard`, `PUT /v1/nuguard/settings`,
+        `GET /v1/nuguard/audit`, `GET /v1/nuguard/preview`;
+      - `GET` and `PUT /v1/repos/{repo}/nuguard`, and
+        `GET /v1/repos/{repo}/ai-sbom/{run_id}`;
+      - `nuguard` options on both scan requests, and `found_by` on findings.
+    - **Interface:**
+      - the "AI scanning (NuGuard)" page;
+      - the repository section, the scanned commit and the AI-SBOM
+        download;
+      - scan options with a preview;
+      - "Found by", the NuGuard section on a finding, and "not requested" on
+        Coverage and the run page;
+      - requirements VM-UI-F-1201..1212 in the UI spec.
+  - **Verified:**
+    - `go vet` and `go test ./...` on both backends;
+    - `-race` on store, api, orchestrator, scan, nuguard and nuguardopt;
+    - the UI typecheck and 161 tests, and `npm run probe:layout`;
+    - `deploy/test-stack.sh` (STACK OK), built under the tag
+      `nuguard-ui-test`. It covers: NuGuard off for a repository leaves its
+      finding unchanged and flagged; an engineer is read-only and refused
+      (403); fewer tools are recorded on the run;
+    - `scripts/smoke.sh --real` (SMOKE OK);
+    - the no-NuGuard worker golden still matches.
+  - **Not verified:**
+    - a real NuGuard service and image;
+    - a live GitHub run;
+    - Docker beyond the stack test above.
 - **Built 2026-11-03, at your request: NuGuard as an opt-in remote adapter**
-  (branch `feature/nuguard-adapter`, **not committed**, as the brief asked).
+  (branch `feature/nuguard-adapter`, committed 2026-11-06 as `9042e4e`).
   - **What:**
     - a client for NuGuard's Remote Scan API (`internal/nuguard`) and a
       fake service (`nuguardfake`);
@@ -663,6 +721,41 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
   - **Python (step 6) not done:** an adapter cannot see which other tools
     covered a repository, so the "NuGuard alone is not a full scan" gap
     needs a worker-level rule. Listed in NOW-VS-LATER.md.
+- **NuGuard controls choices** (2026-11-06):
+  - **"Not requested" is a third list** (`tools_not_requested`, JSON with a
+    reason per tool) beside `tools_ok` and `tools_failed`. The coverage
+    views and the outcome classification are unchanged, because they read
+    only those two.
+  - **A source is named** `adapter` or `adapter/sub-tool`. The sub-tool
+    travels on a new `RawFinding.SubTool`, which is not identity. Only the
+    NuGuard goldens changed (by that field).
+  - **Legacy results:** a scan result that lists no tools at all (none
+    from the scan worker) is judged by its outcome alone, as before. A
+    result whose only list is "not requested" verifies nothing.
+  - **The fake narrows only when asked** (`Narrow`, `-narrow`). Captured
+    results are still replayed verbatim by default, which the existing
+    tests and the stack test rely on.
+  - **The adapter never counts an unasked tool as ok**, even if the service
+    ran it.
+  - **The resolution function is exported** (`ResolveNuGuardOptions`, in
+    `internal/nuguardopt`): the API and the worker are different packages.
+  - **The status re-check is 30 seconds while unreachable**, not a flat 5
+    minutes: the sidecar starts just after the worker.
+  - **Settings writes** pass the same role, origin and CSRF checks as scan
+    requests (shared `checkOwnerWrite`), and have their own rate limit (10 a
+    minute, counted from the audit). Without a configured NuGuard they
+    answer 409.
+  - **A scan request merged into one already queued keeps the queued one's
+    NuGuard options**; the response shows them.
+  - **"Found by" has no counts:** a facet over the tools needs new
+    aggregation in both backends. Listed in NOW-VS-LATER.md.
+  - **CycloneDX is 501** until a converter exists; JSON is served.
+  - **Fixtures:** the configured views come from a Go test that drives the
+    real server and worker (`TestNuGuardViewsFromTheRealServer`,
+    `UPDATE_UI_FIXTURES=1`). Of the demo fixtures, only `coverage.json` was
+    recaptured: a full recapture moved every date and lost the report
+    supersession `reports.json` was captured with. `capture-fixtures.mjs`
+    gained `ONLY=`.
 - **A batch can cover fewer repositories than the fleet** and its point is
   not marked partial: a repository already queued on its own when Scan all
   is pressed merges into that request and runs separately. The timer's

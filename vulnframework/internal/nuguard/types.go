@@ -293,6 +293,8 @@ type ScanResult struct {
 	Findings      []ScanFinding    `json:"findings"`
 	Inventory     InventorySummary `json:"inventory"`
 	ResultSHA256  string           `json:"result_sha256"`
+	// SBOM is the full AI-SBOM, present only when include_sbom was asked.
+	SBOM json.RawMessage `json:"sbom,omitempty"`
 }
 
 // Capabilities is what the service can do.

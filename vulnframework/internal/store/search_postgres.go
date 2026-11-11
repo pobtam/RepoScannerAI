@@ -116,6 +116,9 @@ func (b *builder) filterSQL(f Filter) {
 	if len(f.Languages) > 0 {
 		b.add("EXISTS (SELECT 1 FROM repos r WHERE r.name = f.repo AND r.languages && $%d)", pgTextArray(f.Languages))
 	}
+	if len(f.FoundBy) > 0 {
+		b.add("COALESCE(f.data->'provenance'->'tools', '[]'::jsonb) ?| $%d", pgTextArray(f.FoundBy))
+	}
 	if len(f.Categories) > 0 {
 		b.add("f.category = ANY($%d)", pgTextArray(categoriesToStrings(f.Categories)))
 	}

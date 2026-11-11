@@ -15,6 +15,7 @@ import (
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/nuguard"
 	"github.com/wanaware/vulnframework/internal/nuguard/nuguardfake"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 	"github.com/wanaware/vulnframework/internal/orchestrator"
 	"github.com/wanaware/vulnframework/internal/policy"
 	"github.com/wanaware/vulnframework/internal/remediate"
@@ -142,7 +143,25 @@ func exerciseEveryStoreProducer(t *testing.T) storeRun {
 	})
 	o.Clock = func() time.Time { return now }
 
-	stats, err := o.Sweep(ctx, store.KindSweep, "cron", fleet, nil)
+	// The NuGuard repository's options, through the real resolution the
+	// scan worker runs: a fleet setting the operator has since narrowed the
+	// ceiling under (a clip), and a scan that asks for posture and to keep the
+	// AI-SBOM. The
+	// only producers of EffectiveNuGuard, ToolsNotRequested and AISBOM.
+	ceiling := nuguardopt.Ceiling{Configured: true, AllowTools: []string{"nga-rules", "atlas"}, AllowPosture: true,
+		MaxTimeoutS: 600, Defaults: nuguardopt.Fleet{Enabled: true, Tools: []string{"nga-rules", "atlas"}, TimeoutS: 600}}
+	if _, err := s.SetNuGuardSettings(ctx, nuguardopt.Fleet{Enabled: true, Tools: []string{"nga-rules", "atlas", "semgrep"},
+		TimeoutS: 600}, "census", "", now); err != nil {
+		t.Fatal(err)
+	}
+	posture := true
+	eff, _, err := store.ResolveNuGuard(ctx, s, ceiling, partial.Name,
+		&nuguardopt.Request{Mode: nuguardopt.RequestOn, IncludePosture: &posture, KeepSBOM: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	stats, err := o.SweepWith(ctx, store.KindSweep, "cron", fleet, nil,
+		orchestrator.SweepOptions{NuGuard: map[string]*nuguardopt.Effective{partial.Name: &eff}})
 	if err != nil {
 		t.Fatalf("Sweep: %v", err)
 	}
@@ -436,6 +455,7 @@ func partialScanWorker(t *testing.T) *scan.Worker {
 	fake := nuguardfake.New("census-key", "0.9.15")
 	t.Cleanup(fake.Close)
 	fake.Default = &nuguardfake.Script{Result: result}
+	fake.Narrow = true
 	ng := adapters.NewNuGuard(&nuguard.Client{BaseURL: fake.URL, APIKey: func() (string, error) { return "census-key", nil }},
 		"0.9.15", nil)
 	reg, err := scan.NewRegistry(quietAdapter{}, dyingAdapter{}, ng)
@@ -584,6 +604,12 @@ func storeCensuses(ctx context.Context) []storeCensus {
 		{
 			name: "store.RepoScanResult",
 			typ:  reflect.TypeOf(store.RepoScanResult{}),
+			exempt: map[audit.FieldPath]audit.Exemption{
+				"EffectiveNuGuard.Reason": {
+					Producer: "internal/nuguardopt.ResolveNuGuardOptions via orchestrator.ScanWorker",
+					Why:      "written only when NuGuard is off for the scan; this run has it on, which the inventory and the AI-SBOM need",
+				},
+			},
 			sample: func(t *testing.T, r storeRun) []any {
 				var out []any
 				names, err := r.Store.RepoNames(ctx)
@@ -600,6 +626,33 @@ func storeCensuses(ctx context.Context) []storeCensus {
 					}
 				}
 				return out
+			},
+		},
+		{
+			name: "store.AISBOM",
+			typ:  reflect.TypeOf(store.AISBOM{}),
+			sample: func(t *testing.T, r storeRun) []any {
+				var out []any
+				for _, id := range []string{r.RunID, r.SecondRunID} {
+					names, err := r.Store.RepoNames(ctx)
+					if err != nil {
+						t.Fatalf("RepoNames: %v", err)
+					}
+					for _, name := range names {
+						if s, ok, err := r.Store.GetAISBOM(ctx, id, name); err != nil {
+							t.Fatalf("GetAISBOM: %v", err)
+						} else if ok {
+							out = append(out, s)
+						}
+					}
+				}
+				return out
+			},
+			exempt: map[audit.FieldPath]audit.Exemption{
+				"Withheld": {
+					Producer: "internal/orchestrator.keepSBOM",
+					Why:      "written only for an AI-SBOM over -nuguard-sbom-max-bytes; this one is under it",
+				},
 			},
 		},
 		{

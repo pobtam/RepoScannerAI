@@ -131,11 +131,16 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request, run store.Run,
 					"must be regenerated under a new identifier rather than edited")
 			return
 		}
+		ng, err := s.runNuGuard(ctx, run.ID)
+		if err != nil {
+			s.failStore(w, r, err)
+			return
+		}
 		s.write(w, r, http.StatusOK, normaliseOverview(Overview{
 			Run: runSummary(run), Live: false,
 			SnapshotID: rec.ID, ContentHash: rec.ContentHash,
 			Counts: rep.Counts, Delta: rep.Delta, Coverage: rep.Coverage,
-			Provenance: rep.Provenance, Caveats: rep.Provenance.Caveats,
+			Provenance: rep.Provenance, Caveats: rep.Provenance.Caveats, NuGuard: ng,
 		}))
 		return
 	}
@@ -161,10 +166,15 @@ func (s *Server) overview(w http.ResponseWriter, r *http.Request, run store.Run,
 		note = "these figures are current: the run is the most recent one and no immutable " +
 			"snapshot has been issued for it yet"
 	}
+	ng, err := s.runNuGuard(ctx, run.ID)
+	if err != nil {
+		s.failStore(w, r, err)
+		return
+	}
 	s.write(w, r, http.StatusOK, normaliseOverview(Overview{
 		Run: runSummary(run), Live: true, LiveNote: note,
 		Counts: rep.Counts, Delta: rep.Delta, Coverage: rep.Coverage,
-		Provenance: rep.Provenance, Caveats: rep.Provenance.Caveats,
+		Provenance: rep.Provenance, Caveats: rep.Provenance.Caveats, NuGuard: ng,
 	}))
 }
 

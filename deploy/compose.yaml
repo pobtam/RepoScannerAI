@@ -121,6 +121,12 @@ services:
       - "-nuguard-tools=${NUGUARD_TOOLS:-}"
       - "-nuguard-include-posture=${NUGUARD_INCLUDE_POSTURE:-false}"
       - "-nuguard-timeout=${NUGUARD_TIMEOUT:-10m}"
+      # The operator's ceiling: what security owners may choose in the
+      # interface, never more (DEPLOY.md, "NuGuard controls").
+      - "-nuguard-allow-tools=${NUGUARD_ALLOW_TOOLS:-nga-rules,atlas,semgrep}"
+      - "-nuguard-allow-posture=${NUGUARD_ALLOW_POSTURE:-true}"
+      - "-nuguard-max-timeout=${NUGUARD_MAX_TIMEOUT:-10m}"
+      - "-nuguard-sbom-max-bytes=${NUGUARD_SBOM_MAX_BYTES:-4194304}"
       - "-tools=/opt/vf/config/tools.lock"
       - "-calibration=/opt/vf/config/calibration.yaml"
       - "-policy=/opt/vf/config/policy.yaml"

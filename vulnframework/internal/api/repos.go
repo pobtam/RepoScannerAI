@@ -105,6 +105,14 @@ func (s *Server) handleRepo(w http.ResponseWriter, r *http.Request) {
 		s.repoTrend(w, r, strings.TrimSuffix(name, "/trend"))
 		return
 	}
+	if strings.HasSuffix(name, "/nuguard") {
+		s.repoNuGuard(w, r, strings.TrimSuffix(name, "/nuguard"))
+		return
+	}
+	if i := strings.Index(name, "/ai-sbom/"); i > 0 {
+		s.repoAISBOM(w, r, name[:i], name[i+len("/ai-sbom/"):])
+		return
+	}
 
 	sum, err := s.repoSummary(ctx, name)
 	if err != nil {
@@ -203,6 +211,12 @@ func (s *Server) aiComponents(ctx context.Context, name string) (AIComponents, e
 	out.NodeCounts, out.EdgeCount = emptyMapIfNil(inv.NodeCounts), &inv.EdgeCount
 	out.Frameworks, out.ModelProviders = emptyIfNil(inv.Frameworks), emptyIfNil(inv.ModelProviders)
 	out.PostureObservations = inv.PostureObservations
+	// The AI-SBOM, where this scan asked to keep one (VM-UI-F-1210).
+	if sb, ok, err := s.cfg.Store.GetAISBOM(ctx, latest.RunID, name); err != nil {
+		return out, err
+	} else if ok {
+		out.AISBOM = &AISBOMRef{Stored: sb.Document != nil, SizeBytes: sb.SizeBytes, SHA256: sb.SHA256, Withheld: sb.Withheld}
+	}
 	return out, nil
 }
 
@@ -323,6 +337,21 @@ func (s *Server) handleCoverage(w http.ResponseWriter, r *http.Request) {
 	out.Escalations = emptyIfNil(store.Escalations(states, s.cfg.EscalationThreshold()))
 
 	runID := r.URL.Query().Get("run")
+	// Tools the latest scan did not ask for, with the reason: neither ok
+	// nor failed, so listed apart from the gaps (VM-UI-F-1206).
+	out.NotRequested = []CoverageNotRequested{}
+	for _, name := range names {
+		results, err := s.cfg.Store.ScanResults(ctx, name, 1)
+		if err != nil {
+			s.failStore(w, r, err)
+			return
+		}
+		if len(results) == 1 && len(results[0].ToolsNotRequested) > 0 {
+			out.NotRequested = append(out.NotRequested, CoverageNotRequested{
+				Repo: name, RunID: results[0].RunID, Tools: results[0].ToolsNotRequested,
+			})
+		}
+	}
 	for _, st := range states {
 		if st.SweepsSinceQualifying == 0 {
 			out.Complete++
@@ -350,6 +379,22 @@ func (s *Server) handleCoverage(w http.ResponseWriter, r *http.Request) {
 	}
 	out.History = emptyIfNil(hist)
 	s.write(w, r, http.StatusOK, out)
+}
+
+// handlePutRepo routes PUT /v1/repos/{repo}/nuguard: the only write under
+// a repository.
+func (s *Server) handlePutRepo(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimSuffix(r.PathValue("repo"), "/")
+	if !strings.HasSuffix(name, "/nuguard") {
+		s.fail(w, r, http.StatusNotFound, "not found", "the only write under a repository is /nuguard", "")
+		return
+	}
+	name = strings.TrimSuffix(name, "/nuguard")
+	if !repoNameRe.MatchString(name) || strings.Contains(name, "..") {
+		s.fail(w, r, http.StatusBadRequest, "bad request", "repo must be owner/name", "")
+		return
+	}
+	s.putRepoNuGuard(w, r, name)
 }
 
 // EscalationThreshold is the consecutive-failure count that escalates.
@@ -392,6 +437,7 @@ func (s *Server) gapFor(ctx context.Context, st store.CoverageState, runID strin
 		gap.Owner = res.FailureOwner
 		gap.ToolsOK = emptyIfNil(res.ToolsOK)
 		gap.ToolsFailed = emptyIfNil(res.ToolsFailed)
+		gap.ToolsNotRequested = res.ToolsNotRequested
 		gap.Classification = "total"
 		if len(res.ToolsOK) > 0 {
 			// Partial: some signals remain current, and saying which is what

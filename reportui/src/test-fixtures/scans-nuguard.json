@@ -1,0 +1,33 @@
+[
+  {
+    "finished_at": "2026-10-22T10:00:00Z",
+    "id": "sr_20261022T100000.000Z_b02571f5",
+    "nuguard": {
+      "keep_sbom": true,
+      "mode": "on",
+      "tools": [
+        "nga-rules",
+        "atlas",
+        "semgrep"
+      ]
+    },
+    "repo": "octo/api",
+    "requested_at": "2026-10-22T10:00:00Z",
+    "requested_by": "pat",
+    "run_id": "M-000001",
+    "source": "web",
+    "started_at": "2026-10-22T10:00:00Z",
+    "status": "finished"
+  },
+  {
+    "finished_at": "2026-10-22T10:00:00Z",
+    "id": "sr_20261022T100000.000Z_246bd9c4",
+    "repo": "octo/web",
+    "requested_at": "2026-10-22T10:00:00Z",
+    "requested_by": "pat",
+    "run_id": "M-000002",
+    "source": "web",
+    "started_at": "2026-10-22T10:00:00Z",
+    "status": "finished"
+  }
+]

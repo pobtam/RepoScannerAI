@@ -5,6 +5,8 @@ import { RepoDetail } from './Repos';
 import repoDetail from '../../test-fixtures/repo-detail.json';
 import repoTrend from '../../test-fixtures/repo-trend.json';
 import health from '../../test-fixtures/health.json';
+import repoNuGuardDemo from '../../test-fixtures/repo-nuguard-demo.json';
+import nuguardDemo from '../../test-fixtures/nuguard-demo.json';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -14,7 +16,9 @@ function render(detail: unknown) {
   // The trend first: its path contains the repository's.
   stubApi([
     [`/repos/${repo}/trend`, repoTrend],
+    [`/repos/${repo}/nuguard`, repoNuGuardDemo],
     [`/repos/${repo}`, detail],
+    ['/nuguard', nuguardDemo],
     ['/health', health],
   ]);
   renderApp(<RepoDetail repo={repo} />);

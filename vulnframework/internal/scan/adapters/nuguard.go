@@ -14,6 +14,7 @@ import (
 
 	"github.com/wanaware/vulnframework/internal/model"
 	"github.com/wanaware/vulnframework/internal/nuguard"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 	"github.com/wanaware/vulnframework/internal/scan"
 )
 
@@ -79,6 +80,46 @@ func (a *NuGuard) Supports(r scan.RepoProfile) bool {
 	return r.HasLanguage(scan.LangGo) || r.HasLanguage(scan.LangJavaScript)
 }
 
+// runOptions are the options one run uses: the scan's resolved options
+// (RunOpts.NuGuard) where the scan worker resolved them, else this adapter's
+// own configuration from its flags.
+func (a *NuGuard) runOptions(opts scan.RunOpts) (tools []nuguard.ToolName, posture bool, timeout time.Duration, keepSBOM bool) {
+	e := opts.NuGuard
+	if e == nil {
+		return a.Tools, a.IncludePosture, a.Timeout, false
+	}
+	for _, t := range e.Tools {
+		tools = append(tools, nuguard.ToolName(t))
+	}
+	return tools, e.IncludePosture, time.Duration(e.TimeoutS) * time.Second, e.KeepSBOM
+}
+
+// NotRequested names what this scan does not ask NuGuard for (VM-F-160):
+// NuGuard itself when it is off for the repository or the scan, so the
+// worker does not run it, and each user-selectable tool not chosen. Their
+// earlier findings are then neither verified nor counted against a gap.
+func (a *NuGuard) NotRequested(opts scan.RunOpts) []scan.NotRequested {
+	if opts.NuGuard != nil {
+		return append([]scan.NotRequested(nil), opts.NuGuard.NotRequested...)
+	}
+	var out []scan.NotRequested
+	for _, t := range nuguardopt.Selectable {
+		if !a.asks(nuguard.ToolName(t)) {
+			out = append(out, scan.NotRequested{Tool: a.Name() + "/" + t, Reason: "not in -nuguard-tools"})
+		}
+	}
+	return out
+}
+
+func (a *NuGuard) asks(t nuguard.ToolName) bool {
+	for _, x := range a.Tools {
+		if x == t {
+			return true
+		}
+	}
+	return false
+}
+
 var nuguardRepoName = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
 
 // Run asks the service to scan the repository at exactly the commit the
@@ -92,9 +133,14 @@ func (a *NuGuard) Run(ctx context.Context, _ string, opts scan.RunOpts) (scan.Ra
 		return scan.RawOutput{}, &scan.GapError{Cause: "execution_failed", Owner: scan.OwnerPlatform,
 			Detail: fmt.Sprintf("nuguard: %q is not an owner/name repository", opts.Repo)}
 	}
-	if a.Timeout > 0 {
+	tools, posture, timeout, keepSBOM := a.runOptions(opts)
+	if len(tools) == 0 {
+		return scan.RawOutput{}, &scan.GapError{Cause: "execution_failed", Owner: scan.OwnerPlatform,
+			Detail: "nuguard: the scan resolved to no tool, so NuGuard was not asked"}
+	}
+	if timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, a.Timeout)
+		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 	host := a.GitHubHost
@@ -104,8 +150,8 @@ func (a *NuGuard) Run(ctx context.Context, _ string, opts scan.RunOpts) (scan.Ra
 	req := nuguard.ScanCreateRequest{
 		RepoURL: "https://" + host + "/" + opts.Repo, Ref: opts.CommitSHA, ClientReference: opts.RunID,
 		Options: nuguard.ScanOptions{
-			Tools: a.Tools, MinSeverity: nuguard.SeverityLow, IncludePosture: a.IncludePosture,
-			IncludeSBOM: false, Network: false, UseLLM: false,
+			Tools: tools, MinSeverity: nuguard.SeverityLow, IncludePosture: posture,
+			IncludeSBOM: keepSBOM, Network: false, UseLLM: false,
 		},
 	}
 	key := nuguard.IdempotencyKey(opts.RunID, opts.Repo, opts.CommitSHA)
@@ -146,9 +192,18 @@ func (a *NuGuard) Run(ctx context.Context, _ string, opts scan.RunOpts) (scan.Ra
 	if res.Provenance.ImageDigest != nil && *res.Provenance.ImageDigest != "" {
 		versions["nuguard/image"] = *res.Provenance.ImageDigest
 	}
-	return scan.RawOutput{
+	requested := make([]string, len(tools))
+	for i, t := range tools {
+		requested[i] = string(t)
+	}
+	out := scan.RawOutput{
 		Tool: a.Name(), ToolVersion: a.Version(), ExitCode: exit, Stdout: raw, Versions: versions,
-	}, nil
+		Requested: requested,
+	}
+	if keepSBOM && len(res.SBOM) > 0 && string(res.SBOM) != "null" {
+		out.SBOM = res.SBOM
+	}
+	return out, nil
 }
 
 // secrets are the credentials this adapter sends, read only to keep them out
@@ -336,13 +391,22 @@ func (a *NuGuard) SubTools(out scan.RawOutput) ([]string, []scan.CoverageGap, er
 	var ok []string
 	var gaps []scan.CoverageGap
 	seen := map[string]bool{}
+	asked := map[string]bool{}
+	for _, t := range out.Requested {
+		asked[t] = true
+	}
 	for _, tr := range res.Coverage.ToolRuns {
 		seen[tr.Tool] = true
 		name := a.Name() + "/" + tr.Tool
 		cause := ""
 		switch tr.Status {
 		case nuguard.ToolOK, nuguard.ToolNotApplicable:
-			ok = append(ok, name)
+			// A tool this scan did not ask for is never an ok source, even
+			// if the service ran it: the scan records it as not requested,
+			// and reconciliation must not take its silence as evidence.
+			if out.Requested == nil || asked[tr.Tool] {
+				ok = append(ok, name)
+			}
 			continue
 		case nuguard.ToolDisabled:
 			continue
@@ -359,10 +423,16 @@ func (a *NuGuard) SubTools(out scan.RawOutput) ([]string, []scan.CoverageGap, er
 		}
 		gaps = append(gaps, scan.CoverageGap{Tool: name, Cause: cause, Owner: scan.OwnerPlatform, Detail: detail})
 	}
-	for _, t := range a.Tools {
-		if !seen[string(t)] {
-			gaps = append(gaps, scan.CoverageGap{Tool: a.Name() + "/" + string(t), Cause: "tool_skipped",
-				Owner: scan.OwnerPlatform, Detail: "nuguard/" + string(t) + " was asked for and the result does not mention it"})
+	want := out.Requested
+	if want == nil {
+		for _, t := range a.Tools {
+			want = append(want, string(t))
+		}
+	}
+	for _, t := range want {
+		if !seen[t] {
+			gaps = append(gaps, scan.CoverageGap{Tool: a.Name() + "/" + t, Cause: "tool_skipped",
+				Owner: scan.OwnerPlatform, Detail: "nuguard/" + t + " was asked for and the result does not mention it"})
 		}
 	}
 	if res.Job.Status == nuguard.StatusPartial && len(gaps) == 0 {
@@ -532,6 +602,57 @@ func ParseNuGuardTools(s string) ([]nuguard.ToolName, error) {
 		return nil, errors.New("nuguard: -nuguard-tools names no tool")
 	}
 	return out, nil
+}
+
+// NuGuardProbe is what one status check found (VM-UI-F-1201): published by
+// the scan worker, the only process that talks to NuGuard, so the API can
+// show it without holding a key.
+type NuGuardProbe struct {
+	Reachable      bool
+	ServiceVersion string
+	// ToolsAllowed is the service's own list; nil when it could not be asked.
+	ToolsAllowed []string
+	// Err is the failure, with every credential this adapter sends removed,
+	// as from a gap's detail; empty when the check passed.
+	Err string
+}
+
+// Probe asks the service whether it is ready and what it runs. It never
+// fails: what went wrong is in the result, sanitized.
+func (a *NuGuard) Probe(ctx context.Context) NuGuardProbe {
+	var p NuGuardProbe
+	scrub := func(err error) string {
+		s := err.Error()
+		for _, sec := range a.secrets() {
+			s = strings.ReplaceAll(s, sec, "[redacted]")
+		}
+		if !strings.HasPrefix(s, "nuguard") {
+			s = "nuguard: " + s
+		}
+		return s
+	}
+	h, err := a.Client.Ready(ctx)
+	if err != nil {
+		p.Err = scrub(err)
+		return p
+	}
+	if h.Status != "ok" {
+		p.Err = "nuguard: the service is not ready (" + strings.Join(h.Failing, ", ") + ")"
+		return p
+	}
+	p.Reachable = true
+	caps, err := a.Client.Capabilities(ctx)
+	if err != nil {
+		p.Err = scrub(err)
+		return p
+	}
+	p.ServiceVersion = caps.NuGuardVersion
+	p.ToolsAllowed = append([]string{}, caps.ToolsAllowed...)
+	if strings.TrimPrefix(caps.NuGuardVersion, "v") != strings.TrimPrefix(a.Pinned, "v") {
+		p.Err = fmt.Sprintf("nuguard: the service runs %s but config/tools.lock pins %s; its results are refused",
+			caps.NuGuardVersion, a.Pinned)
+	}
+	return p
 }
 
 // ErrNuGuardRefused is a start-up check that must stop the program: the

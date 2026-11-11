@@ -1,0 +1,61 @@
+{
+  "complete": 3,
+  "gaps": [],
+  "history": [
+    {
+      "outcomes": [
+        "complete"
+      ],
+      "repo": "octo/api",
+      "runs": [
+        "M-000001"
+      ]
+    },
+    {
+      "outcomes": [],
+      "repo": "octo/old",
+      "runs": []
+    },
+    {
+      "outcomes": [
+        "complete"
+      ],
+      "repo": "octo/web",
+      "runs": [
+        "M-000002"
+      ]
+    }
+  ],
+  "in_scope": 3,
+  "not_requested": [
+    {
+      "repo": "octo/api",
+      "run_id": "M-000001",
+      "tools": [
+        {
+          "reason": "not offered by the service",
+          "tool": "nuguard/semgrep"
+        }
+      ]
+    },
+    {
+      "repo": "octo/web",
+      "run_id": "M-000002",
+      "tools": [
+        {
+          "reason": "off for this repository",
+          "tool": "nuguard"
+        }
+      ]
+    }
+  ],
+  "percent": 100,
+  "staleness": {
+    "in_scope": 3,
+    "max_age": 0,
+    "median_age": 0,
+    "never_scanned": 3,
+    "p95_age": 0
+  },
+  "warning": "a failed scan and a clean scan are indistinguishable in every aggregate on the run overview. Findings in a repository with a gap are not absent because they were fixed; nobody looked. Read the gaps here before believing a drop in counts (VM-UI-F-757, VM-ADR-12)"
+}

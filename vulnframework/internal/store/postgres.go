@@ -12,6 +12,7 @@ import (
 
 	"github.com/wanaware/vulnframework/internal/fingerprint"
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 )
 
 // Postgres is the production findings store (VM-AD §3, §4.2).
@@ -244,11 +245,21 @@ func (p *Postgres) RecordScanResult(ctx context.Context, res RepoScanResult) err
 		pgTextArray(res.ToolsOK), pgTextArray(res.ToolsFailed),
 		nullString(res.FailureCause), nullString(res.FailureDetail),
 		nullString(res.FailureOwner), res.DurationSec,
-		nullString(res.CommitSHA), nullJSON(res.AIInventory))
+		nullString(res.CommitSHA), nullJSON(res.AIInventory),
+		nullJSON(rawOrNil(res.EffectiveNuGuard)), nullJSON(notRequestedJSON(res.ToolsNotRequested)))
 	if err != nil {
 		return fmt.Errorf("store: record scan result %s/%s: %w", res.RunID, res.Repo, err)
 	}
 	return nil
+}
+
+// notRequestedJSON is nil for an empty list, so "nothing not requested" and
+// "not recorded" read back the same on both backends.
+func notRequestedJSON(l []ToolNotRequested) json.RawMessage {
+	if len(l) == 0 {
+		return nil
+	}
+	return rawOrNil(l)
 }
 
 func (p *Postgres) ScanResults(ctx context.Context, repo string, limit int) ([]RepoScanResult, error) {
@@ -271,10 +282,22 @@ func (p *Postgres) ScanResults(ctx context.Context, repo string, limit int) ([]R
 			owner         sql.NullString
 			duration      sql.NullInt64
 			commit, inv   sql.NullString
+			eff, notReq   sql.NullString
 		)
 		if err := rows.Scan(&r.RunID, &r.Repo, &outcome, &ok, &failed, &cause, &detail, &owner, &duration,
-			&commit, &inv); err != nil {
+			&commit, &inv, &eff, &notReq); err != nil {
 			return nil, err
+		}
+		if eff.Valid {
+			r.EffectiveNuGuard = &nuguardopt.Effective{}
+			if err := json.Unmarshal([]byte(eff.String), r.EffectiveNuGuard); err != nil {
+				return nil, fmt.Errorf("store: unreadable NuGuard options on %s/%s: %w", r.RunID, r.Repo, err)
+			}
+		}
+		if notReq.Valid {
+			if err := json.Unmarshal([]byte(notReq.String), &r.ToolsNotRequested); err != nil {
+				return nil, fmt.Errorf("store: unreadable tools-not-requested on %s/%s: %w", r.RunID, r.Repo, err)
+			}
 		}
 		r.CommitSHA = commit.String
 		if inv.Valid {
@@ -389,7 +412,8 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 
 	var outcome string
 	var okText, failedText string
-	err = tx.QueryRowContext(ctx, qReconcileResult, runID, repo).Scan(&outcome, &okText, &failedText)
+	var notRequested int
+	err = tx.QueryRowContext(ctx, qReconcileResult, runID, repo).Scan(&outcome, &okText, &failedText, &notRequested)
 	if errors.Is(err, sql.ErrNoRows) {
 		return stats, fmt.Errorf("%w: no scan result for repo %q in run %q; reconciliation requires one (VM-ADR-12)",
 			ErrNotFound, repo, runID)
@@ -427,7 +451,7 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 		absent[i].Sources = sources[absent[i].Fingerprint]
 	}
 
-	actions := resolveGapLinks(PlanReconcile(ScanOutcome(outcome), toolList(toolsOK, toolsFailed), absent), runID)
+	actions := resolveGapLinks(PlanReconcile(ScanOutcome(outcome), toolList(toolsOK, toolsFailed, notRequested), absent), runID)
 	now := p.clock()
 
 	stateOf := map[string]model.State{}

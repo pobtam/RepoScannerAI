@@ -1,0 +1,37 @@
+{
+  "clips": [
+    {
+      "asked": "semgrep",
+      "field": "tools",
+      "used": "left out",
+      "why": "not offered by the service"
+    }
+  ],
+  "configured": true,
+  "effective": {
+    "clips": [
+      {
+        "asked": "semgrep",
+        "field": "tools",
+        "used": "left out",
+        "why": "not offered by the service"
+      }
+    ],
+    "enabled": true,
+    "from": "scan",
+    "include_posture": true,
+    "keep_sbom": true,
+    "not_requested": [
+      {
+        "reason": "not offered by the service",
+        "tool": "nuguard/semgrep"
+      }
+    ],
+    "timeout_s": 300,
+    "tools": [
+      "nga-rules",
+      "atlas"
+    ]
+  },
+  "repo": "octo/api"
+}

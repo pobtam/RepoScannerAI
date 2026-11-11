@@ -43,6 +43,9 @@ type Filter struct {
 	Severities []model.Severity
 	Reachable  []model.Reachable
 	DepClasses []model.DepClass
+	// FoundBy selects findings any of these tools reported, by adapter name
+	// ("nuguard", "gosec"): the finding's provenance tools (VM-UI-F-1207).
+	FoundBy []string
 
 	Transitive *bool
 	// FirstParty selects findings in a module this organisation owns.
@@ -75,7 +78,7 @@ func (f Filter) Empty() bool {
 	return len(f.Repos) == 0 && len(f.Tiers) == 0 && len(f.Languages) == 0 &&
 		len(f.Categories) == 0 && len(f.States) == 0 && len(f.Reasons) == 0 &&
 		len(f.Priorities) == 0 && len(f.Severities) == 0 && len(f.Reachable) == 0 &&
-		len(f.DepClasses) == 0 && f.Transitive == nil && f.FirstParty == nil &&
+		len(f.DepClasses) == 0 && len(f.FoundBy) == 0 && f.Transitive == nil && f.FirstParty == nil &&
 		f.Blocked == nil && f.HasPR == nil && f.HasTicket == nil &&
 		f.NotReobserved == nil && f.SLABreached == nil &&
 		f.FirstSeenFrom == nil && f.FirstSeenTo == nil &&
@@ -129,6 +132,9 @@ func (f Filter) Match(fd model.Finding, repo RepoFacts) bool {
 		return false
 	}
 	if len(f.DepClasses) > 0 && !containsDepClass(f.DepClasses, fd.Classification.DepClass) {
+		return false
+	}
+	if len(f.FoundBy) > 0 && !anyString(fd.Provenance.Tools, f.FoundBy) {
 		return false
 	}
 	if f.Transitive != nil && fd.Classification.Transitive != *f.Transitive {

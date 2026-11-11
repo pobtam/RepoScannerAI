@@ -206,11 +206,13 @@ func PlanReconcile(outcome ScanOutcome, toolsOK []string, absent []FindingState)
 
 // toolList is the tool list PlanReconcile checks sources against: a scan
 // result's ToolsOK, or nil where the result recorded no tool lists at all.
-// A scan worker's result always lists at least one tool; a result with none
-// was recorded by something else (a plan close, a test), and is judged by its
-// outcome alone, as before reconciliation consulted tools.
-func toolList(ok, failed []string) []string {
-	if len(ok) == 0 && len(failed) == 0 {
+// A scan worker's result always lists at least one tool, ok, failed or not
+// requested; a result with none was recorded by something else (a plan
+// close, a test), and is judged by its outcome alone, as before
+// reconciliation consulted tools. A scan whose every tool was not requested
+// has a tool list, and nothing ran: it verifies nothing.
+func toolList(ok, failed []string, notRequested int) []string {
+	if len(ok) == 0 && len(failed) == 0 && notRequested == 0 {
 		return nil
 	}
 	if ok == nil {

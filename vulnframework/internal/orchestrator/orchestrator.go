@@ -2,6 +2,8 @@ package orchestrator
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"github.com/wanaware/vulnframework/internal/firstparty"
 	"github.com/wanaware/vulnframework/internal/gh"
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 	"github.com/wanaware/vulnframework/internal/scan"
 	"github.com/wanaware/vulnframework/internal/score"
 	"github.com/wanaware/vulnframework/internal/store"
@@ -76,6 +79,11 @@ type Config struct {
 	// SLAWindows are the remediation windows per tier and priority
 	// (VM-NF-301). Nil uses the working defaults; VM-OQ-02 is still open.
 	SLAWindows score.SLAWindows
+
+	// SBOMMaxBytes caps an AI-SBOM a scan asked to keep
+	// (-nuguard-sbom-max-bytes). A larger one is not stored, and the row
+	// says why. Zero means 4 MiB.
+	SBOMMaxBytes int64
 }
 
 func (c Config) withDefaults() Config {
@@ -90,6 +98,9 @@ func (c Config) withDefaults() Config {
 	}
 	if c.EscalationThreshold <= 0 {
 		c.EscalationThreshold = 2
+	}
+	if c.SBOMMaxBytes <= 0 {
+		c.SBOMMaxBytes = 4 << 20
 	}
 	return c
 }
@@ -171,6 +182,19 @@ type RunStats struct {
 // leaves a row — coverage is measured against what was planned, never against
 // what happened to report (OQ-P2-02).
 func (o *Orchestrator) Sweep(ctx context.Context, kind store.RunKind, trigger string, repos []store.Repo, sel Selector) (RunStats, error) {
+	return o.SweepWith(ctx, kind, trigger, repos, sel, SweepOptions{})
+}
+
+// SweepOptions are per-repository options a sweep passes on each job.
+type SweepOptions struct {
+	// NuGuard is each repository's resolved NuGuard options, by name. A
+	// repository not in the map has none, and the adapter's own
+	// configuration applies.
+	NuGuard map[string]*nuguardopt.Effective
+}
+
+// SweepWith is Sweep with per-repository options.
+func (o *Orchestrator) SweepWith(ctx context.Context, kind store.RunKind, trigger string, repos []store.Repo, sel Selector, opts SweepOptions) (RunStats, error) {
 	if sel == nil {
 		sel = DefaultSelector
 	}
@@ -194,7 +218,7 @@ func (o *Orchestrator) Sweep(ctx context.Context, kind store.RunKind, trigger st
 	}
 
 	// 2. Dispatch what the budget and concurrency cap allow.
-	dispatched, skipped, err := o.dispatch(ctx, run.ID, plan, repos)
+	dispatched, skipped, err := o.dispatch(ctx, run.ID, plan, repos, opts)
 	if err != nil {
 		return stats, err
 	}
@@ -323,7 +347,7 @@ func (o *Orchestrator) plan(ctx context.Context, runID string, kind store.RunKin
 
 // dispatch starts workers for the planned set, recording a reason for anything
 // it cannot start.
-func (o *Orchestrator) dispatch(ctx context.Context, runID string, plan []store.PlanEntry, repos []store.Repo) (int, int, error) {
+func (o *Orchestrator) dispatch(ctx context.Context, runID string, plan []store.PlanEntry, repos []store.Repo, opts SweepOptions) (int, int, error) {
 	byName := map[string]store.Repo{}
 	for _, r := range repos {
 		byName[r.Name] = r
@@ -377,7 +401,8 @@ func (o *Orchestrator) dispatch(ctx context.Context, runID string, plan []store.
 					Languages: languagesOf(repo), HasTestSuite: repo.HasTestSuite,
 					HasLockfile: repo.HasLockfile,
 				},
-				Opts:       scan.RunOpts{Mode: scan.ModeFull, APICredits: o.Config.CreditsPerScan},
+				Opts: scan.RunOpts{Mode: scan.ModeFull, APICredits: o.Config.CreditsPerScan,
+					NuGuard: opts.NuGuard[entry.Repo]},
 				APICredits: o.Config.CreditsPerScan,
 			}
 
@@ -454,6 +479,12 @@ func (o *Orchestrator) record(ctx context.Context, res scan.Result) error {
 		RunID: res.RunID, Repo: res.Repo, Outcome: res.Outcome,
 		ToolsOK: res.ToolsOK, ToolsFailed: res.ToolsFailed,
 		DurationSec: res.DurationSec, CommitSHA: res.CommitSHA,
+		EffectiveNuGuard: res.EffectiveNuGuard, ToolsNotRequested: res.ToolsNotRequested,
+	}
+	if res.AISBOM != nil {
+		if err := o.keepSBOM(ctx, res); err != nil {
+			return fmt.Errorf("keeping the AI-SBOM of %s: %w", res.Repo, err)
+		}
 	}
 	if res.AIInventory != nil {
 		inv, err := json.Marshal(res.AIInventory)
@@ -469,6 +500,24 @@ func (o *Orchestrator) record(ctx context.Context, res scan.Result) error {
 		scanResult.FailureOwner = string(g.Owner)
 	}
 	return o.Store.RecordScanResult(ctx, scanResult)
+}
+
+// keepSBOM stores the AI-SBOM a scan asked to keep, or, over the cap, the
+// reason it was not kept: never a truncated document.
+func (o *Orchestrator) keepSBOM(ctx context.Context, res scan.Result) error {
+	doc := res.AISBOM.Document
+	sum := sha256.Sum256(doc)
+	s := store.AISBOM{
+		RunID: res.RunID, Repo: res.Repo, CommitSHA: res.CommitSHA, NuGuardVersion: res.AISBOM.Version,
+		SizeBytes: int64(len(doc)), SHA256: hex.EncodeToString(sum[:]), StoredAt: o.clock(),
+	}
+	if s.SizeBytes > o.Config.SBOMMaxBytes {
+		s.Withheld = fmt.Sprintf("the AI-SBOM is %d bytes, over the %d-byte cap (-nuguard-sbom-max-bytes); it was not stored",
+			s.SizeBytes, o.Config.SBOMMaxBytes)
+	} else {
+		s.Document = doc
+	}
+	return o.Store.PutAISBOM(ctx, s)
 }
 
 // ApplyAllowlist splits a scan's secrets into those the ordinary scan reported

@@ -1,0 +1,5 @@
+{
+  "detail": "timeout_s: above the ceiling of 600 seconds",
+  "error": "not allowed",
+  "remedy": "the operator's ceiling is: tools nga-rules, atlas, semgrep; posture allowed; timeout at most 600 seconds"
+}

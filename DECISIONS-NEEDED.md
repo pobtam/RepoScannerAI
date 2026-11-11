@@ -656,6 +656,18 @@ configured**.
   through an egress proxy. Our VM uses a port firewall, not a proxy, so it
   is not a blocker here.
 
+**Note, 2026-11-06 (not a decision):** NuGuard is now user-controllable
+within an operator ceiling (branch `feature/nuguard-ui-controls`, built on
+the adapter branch). The operator's flags on the scan worker set what is
+allowed. Security owners turn it on or off for the fleet, a repository or
+one scan, and choose among the three AI tools and posture, from the
+interface. Engineers see the settings read-only. Every change is audited,
+and every scan records the options it used. Reconciliation became
+tool-aware first, so switching NuGuard off never closes its findings. This
+changes nothing about the amendment itself, which is still yours to accept
+or reject. With it rejected, the controls show "NuGuard is not configured
+on this deployment" and nothing else.
+
 **Needs from you:**
 
 1. **Accept or reject the amendment.** Rejecting it leaves D13 as it was.

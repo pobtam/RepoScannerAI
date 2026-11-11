@@ -1,5 +1,7 @@
 package scan
 
+import "github.com/wanaware/vulnframework/internal/nuguardopt"
+
 // Optional adapter capabilities. Each is an interface an adapter may also
 // implement; an adapter that implements none behaves exactly as before
 // (VM-NF-502). They exist for adapters that wrap several tools, such as a
@@ -33,6 +35,19 @@ func (e *GapError) Error() string { return e.Detail }
 // tools was lost; any gap makes the scan partial.
 type GapReporter interface {
 	SubTools(out RawOutput) (ok []string, gaps []CoverageGap, err error)
+}
+
+// NotRequested is a tool a scan did not ask for, and why: neither ok nor
+// failed. Its earlier findings keep their state and are flagged not
+// re-observed (VM-F-160/161).
+type NotRequested = nuguardopt.NotRequested
+
+// NotRequestedReporter is implemented by an adapter a scan may switch off,
+// or whose tools a scan may choose from (NuGuard). The worker asks it before
+// running it and records what it names in ToolsNotRequested; an entry naming
+// the adapter itself means the adapter is not run at all.
+type NotRequestedReporter interface {
+	NotRequested(opts RunOpts) []NotRequested
 }
 
 // InventoryReporter is implemented by adapters that describe what a

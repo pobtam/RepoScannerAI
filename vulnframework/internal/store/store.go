@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 )
 
 // RunKind is the class of run. Each kind draws from its own sequence so that
@@ -101,6 +102,17 @@ type RepoScanResult struct {
 	// (scan.AIInventory, kept as a document so the store does not depend on
 	// the scanner). Nil is "not measured", never "none".
 	AIInventory json.RawMessage `json:"ai_inventory,omitempty"`
+
+	// EffectiveNuGuard is the NuGuard options this scan actually used, after
+	// inheritance and the operator's ceiling, with any clip notes: the
+	// provenance a NuGuard finding or inventory is read against (VM-F-202).
+	// Nil where the scan worker resolved none (NuGuard not configured, or a
+	// scan from before migration 0019).
+	EffectiveNuGuard *nuguardopt.Effective `json:"effective_nuguard,omitempty"`
+	// ToolsNotRequested are the tools this scan did not ask for, with the
+	// reason: neither ok nor failed. A finding from one of them keeps its
+	// state and is flagged not re-observed (VM-F-160/161).
+	ToolsNotRequested []ToolNotRequested `json:"tools_not_requested,omitempty"`
 }
 
 // Report is an issued report record (VM-ADR-15).
@@ -571,6 +583,7 @@ type Store interface {
 	GitHubStore
 	// --- Scan queue (migration 0017) ---
 	ScanQueue
+	NuGuardStore
 
 	// Close releases resources.
 	Close() error

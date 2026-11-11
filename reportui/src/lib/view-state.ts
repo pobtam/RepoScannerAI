@@ -43,6 +43,8 @@ export const explorerState = z.object({
   severity: list.optional(),
   reachable: list.optional(),
   depClass: list.optional(),
+  // The tools that reported a finding (VM-UI-F-1207).
+  found_by: list.optional(),
   transitive: tri.optional(),
   firstParty: tri.optional(),
   blocked: tri.optional(),
@@ -71,6 +73,7 @@ export const MULTI_DIMENSIONS = [
   'severity',
   'reachable',
   'depClass',
+  'found_by',
 ] as const;
 export type MultiDimension = (typeof MULTI_DIMENSIONS)[number];
 
