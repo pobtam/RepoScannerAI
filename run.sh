@@ -260,10 +260,13 @@ if [ "$USE_REAL" -eq 1 ]; then
   VULNFRAMEWORK_LOCAL_AUTH_REPOS="$(printf '%s' "$REAL_REPOS" | paste -sd, -)"
   export VULNFRAMEWORK_LOCAL_AUTH_REPOS
 fi
-if [ "$USE_NUGUARD" -eq 1 ]; then
-  # Not exec, so that stop runs on the way out and stops the NuGuard this
-  # run started, with the scan worker. Ctrl-C reaches the dev server and
-  # this shell together; the shell then exits through the EXIT trap, once.
+if [ "$USE_REAL" -eq 1 ]; then
+  # Not exec, so that stop runs on the way out: it stops the scan worker
+  # container, the API server (and the server go run leaves behind) and,
+  # with --nuguard, the NuGuard this run started. exec would replace this
+  # shell and its traps, and leave all of them running. Ctrl-C reaches the
+  # dev server and this shell together; the shell then exits through the
+  # EXIT trap, once.
   trap stop EXIT
   trap 'exit 130' INT TERM
   launch_ui wait "$UI_PORT" "$API_PORT" || true
