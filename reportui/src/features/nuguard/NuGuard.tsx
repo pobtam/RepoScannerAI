@@ -751,6 +751,14 @@ export function NuGuardFindingSection({ d }: { d: NuGuardDetail }) {
         <dd>{d.mitre_atlas_technique ?? missing('MITRE ATLAS technique')}</dd>
         <dt>Enclosing function</dt>
         <dd className="mono">{d.function ?? missing('enclosing function')}</dd>
+        {d.scanned && (
+          <>
+            {/* Real mode: the local tools scanned the tree on disk, NuGuard
+                the commit on GitHub. Said only where the two may differ. */}
+            <dt>What NuGuard scanned</dt>
+            <dd className="warn-text">{d.scanned}</dd>
+          </>
+        )}
         <dt>Last observed by</dt>
         <dd>
           {d.last_run ? <Link to={`/runs/${encodeURIComponent(d.last_run)}`}>{d.last_run}</Link> : <Absent why="no run recorded" />}

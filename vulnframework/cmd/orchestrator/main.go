@@ -167,6 +167,10 @@ func run() error {
 			}
 			return *workDir + "/" + lastPath(repo)
 		},
+		// NuGuard scans GitHub's copy of a clone's commit: it needs the
+		// clone's origin and whether the tree on disk differs. Without
+		// NuGuard nothing is read.
+		ReadClone: ng != nil,
 	}
 	var account *gh.TokenClient
 	if *githubMode {
@@ -284,7 +288,21 @@ func run() error {
 		return fmt.Errorf("no repositories registered; add them with vfctl before running a sweep")
 	}
 
-	stats, err := o.Sweep(ctx, store.RunKind(*kind), *trigger, repos, orchestrator.DefaultSelector)
+	// The stored NuGuard settings apply to a sweep as to a requested scan.
+	ceiling, err := nuguardFlags.Ceiling()
+	if err != nil {
+		return err
+	}
+	if ng != nil && ceiling.Configured {
+		if p := ng.Probe(ctx); p.Reachable {
+			ceiling.ServiceTools = p.ToolsAllowed
+		}
+	}
+	sweepOpts, err := orchestrator.ResolveSweepNuGuard(ctx, st, ceiling, repos)
+	if err != nil {
+		return err
+	}
+	stats, err := o.SweepWith(ctx, store.RunKind(*kind), *trigger, repos, orchestrator.DefaultSelector, sweepOpts)
 	if err != nil {
 		return err
 	}

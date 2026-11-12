@@ -753,6 +753,8 @@ func (s *Server) nuguardDetail(ctx context.Context, f model.Finding) *NuGuardDet
 			d.OWASPASIRef = v
 		case "mitre_atlas_technique":
 			d.MITREAtlasTechnique = v
+		case "scanned":
+			d.Scanned = v
 		}
 	}
 	if results, err := s.cfg.Store.ScanResults(ctx, f.Repo, 50); err == nil {

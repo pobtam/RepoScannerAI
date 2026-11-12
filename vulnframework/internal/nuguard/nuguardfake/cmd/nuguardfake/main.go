@@ -9,6 +9,8 @@
 // Each -script serves a captured ScanResult for one repository URL; the
 // job block is rewritten to describe the job actually submitted. A URL with
 // no script is refused, as the real service refuses a host it does not allow.
+// -script URL=error:CODE ends that repository's jobs failed with the job
+// error CODE, such as ref_not_found for a commit GitHub does not have.
 package main
 
 import (
@@ -43,7 +45,11 @@ func main() {
 	for _, s := range sc {
 		url, file, ok := strings.Cut(s, "=")
 		if !ok {
-			log.Fatalf("-script %q: want repo-url=result.json", s)
+			log.Fatalf("-script %q: want repo-url=result.json or repo-url=error:CODE", s)
+		}
+		if code, isErr := strings.CutPrefix(file, "error:"); isErr {
+			fake.Script(url, &nuguardfake.Script{ErrorCode: code, ErrorDetail: "scripted " + code, Polls: 1})
+			continue
 		}
 		b, err := os.ReadFile(file)
 		if err != nil {

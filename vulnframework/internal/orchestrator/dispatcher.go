@@ -14,6 +14,10 @@ import (
 type LocalDispatcher struct {
 	Worker  *scan.Worker
 	WorkDir func(repo string) string
+	// ReadClone reads each clone's GitHub origin and working-tree state onto
+	// the job (RunOpts.LocalClone), for an adapter that scans GitHub's copy
+	// of the commit (NuGuard). Off, nothing is read.
+	ReadClone bool
 }
 
 // Dispatch scans the repository in-process, recording the commit the
@@ -27,6 +31,10 @@ func (d *LocalDispatcher) Dispatch(ctx context.Context, job Job) (scan.Result, e
 		// A checkout with no .git (a copied tree) has no commit to record;
 		// an adapter that needs one records a gap.
 		job.Opts.CommitSHA, _ = scan.GitHead(dir)
+	}
+	if d.ReadClone && job.Opts.LocalClone == nil {
+		lc := scan.ReadLocalClone(ctx, dir)
+		job.Opts.LocalClone = &lc
 	}
 	return d.Worker.Scan(ctx, job.RunID, job.Repo, dir, job.Profile, job.Opts)
 }

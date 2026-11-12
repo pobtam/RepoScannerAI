@@ -144,3 +144,25 @@ func (w *ScanWorker) resolveNuGuard(ctx context.Context, byRepo map[string]store
 	}
 	return out, nil
 }
+
+// ResolveSweepNuGuard resolves each repository's NuGuard options for a sweep
+// no request started (the one-shot sweep, the daily timer), exactly as the
+// scan worker resolves a request without options: the stored fleet settings
+// and each repository's override, within the ceiling. So a repository
+// switched off in the interface is not scanned by NuGuard in any sweep.
+// Without NuGuard configured it resolves nothing, and the sweep runs as it
+// did before options existed.
+func ResolveSweepNuGuard(ctx context.Context, st store.Store, c nuguardopt.Ceiling, repos []store.Repo) (SweepOptions, error) {
+	if !c.Configured {
+		return SweepOptions{}, nil
+	}
+	out := SweepOptions{NuGuard: map[string]*nuguardopt.Effective{}}
+	for _, r := range repos {
+		e, _, err := store.ResolveNuGuard(ctx, st, c, r.Name, nil)
+		if err != nil {
+			return SweepOptions{}, err
+		}
+		out.NuGuard[r.Name] = &e
+	}
+	return out, nil
+}

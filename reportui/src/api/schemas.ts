@@ -175,6 +175,7 @@ export const nuguardDetail = z.object({
   owasp_asi_ref: z.string().optional(),
   mitre_atlas_technique: z.string().optional(),
   function: z.string().optional(),
+  scanned: z.string().optional(),
   last_run: z.string().optional(),
   effective: effectiveNuGuard.optional(),
   note: z.string().optional(),

@@ -445,6 +445,50 @@ func TestANuGuardFindingHasItsOwnSectionAndFilter(t *testing.T) {
 	}
 }
 
+// A NuGuard finding from a clone with uncommitted changes says NuGuard
+// scanned the commit, and stops saying so once a scan of a clean tree
+// observes it again.
+func TestANuGuardFindingSaysWhatNuGuardScanned(t *testing.T) {
+	for name, open := range scanBackends(t) {
+		t.Run(name, func(t *testing.T) {
+			e := newScanEnv(t, open(t), true)
+			ctx := context.Background()
+			cls := model.Classification{Severity: model.SeverityHigh, Reachable: model.ReachableTrue, DepClass: model.DepNotApplicable}
+			observe := func(annotations map[string]string) {
+				run, err := e.st.CreateRun(ctx, store.KindSweep, "test", "img", map[string]string{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				f := model.RawFinding{Repo: "octo/api", Category: model.CategoryCode, Tool: "nuguard", SubTool: "atlas",
+					ToolVersion: "0.9.15", RuleID: "NGA-TOOL-001", File: "agent/tools.go", Classification: cls, Annotations: annotations}
+				if _, err := e.st.UpsertObservations(ctx, run.ID, "octo/api", []model.RawFinding{f}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			fp := fingerprint.Compute(model.RawFinding{Repo: "octo/api", Category: model.CategoryCode, Tool: "nuguard",
+				RuleID: "NGA-TOOL-001", File: "agent/tools.go"})
+			scanned := func() any {
+				_, m, raw := e.do(t, http.MethodGet, "/v1/findings/"+fp, owner, "", nil)
+				sec, ok := m["nuguard"].(map[string]any)
+				if !ok {
+					t.Fatalf("no NuGuard section: %s", raw)
+				}
+				return sec["scanned"]
+			}
+
+			note := "NuGuard scanned the committed state, not the working tree"
+			observe(map[string]string{"nuguard/0.9.15/source_tool": "atlas", "nuguard/0.9.15/scanned": note})
+			if got := scanned(); got != note {
+				t.Errorf("scanned = %v, want %q", got, note)
+			}
+			observe(map[string]string{"nuguard/0.9.15/source_tool": "atlas"})
+			if got := scanned(); got != nil {
+				t.Errorf("after a scan of a clean tree, scanned = %v, want absent", got)
+			}
+		})
+	}
+}
+
 // TestThePreviewIsWhatTheWorkerDoes is the integration: the scan worker
 // publishes its ceiling, the API previews a scan, the request is queued
 // through the API, and the real worker runs it through the real adapter

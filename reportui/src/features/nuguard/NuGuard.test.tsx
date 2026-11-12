@@ -311,6 +311,15 @@ describe('NuGuard on the finding, coverage and run pages', () => {
     expect(panel.querySelector('.absent')).toBeTruthy();
   });
 
+  it('says when NuGuard scanned the commit rather than the working tree, and only then', () => {
+    const { unmount } = renderApp(<NuGuardFindingSection d={finding.nuguard!} />);
+    expect(screen.queryByText('What NuGuard scanned')).toBeNull();
+    unmount();
+    const scanned = 'NuGuard scanned the committed state, not the working tree';
+    renderApp(<NuGuardFindingSection d={{ ...finding.nuguard!, scanned }} />);
+    expect(screen.getByText('What NuGuard scanned').nextElementSibling!.textContent).toBe(scanned);
+  });
+
   it('lists tools not requested apart from failed ones, with the reason', async () => {
     stub([{ path: '/coverage', body: coverage }]);
     renderApp(<Coverage />);

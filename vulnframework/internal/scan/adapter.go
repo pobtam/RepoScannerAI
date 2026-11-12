@@ -100,6 +100,13 @@ type RunOpts struct {
 	// where nothing resolved any and the adapter's own configuration
 	// applies. No secret: tools, posture, timeout and where each came from.
 	NuGuard *nuguardopt.Effective
+
+	// LocalClone is set where the tree is a local clone (real mode), by a
+	// dispatcher asked to read it: the clone's GitHub owner/name, which a
+	// remote adapter scans in place of the registered name, and whether the
+	// tree on disk differs from the commit. Nil where the tree was
+	// downloaded from GitHub at the commit. No credential.
+	LocalClone *LocalClone
 }
 
 // RawOutput is a tool's verbatim output plus the context needed to normalise
@@ -140,6 +147,11 @@ type RawOutput struct {
 	// SBOM is a document the tool returned beside its findings because the
 	// scan asked to keep it (NuGuard's AI-SBOM). Nil when not asked for.
 	SBOM json.RawMessage
+
+	// Annotations are added to every finding Normalize returns from this
+	// run: what is true of the run rather than of one finding (NuGuard
+	// scanned the commit, not the working tree the local tools scanned).
+	Annotations map[string]string
 }
 
 // Adapter is the scanner contract (VM-AD §8.4).

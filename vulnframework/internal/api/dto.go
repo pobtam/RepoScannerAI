@@ -437,6 +437,10 @@ type NuGuardDetail struct {
 	OWASPASIRef         string `json:"owasp_asi_ref,omitempty"`
 	MITREAtlasTechnique string `json:"mitre_atlas_technique,omitempty"`
 	Function            string `json:"function,omitempty"`
+	// Scanned says what NuGuard scanned where it differs from the tree the
+	// local tools scanned: in real mode, the commit on GitHub when the
+	// clone had uncommitted changes, or could not be checked.
+	Scanned string `json:"scanned,omitempty"`
 	// LastRun is the run that last observed it, and Effective its options;
 	// absent where that scan recorded none, and Note says so.
 	LastRun   string                `json:"last_run,omitempty"`

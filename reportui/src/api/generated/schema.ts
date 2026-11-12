@@ -5,7 +5,7 @@
  * Editing this file by hand re-creates the drift the generation exists to
  * prevent (UI-ADR-05, VM-UI-F-107).
  *
- * Source: http://127.0.0.1:18084/v1/schema/openapi.json
+ * Source: http://127.0.0.1:18181/v1/schema/openapi.json
  */
 export interface paths {
     "/v1/coverage": {
@@ -636,6 +636,7 @@ export interface components {
                     owasp_asi_ref?: string;
                     owasp_llm_ref?: string;
                     rule: string;
+                    scanned?: string;
                     sub_tool?: string;
                     version: string;
                 };
@@ -801,6 +802,7 @@ export interface components {
                         owasp_asi_ref?: string;
                         owasp_llm_ref?: string;
                         rule: string;
+                        scanned?: string;
                         sub_tool?: string;
                         version: string;
                     };
@@ -954,6 +956,7 @@ export interface components {
                     owasp_asi_ref?: string;
                     owasp_llm_ref?: string;
                     rule: string;
+                    scanned?: string;
                     sub_tool?: string;
                     version: string;
                 };
@@ -1317,6 +1320,7 @@ export interface components {
                 owasp_asi_ref?: string;
                 owasp_llm_ref?: string;
                 rule: string;
+                scanned?: string;
                 sub_tool?: string;
                 version: string;
             };
@@ -1475,6 +1479,7 @@ export interface components {
                     owasp_asi_ref?: string;
                     owasp_llm_ref?: string;
                     rule: string;
+                    scanned?: string;
                     sub_tool?: string;
                     version: string;
                 };
@@ -1705,6 +1710,7 @@ export interface components {
             owasp_asi_ref?: string;
             owasp_llm_ref?: string;
             rule: string;
+            scanned?: string;
             sub_tool?: string;
             version: string;
         };
@@ -2470,6 +2476,7 @@ export interface components {
                     owasp_asi_ref?: string;
                     owasp_llm_ref?: string;
                     rule: string;
+                    scanned?: string;
                     sub_tool?: string;
                     version: string;
                 };

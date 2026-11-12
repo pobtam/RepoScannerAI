@@ -314,3 +314,35 @@ func contains(l []string, x string) bool {
 	}
 	return false
 }
+
+// A sweep no request started (run.sh --real's start-of-run sweep, the daily
+// timer) honours the stored settings as a requested scan does: a repository
+// switched off in the interface is not scanned by NuGuard.
+func TestASweepHonoursTheStoredSettings(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		ctx := context.Background()
+		repos := fleet(t, s, "org/api", "org/web")
+		if _, err := s.SetNuGuardRepoOverride(ctx, "org/api", &nuguardopt.RepoOverride{Mode: nuguardopt.RepoOff},
+			"owner", "pilot over", at); err != nil {
+			t.Fatal(err)
+		}
+		opts, err := orchestrator.ResolveSweepNuGuard(ctx, s, fullCeiling(), repos)
+		if err != nil {
+			t.Fatal(err)
+		}
+		api, web := opts.NuGuard["org/api"], opts.NuGuard["org/web"]
+		if api == nil || api.Enabled || api.From != "repository" {
+			t.Errorf("org/api = %+v, want off, from the repository", api)
+		}
+		if web == nil || !web.Enabled || len(web.Tools) != 3 {
+			t.Errorf("org/web = %+v, want on with the defaults", web)
+		}
+
+		// Without NuGuard configured, nothing is resolved: the sweep runs as
+		// it did before options existed.
+		none, err := orchestrator.ResolveSweepNuGuard(ctx, s, nuguardopt.Ceiling{}, repos)
+		if err != nil || none.NuGuard != nil {
+			t.Errorf("unconfigured: %+v, %v", none, err)
+		}
+	})
+}

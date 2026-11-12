@@ -98,7 +98,13 @@ func (a *NuGuard) runOptions(opts scan.RunOpts) (tools []nuguard.ToolName, postu
 // NuGuard itself when it is off for the repository or the scan, so the
 // worker does not run it, and each user-selectable tool not chosen. Their
 // earlier findings are then neither verified nor counted against a gap.
+//
+// A local clone with no github.com origin is not scanned at all: NuGuard
+// clones from GitHub, and there is nothing there for it to read.
 func (a *NuGuard) NotRequested(opts scan.RunOpts) []scan.NotRequested {
+	if lc := opts.LocalClone; lc != nil && lc.GitHubRepo == "" && !offFor(opts.NuGuard) {
+		return []scan.NotRequested{{Tool: a.Name(), Reason: NoGitHubOrigin}}
+	}
 	if opts.NuGuard != nil {
 		return append([]scan.NotRequested(nil), opts.NuGuard.NotRequested...)
 	}
@@ -109,6 +115,24 @@ func (a *NuGuard) NotRequested(opts scan.RunOpts) []scan.NotRequested {
 		}
 	}
 	return out
+}
+
+// NoGitHubOrigin is why a local clone with no github.com origin is not
+// scanned by NuGuard.
+const NoGitHubOrigin = "no GitHub origin; NuGuard needs the repository on GitHub"
+
+// offFor reports whether the scan's options already switched NuGuard off,
+// whose own reason then stands.
+func offFor(e *nuguardopt.Effective) bool {
+	if e == nil {
+		return false
+	}
+	for _, nr := range e.NotRequested {
+		if nr.Tool == "nuguard" {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *NuGuard) asks(t nuguard.ToolName) bool {
@@ -124,14 +148,25 @@ var nuguardRepoName = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
 
 // Run asks the service to scan the repository at exactly the commit the
 // other adapters scanned, and returns the result as received.
+//
+// For a local clone (real mode) the repository is the clone's GitHub origin,
+// not the registered name, which need not be the GitHub owner/name.
 func (a *NuGuard) Run(ctx context.Context, _ string, opts scan.RunOpts) (scan.RawOutput, error) {
 	if opts.CommitSHA == "" {
 		return scan.RawOutput{}, &scan.GapError{Cause: "execution_failed", Owner: scan.OwnerPlatform,
 			Detail: "nuguard: no commit was recorded for this checkout, so NuGuard cannot be asked to scan the same one"}
 	}
-	if !nuguardRepoName.MatchString(opts.Repo) || strings.Contains(opts.Repo, "..") {
+	repo := opts.Repo
+	if opts.LocalClone != nil {
+		repo = opts.LocalClone.GitHubRepo
+		if repo == "" {
+			return scan.RawOutput{}, &scan.GapError{Cause: "execution_failed", Owner: scan.OwnerRepo,
+				Detail: "nuguard: " + NoGitHubOrigin}
+		}
+	}
+	if !nuguardRepoName.MatchString(repo) || strings.Contains(repo, "..") {
 		return scan.RawOutput{}, &scan.GapError{Cause: "execution_failed", Owner: scan.OwnerPlatform,
-			Detail: fmt.Sprintf("nuguard: %q is not an owner/name repository", opts.Repo)}
+			Detail: fmt.Sprintf("nuguard: %q is not an owner/name repository", repo)}
 	}
 	tools, posture, timeout, keepSBOM := a.runOptions(opts)
 	if len(tools) == 0 {
@@ -148,7 +183,7 @@ func (a *NuGuard) Run(ctx context.Context, _ string, opts scan.RunOpts) (scan.Ra
 		host = "github.com"
 	}
 	req := nuguard.ScanCreateRequest{
-		RepoURL: "https://" + host + "/" + opts.Repo, Ref: opts.CommitSHA, ClientReference: opts.RunID,
+		RepoURL: "https://" + host + "/" + repo, Ref: opts.CommitSHA, ClientReference: opts.RunID,
 		Options: nuguard.ScanOptions{
 			Tools: tools, MinSeverity: nuguard.SeverityLow, IncludePosture: posture,
 			IncludeSBOM: keepSBOM, Network: false, UseLLM: false,
@@ -158,6 +193,13 @@ func (a *NuGuard) Run(ctx context.Context, _ string, opts scan.RunOpts) (scan.Ra
 	job, raw, err := a.Client.Scan(ctx, req, key, a.GitHubToken)
 	secrets := a.secrets()
 	if err != nil {
+		if opts.LocalClone != nil && jobCode(err) == "ref_not_found" {
+			// From a local clone, a commit GitHub does not have is the
+			// repository's: pushed, it is scanned. Not a download fault.
+			return scan.RawOutput{}, &scan.GapError{Cause: "commit_not_on_github", Owner: scan.OwnerRepo,
+				Detail: fmt.Sprintf("nuguard: commit %s is not on GitHub in %s (not pushed yet, or the clone's history is local only); "+
+					"NuGuard scans only what GitHub has", opts.CommitSHA, repo)}
+		}
 		return scan.RawOutput{}, scrubGap(nuguardGap(err), secrets)
 	}
 	// A service that echoed a credential into its result must not have it
@@ -203,7 +245,25 @@ func (a *NuGuard) Run(ctx context.Context, _ string, opts scan.RunOpts) (scan.Ra
 	if keepSBOM && len(res.SBOM) > 0 && string(res.SBOM) != "null" {
 		out.SBOM = res.SBOM
 	}
+	if lc := opts.LocalClone; lc != nil && lc.WorkTree != scan.WorkTreeClean {
+		// The local tools scanned the tree on disk; NuGuard scanned GitHub's
+		// copy of the commit. Every NuGuard finding says so.
+		note := "NuGuard scanned the committed state, not the working tree"
+		if lc.WorkTree != scan.WorkTreeDirty {
+			note = "NuGuard scanned the committed state; working-tree state unknown"
+		}
+		out.Annotations = map[string]string{a.Name() + "/" + a.Version() + "/scanned": note}
+	}
 	return out, nil
+}
+
+// jobCode is the service's code for a scan that ended without a result, or "".
+func jobCode(err error) string {
+	var je *nuguard.JobError
+	if errors.As(err, &je) {
+		return je.Code
+	}
+	return ""
 }
 
 // secrets are the credentials this adapter sends, read only to keep them out
@@ -325,7 +385,7 @@ func (a *NuGuard) Normalize(out scan.RawOutput) ([]model.RawFinding, error) {
 			},
 			ToolVersion: a.Version(),
 			Description: model.SafeDescription(firstNonEmptyText(f.Description, f.Title)),
-			Annotations: a.annotate(f),
+			Annotations: a.annotate(f, out.Annotations),
 			Raw:         withoutRaw(items.Findings[i]),
 		}
 		if loc.Symbol != nil {
@@ -495,12 +555,14 @@ func (a *NuGuard) Inventory(out scan.RawOutput) *scan.AIInventory {
 // not use to decide anything: its own fingerprint (never the identity:
 // fingerprints are computed here, VM-AD §5), the tool inside NuGuard that
 // matched, and the taxonomy references. Version-tagged, as annotations are.
-func (a *NuGuard) annotate(f nuguard.ScanFinding) map[string]string {
+func (a *NuGuard) annotate(f nuguard.ScanFinding, run map[string]string) map[string]string {
 	prefix := a.Name() + "/" + a.Version() + "/"
-	out := map[string]string{
-		prefix + "fingerprint": f.Fingerprint,
-		prefix + "source_tool": f.SourceTool,
+	out := map[string]string{}
+	for k, v := range run {
+		out[k] = v
 	}
+	out[prefix+"fingerprint"] = f.Fingerprint
+	out[prefix+"source_tool"] = f.SourceTool
 	for k, v := range map[string]*string{
 		"owasp_llm_ref": f.OWASPLLMRef, "owasp_asi_ref": f.OWASPASIRef, "mitre_atlas_technique": f.MITREAtlasTechnique,
 	} {
