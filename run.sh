@@ -20,10 +20,20 @@
 # read-only), stores the results in PostgreSQL, and opens the interface on
 # them with LOCAL AUTH ON — see REAL-REPOS.md first. Add --no-sweep to browse
 # the last results without scanning again. Nothing is written to GitHub.
+#
+# NuGuard: ./run.sh --real --nuguard ~/clones also scans with NuGuard, run on
+# this Mac from the NuGuard checkout next to this repository
+# (scripts/nuguard-local.sh), listening on 127.0.0.1 only. NuGuard clones
+# each repository from github.com, so only clones whose origin is on GitHub,
+# at commits pushed there, are scanned by it. See REAL-REPOS.md, "NuGuard in
+# real mode".
 
 set -euo pipefail
 
 cd "$(dirname "$0")"
+RUN_ROOT="$(pwd)"
+# shellcheck source=scripts/launch.sh
+source scripts/launch.sh
 
 BOLD=$'\033[1m'
 GREEN=$'\033[0;32m'
@@ -34,6 +44,7 @@ API_PORT="${API_PORT:-8080}"
 UI_PORT="${UI_PORT:-5173}"
 USE_POSTGRES=0
 USE_REAL=0
+USE_NUGUARD=0
 REAL_SWEEP=1
 CLONES="${VULNFRAMEWORK_CLONES:-}"
 DSN="${VULNFRAMEWORK_DSN:-postgres://vulnframework:vulnframework@localhost:5433/vulnframework?sslmode=disable}"
@@ -43,6 +54,7 @@ for arg in "$@"; do
     --postgres) USE_POSTGRES=1 ;;
     --real) USE_REAL=1 ;;
     --no-sweep) REAL_SWEEP=0 ;;
+    --nuguard) USE_NUGUARD=1 ;;
     -h|--help)
       awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"
       exit 0
@@ -72,6 +84,10 @@ if [ "$USE_REAL" -eq 0 ] && [ "$REAL_SWEEP" -eq 0 ]; then
   printf '%s--no-sweep only applies with --real.%s\n' "$RED" "$PLAIN"
   exit 1
 fi
+if [ "$USE_REAL" -eq 0 ] && [ "$USE_NUGUARD" -eq 1 ]; then
+  printf '%s--nuguard only applies with --real: the demonstration scans nothing.%s\n' "$RED" "$PLAIN"
+  exit 1
+fi
 
 if ! command -v go >/dev/null 2>&1 || ! command -v node >/dev/null 2>&1; then
   printf '%sGo and Node.js are needed and one of them is missing.%s\n' "$RED" "$PLAIN"
@@ -88,14 +104,21 @@ fi
 API_PID=""
 UI_PID=""
 PG_STARTED=0
+NUGUARD_STARTED=0
 
 stop() {
   printf '\nStopping…\n'
   [ -n "$UI_PID" ] && kill "$UI_PID" 2>/dev/null || true
+  # go run leaves the compiled server running when it is killed itself, so
+  # its children (by parent pid, never a pattern) go first.
+  [ -n "$API_PID" ] && pkill -TERM -P "$API_PID" 2>/dev/null || true
   [ -n "$API_PID" ] && kill "$API_PID" 2>/dev/null || true
   if [ "$USE_REAL" -eq 1 ] && declare -f real_worker_stop >/dev/null; then
     real_worker_stop
     printf 'The scan worker is stopped; any scan it was running is marked interrupted.\n'
+  fi
+  if [ "$NUGUARD_STARTED" -eq 1 ]; then
+    "$RUN_ROOT/scripts/nuguard-local.sh" stop || true
   fi
   if [ "$PG_STARTED" -eq 1 ]; then
     docker stop "${REAL_PG_NAME:-vulnframework-pg}" >/dev/null 2>&1 || true
@@ -115,6 +138,7 @@ if [ "$USE_REAL" -eq 1 ]; then
   real_need_docker || exit 1
   printf '%sStarting PostgreSQL in Docker…%s\n' "$BOLD" "$PLAIN"
   PG_STARTED="$(real_pg_up)" || exit 1
+  real_backup_if_migrating || exit 1
   real_migrate || exit 1
 
   REAL_REPOS="$(real_active_repos)"
@@ -137,6 +161,11 @@ if [ "$USE_REAL" -eq 1 ]; then
       exit 1
     fi
     CLONES="$(cd "$CLONES" && pwd)"
+  fi
+  if [ "$USE_NUGUARD" -eq 1 ]; then
+    real_nuguard_up || exit 1
+  fi
+  if [ "$REAL_SWEEP" -eq 1 ]; then
     # A stale image is reported, never rebuilt here: every run records the
     # tool versions it used, and a record that does not match the binaries
     # is wrong rather than merely old.
@@ -191,7 +220,8 @@ else
 fi
 
 printf '%sStarting the API…%s\n' "$BOLD" "$PLAIN"
-(cd vulnframework && exec go run ./cmd/apiserver "${API_ARGS[@]}") &
+# Without the NuGuard key or a GitHub token: only the scan containers use them.
+launch_api "${API_ARGS[@]}" &
 API_PID=$!
 
 # The API is up when /v1/health answers. With a database it answers 401 to
@@ -222,7 +252,6 @@ printf '%s  ✓ API ready on port %s%s\n' "$GREEN" "$API_PORT" "$PLAIN"
 printf '\n%sApp running — open http://localhost:%s in your browser%s\n\n' "$BOLD" "$UI_PORT" "$PLAIN"
 printf 'Press Ctrl-C to stop.\n\n'
 
-cd reportui
 if [ "$USE_REAL" -eq 1 ]; then
   # Local auth: the dev server tells the API you are the security owner. It
   # refuses to start unless bound to 127.0.0.1, and prints a warning banner.
@@ -231,4 +260,13 @@ if [ "$USE_REAL" -eq 1 ]; then
   VULNFRAMEWORK_LOCAL_AUTH_REPOS="$(printf '%s' "$REAL_REPOS" | paste -sd, -)"
   export VULNFRAMEWORK_LOCAL_AUTH_REPOS
 fi
-PORT="$UI_PORT" API_URL="http://127.0.0.1:${API_PORT}" exec npm run dev -- --host 127.0.0.1 --port "$UI_PORT" --strictPort
+if [ "$USE_NUGUARD" -eq 1 ]; then
+  # Not exec, so that stop runs on the way out and stops the NuGuard this
+  # run started, with the scan worker. Ctrl-C reaches the dev server and
+  # this shell together; the shell then exits through the EXIT trap, once.
+  trap stop EXIT
+  trap 'exit 130' INT TERM
+  launch_ui wait "$UI_PORT" "$API_PORT" || true
+  exit 0
+fi
+launch_ui exec "$UI_PORT" "$API_PORT"

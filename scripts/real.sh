@@ -6,7 +6,9 @@
 #   * clones are mounted into the scan container READ-ONLY;
 #   * no GitHub credential exists anywhere in this path, and nothing opens a
 #     pull request, comments, or creates a ticket — the orchestrator's
-#     post-sweep pass stops at the routing decision;
+#     post-sweep pass stops at the routing decision. The one exception is
+#     opt-in: with --nuguard, a read-only token in VULNFRAMEWORK_GITHUB_TOKEN,
+#     if you set one, is passed on so NuGuard can clone private repositories;
 #   * the scanner image is checked against config/tools.lock and NOT rebuilt
 #     if it differs.
 #
@@ -35,6 +37,12 @@ REAL_EPSS_URL="${VULNFRAMEWORK_EPSS_URL:-https://epss.empiricalsecurity.com/epss
 
 # Your organisation's first-party module registry, if you have written one.
 REAL_FIRSTPARTY="$REAL_VF/config/firstparty.yaml"
+
+# NuGuard on this Mac (run.sh --real --nuguard, scripts/nuguard-local.sh).
+# Off unless run.sh sets REAL_NUGUARD=1; the API key is read from
+# VULNFRAMEWORK_NUGUARD_API_KEY and passed into the container by name only.
+REAL_NUGUARD="${REAL_NUGUARD:-0}"
+REAL_NUGUARD_PORT="${REAL_NUGUARD_PORT:-8090}"
 
 real_red=$'\033[0;31m'
 real_bold=$'\033[1m'
@@ -65,8 +73,10 @@ real_pg_up() {
     -p "127.0.0.1:${REAL_PG_PORT}:5432" \
     -v "$REAL_PG_VOLUME:/var/lib/postgresql/data" \
     postgres:16-alpine >/dev/null
+  # Over TCP: on first start the image runs a temporary server on its socket
+  # only, which answers pg_isready and then restarts under the migration.
   for _ in $(seq 1 60); do
-    if docker exec "$REAL_PG_NAME" pg_isready -U vulnframework >/dev/null 2>&1; then
+    if docker exec "$REAL_PG_NAME" pg_isready -h 127.0.0.1 -U vulnframework >/dev/null 2>&1; then
       echo 1
       return 0
     fi
@@ -78,6 +88,22 @@ real_pg_up() {
 real_migrate() {
   (cd "$REAL_VF" && go run ./cmd/orchestrator -dsn "$REAL_DSN" -migrate 2>&1 | tail -n 1) >/dev/null ||
     real_fail "Migrating the database failed. Run: (cd vulnframework && go run ./cmd/orchestrator -dsn \"$REAL_DSN\" -migrate)"
+}
+
+# real_backup_if_migrating backs the database up (scripts/db.sh backup)
+# before a binary with newer migrations changes it, and says where the
+# backup is. A new, empty database has nothing to keep.
+real_backup_if_migrating() {
+  local have want
+  want="$(cd "$REAL_VF/internal/store/migrations" && ls ./*.up.sql | sed -n 's#^\./0*\([0-9][0-9]*\)_.*#\1#p' | sort -n | tail -n 1)"
+  have="$(docker exec "$REAL_PG_NAME" psql -X -q -tA -U vulnframework -d vulnframework \
+    -c 'SELECT max(version) FROM schema_migrations' 2>/dev/null | tr -d '[:space:]' || true)"
+  case "$have" in '' | *[!0-9]*) return 0 ;; esac
+  [ "$have" -lt "$want" ] || return 0
+  printf '%sThe database is at schema %s and this version migrates it to %s; backing it up first…%s\n' \
+    "$real_bold" "$have" "$want" "$real_plain"
+  "$REAL_ROOT/scripts/db.sh" backup --target real ||
+    real_fail "The backup failed, so the database was not migrated. Nothing has changed; fix the backup (scripts/db.sh backup) and try again."
 }
 
 real_vfctl() {
@@ -127,6 +153,80 @@ real_prepare_container() {
     REAL_ENV+=(-e ANTHROPIC_API_KEY)
     printf '%sAI triage is ON (%s): finding details will be sent to the Anthropic API.%s\n' "$real_bold" "$VULNFRAMEWORK_TRIAGE_MODEL" "$real_plain"
   fi
+  # What the container runs: the orchestrator, or with NuGuard the loopback
+  # bridge first and then the orchestrator.
+  REAL_ENTRY=(--entrypoint /opt/vf/orchestrator "$REAL_SCANNER_IMAGE")
+  if [ "$REAL_NUGUARD" = 1 ]; then
+    real_nuguard_container || return 1
+  fi
+}
+
+# real_nuguard_container adds NuGuard to the container real_prepare_container
+# describes. NuGuard listens on the Mac's 127.0.0.1 only. Inside the
+# container the Mac is host.docker.internal, which the NuGuard client refuses
+# plain http to (the API key crosses the connection), so a small bridge,
+# cmd/loopbridge, listens on the container's own 127.0.0.1 and carries the
+# bytes to the Mac over Docker Desktop's host connection. The client's
+# loopback rule is unchanged.
+real_nuguard_container() {
+  [ -n "${VULNFRAMEWORK_NUGUARD_API_KEY:-}" ] ||
+    real_fail "NuGuard is on but VULNFRAMEWORK_NUGUARD_API_KEY is not set: eval \"\$(scripts/nuguard-local.sh key)\"" || return 1
+  (cd "$REAL_VF" && GOOS=linux GOARCH="$REAL_ARCH" CGO_ENABLED=0 go build -o "$REAL_BIN/loopbridge-linux-$REAL_ARCH" ./cmd/loopbridge) ||
+    real_fail "Building the NuGuard bridge for the scan container failed." || return 1
+  local port="$REAL_NUGUARD_PORT"
+  # The ceiling (-nuguard-allow-*, -nuguard-max-timeout) and the defaults,
+  # from the environment with deploy/compose.yaml's defaults, so the
+  # interface's NuGuard controls work in real mode within the same ceiling.
+  REAL_ARGS+=(
+    -nuguard-url "http://127.0.0.1:$port"
+    -nuguard-tools "${NUGUARD_TOOLS:-}"
+    "-nuguard-include-posture=${NUGUARD_INCLUDE_POSTURE:-false}"
+    -nuguard-timeout "${NUGUARD_TIMEOUT:-10m}"
+    -nuguard-allow-tools "${NUGUARD_ALLOW_TOOLS:-nga-rules,atlas,semgrep}"
+    "-nuguard-allow-posture=${NUGUARD_ALLOW_POSTURE:-true}"
+    -nuguard-max-timeout "${NUGUARD_MAX_TIMEOUT:-10m}"
+    -nuguard-sbom-max-bytes "${NUGUARD_SBOM_MAX_BYTES:-4194304}"
+  )
+  # By name only: the values never reach a command line.
+  REAL_ENV+=(-e VULNFRAMEWORK_NUGUARD_API_KEY)
+  if [ -n "${VULNFRAMEWORK_GITHUB_TOKEN:-}" ]; then
+    REAL_ENV+=(-e VULNFRAMEWORK_GITHUB_TOKEN)
+  fi
+  local start
+  start="/opt/vf/loopbridge -listen 127.0.0.1:$port -to host.docker.internal:$port -ready /tmp/loopbridge.ready &
+i=0; while [ ! -e /tmp/loopbridge.ready ] && [ \$i -lt 100 ]; do sleep 0.1; i=\$((i + 1)); done
+exec /opt/vf/orchestrator \"\$@\""
+  REAL_ENTRY=(
+    -v "$REAL_BIN/loopbridge-linux-$REAL_ARCH:/opt/vf/loopbridge:ro"
+    --entrypoint /bin/sh "$REAL_SCANNER_IMAGE" -c "$start" orchestrator
+  )
+}
+
+# real_nuguard_up starts NuGuard on this Mac unless it is already running
+# and healthy, loads its API key into this shell, prints what will happen,
+# and turns NuGuard on for the containers real_prepare_container describes.
+# NUGUARD_STARTED is 1 when this call started it, so run.sh stops only a
+# NuGuard it started.
+real_nuguard_up() {
+  local ng="$REAL_ROOT/scripts/nuguard-local.sh" state
+  REAL_NUGUARD_PORT="${NUGUARD_PORT:-8090}"
+  if curl -sf -m 3 "http://127.0.0.1:$REAL_NUGUARD_PORT/v1/readyz" >/dev/null 2>&1; then
+    NUGUARD_STARTED=0
+  else
+    "$ng" start || return 1
+    NUGUARD_STARTED=1
+  fi
+  eval "$("$ng" key)" || return 1
+  [ -n "${VULNFRAMEWORK_NUGUARD_API_KEY:-}" ] || real_fail "Could not load NuGuard's API key." || return 1
+  export VULNFRAMEWORK_NUGUARD_API_KEY
+  state="$("$ng" status)" || return 1
+  printf '%s\n' "$state"
+  local version tree
+  version="$(printf '%s\n' "$state" | sed -n 's/^  version *\([^ ]*\).*/\1/p')"
+  tree="$(printf '%s\n' "$state" | sed -n 's/^  source .*, tree \(.*\)$/\1/p')"
+  printf '%sNuGuard on%s (local, http://127.0.0.1:%s, version %s, tree %s); repositories without a GitHub origin will show NuGuard as not requested.\n' \
+    "$real_bold" "$real_plain" "$REAL_NUGUARD_PORT" "$version" "$tree"
+  REAL_NUGUARD=1
 }
 
 # real_worker_start CLONES starts the scan worker in the background: it runs
@@ -146,8 +246,7 @@ real_worker_start() {
     -v "$REAL_VF/config:/opt/vf/config:ro" \
     -v vulnframework-scanhome:/home/scanner \
     "${REAL_ENV[@]}" \
-    --entrypoint /opt/vf/orchestrator \
-    "$REAL_SCANNER_IMAGE" "${REAL_ARGS[@]}" -worker -scan-timeout "${VULNFRAMEWORK_SCAN_TIMEOUT:-15m}" >/dev/null ||
+    "${REAL_ENTRY[@]}" "${REAL_ARGS[@]}" -worker -scan-timeout "${VULNFRAMEWORK_SCAN_TIMEOUT:-15m}" >/dev/null ||
     real_fail "Starting the scan worker failed." || return 1
   printf '%s  ✓ scan worker running (container %s); Scan now works in the interface%s\n' "$real_green" "$REAL_WORKER_NAME" "$real_plain"
 }
@@ -184,8 +283,7 @@ real_sweep() {
     -v "$REAL_VF/config:/opt/vf/config:ro" \
     -v vulnframework-scanhome:/home/scanner \
     "${REAL_ENV[@]}" \
-    --entrypoint /opt/vf/orchestrator \
-    "$REAL_SCANNER_IMAGE" "${REAL_ARGS[@]}" >"$out"; then
+    "${REAL_ENTRY[@]}" "${REAL_ARGS[@]}" >"$out"; then
     real_fail "The sweep failed; its output so far is in $out." || return 1
   fi
   printf '%s  ✓ sweep complete; the full record is in %s%s\n' "$real_green" "${out#"$REAL_ROOT"/}" "$real_plain"
