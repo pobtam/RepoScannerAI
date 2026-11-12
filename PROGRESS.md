@@ -72,9 +72,133 @@ read this file first and resume from "Next".
     The chart is drawn in the design system's colours and follows dark
     mode; scanner changes are a ring and partial runs a solid dot, so they
     differ by shape as well as colour. Tests on both backends, UI tests.
+- **Done 2026-11-11 (evening), at your request: NuGuard live in real mode,
+  committed and reproducible.** Nothing pushed or merged.
+  - **NuGuard commits** (`nuguard/nuguard`, branch
+    `feature/remote-scan-service` from `develop` @ `ad7873ee`):
+    - `96f03c63` P1 and P5: no-false-clean tool status, finding identity.
+      One commit, because the two share `static_analyzer.py` hunk by hunk;
+    - `c1cfba0c` P2: Semgrep rules that can fire;
+    - `0d00e7df` P3 and P4: token without URL embedding, clone safety, and
+      the **proxy fix**. Under a host policy, git keeps the `*_PROXY` and CA
+      variables and still drops `GH_TOKEN`, `GITHUB_TOKEN` and `NUGUARD_*`;
+      tested. The tree-API client keeps httpx `trust_env`; tested;
+    - `04ad59d2` P6: packaging;
+    - `b4c91ca2` the service;
+    - `776b04cd` docs, including `remote-api.md` (proxy, native run with
+      `NUGUARD_TOOLS_JSON` and `NUGUARD_IMAGE_DIGEST`) and
+      `GATEWAY-DESIGN.md`, which the spec cites.
+    - `CONTEXT.md` (a dated orientation note) and `.DS_Store` files left
+      untracked. `.ng-src.tgz` deleted.
+  - **NuGuard checks:**
+    - ruff: no new errors. About 500 already exist on `develop`; one new
+      import-order error was fixed;
+    - mypy: clean (857 files);
+    - contracts, service, analysis and sbom: 549 passed, 2 skipped;
+    - full suite: 3449 passed, 66 skipped, 8 failed. The 8 failures are in
+      pentest, and also fail on `develop` (macOS temporary folder is a
+      symlink).
+    - Found on the way: **Semgrep cannot share NuGuard's environment.** It
+      fails on start-up over an OpenTelemetry version clash with NuGuard's
+      lockfile, so every scan would report `semgrep: failed`. The image
+      already isolates it; `nuguard-local.sh` now does too.
+  - **vulnerabilityAI commits** (`feature/real-mode-nuguard`, from
+    `b707be8`):
+    - `6be7ec0` Go and UI: scan each clone's GitHub origin;
+    - `bb0ad87` scripts: `run.sh --nuguard`, `nuguard-local.sh` as built
+      earlier today, and the `launch.sh` credential scrub;
+    - `a02d828` docs;
+    - `aab16bf` `nuguard-local.sh`: lockfile with `uv`, Semgrep in its own
+      environment, `git:<commit>` as the image digest, `tools.json`, a
+      fuller `status`;
+    - `4584c36` Ctrl-C clean-up in plain `--real`;
+    - `213a154` the briefs in `nuguard-integration/`;
+    - this documentation commit.
+    - Archives `.vf-src.tgz`, `.b707be8.tgz` and `.rmn.tgz` deleted.
+  - **vulnerabilityAI checks:**
+    - `go vet` clean, and `go test ./...` on memory and on Postgres (a
+      throwaway container, since removed);
+    - UI typecheck, and 162 UI tests;
+    - `scripts/test-real-cmdlines.sh`: the command lines are unchanged;
+    - `smoke.sh --real` and `--real --nuguard-fake`: OK;
+    - Ctrl-C in plain `--real`, on a throwaway database: the worker
+      container, the API and the dev server all stopped.
+  - **`uv` 0.13.7** was installed with Homebrew, with your approval.
+  - **Backups:**
+    - `~/.local/share/vulnframework/backups/real-20261111-160930.dump`,
+      taken by hand (140 findings);
+    - `real-20261111-161302.dump`, taken by `run.sh` before migrating schema
+      17 to 19.
+  - **Clones (step 5):**
+
+    | Repository | GitHub origin | HEAD pushed | Dirty | Visibility | NuGuard will |
+    |---|---|---|---|---|---|
+    | pobtampal/GCP-AutoPenTest | github.com/pobtampal/GCP-AutoPenTest | yes, `bad9378` = `main` | no | public | scan |
+    | pobtampal/GCP-Sec | github.com/pobtampal/GCP-Sec | yes, `912171d` = `main` | no | public | scan |
+
+    No unregistered clones are in `~/clones`. No token was needed or used.
+  - **Live sweep `S-000004`** (`./run.sh --real --nuguard ~/clones`):
+    - NuGuard 0.9.15, built from the lockfile, source
+      `git:776b04cd39ba717cf6f1efbf0ba6d4d9ef64d051`, clean, on
+      127.0.0.1:8090 only. Semgrep 1.172.0 is reported by the service.
+    - `GET /v1/nuguard`: configured, reachable, `version_ok`, fresh.
+    - **GCP-Sec:** complete. `nuguard`, `nga-rules`, `atlas` and `semgrep`
+      all ok. AI components measured: agent 1, model 1, privilege 4,
+      deployment 8 and others; provider anthropic. Image
+      `git:776b04cd…`, commit `912171d`.
+    - **GCP-AutoPenTest:** partial. All four NuGuard parts ok, but `gosec`
+      ("parsing report: unexpected end of JSON input") and `osv-scanner`
+      failed. That is the existing escalation (`normalise_failed`, 4
+      sweeps). AI components measured: agent 1, tool 1, 10 API endpoints
+      and others. Image `git:776b04cd…`, commit `bad9378`.
+    - `effective_nuguard` is recorded for both. The per-repository versions,
+      including `nuguard/image`, go to finding provenance and the
+      AI-components record, not to the run's `tool_versions`.
+    - **NuGuard findings: none** (`found_by=nuguard`, in both scopes), with
+      every NuGuard part ok. Posture findings are off by default.
+  - **Not caused by NuGuard, but visible in this sweep:** on GCP-Sec, 80
+    findings went VERIFIED to REGRESSED and 38 went to VERIFIED. All the
+    VERIFIED-to-REGRESSED moves had been made by `M-000002` (22 October),
+    whose trivy reported the same CVEs under CVE-only identities with no
+    `go.mod` location. Those identities existed only in that run.
+    `S-000004` restored the usual identities. The history now shows 80
+    "regressions" that are artefacts. The cause in `M-000002` is not known.
+  - **Controls, on GCP-Sec:**
+    - NuGuard off (audit #1), then Scan now: `M-000003`, NuGuard not
+      requested ("off for this repository"), no state changes;
+    - restored to inherit (audit #2), then Scan now: `M-000004`, NuGuard and
+      all its parts ok.
+    - There were no NuGuard findings, so "kept open and flagged not
+      re-observed" could not be exercised live. Unit and stack tests cover
+      it.
+  - **Restart test, on GCP-AutoPenTest:**
+    - NuGuard stopped, then Scan now: `M-000005` partial, with `nuguard`
+      failed, so a gap, not a clean result.
+    - The status card went on showing "reachable" until the worker's next
+      5-minute check (00:28:31Z), then showed unreachable.
+    - NuGuard started: the card recovered in 18 seconds. `M-000006` ran
+      NuGuard with every part ok.
+    - The four manual scans caused no state changes.
+  - **Interface:**
+    - The layout probe uses fixtures only, so it cannot point at a running
+      server.
+    - Instead, headless Chrome loaded the running app: the NuGuard page,
+      both repository pages (AI components panel) and a finding page all
+      rendered without error text.
+    - There is no NuGuard finding page to check.
+  - **Stopped:** everything this session started, by Ctrl-C on the run and
+    by name for the test containers. The containers and volumes match the
+    starting state. `vf-demo`, `vf-pg-test` and `nuguard-service` were not
+    touched.
+  - **Not verified:**
+    - a private repository with a token;
+    - a real proxy;
+    - a NuGuard finding end to end: none exist in these repositories;
+    - a large repository's time limits;
+    - Python repositories.
 - **Built 2026-11-11, at your request: NuGuard in real mode**
   (branch `feature/real-mode-nuguard`, from `feature/nuguard-ui-controls`;
-  **not committed**). `./run.sh --real --nuguard ~/clones` runs NuGuard on
+  committed later the same day, see above). `./run.sh --real --nuguard ~/clones` runs NuGuard on
   this Mac from the sibling checkout (`scripts/nuguard-local.sh`). It needs
   no NuGuard image. See REAL-REPOS.md §6a.
   - **Reachability experiment** (Docker Desktop 4.86.0, engine 29.7.2): a
@@ -157,8 +281,8 @@ read this file first and resume from "Next".
     - a proxy;
     - a large repository's time limits;
     - Python repositories (the adapter covers Go and JavaScript);
-    - `uv`, which is not installed here: the environment was built with
-      pip from Python 3.12, so NuGuard's lockfile was not used.
+    - `uv`, which was not installed then: the environment was built with
+      pip from Python 3.12 (since rebuilt from the lockfile, see above).
   - **Observed once:** trivy failed to parse its own report on one of four
     repositories scanned at once in the smoke test ("unexpected end of JSON
     input"). It did not recur in four later runs.

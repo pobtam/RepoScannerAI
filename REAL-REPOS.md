@@ -254,6 +254,34 @@ do yourself. With it, NuGuard clones from GitHub as described in the table.
 
 ## 6a. NuGuard in real mode
 
+**Everyday use with NuGuard**
+
+- **Run:** `./run.sh --real --nuguard ~/clones`. Ctrl-C stops the scan
+  worker, the API, the dev server and the NuGuard this run started.
+- **On its own:** `scripts/nuguard-local.sh start`, `stop` and `status`.
+  `status` shows what is running and on which address (it must say
+  "loopback only"), the version against the `config/tools.lock` pin,
+  whether dependencies came from NuGuard's lockfile, Semgrep's version (as
+  installed and as the service reports it), and the recorded source.
+- **Reset:** `scripts/nuguard-local.sh stop`, then delete
+  `~/.local/share/vulnframework/nuguard`. The next `start` rebuilds the
+  environments and makes a new API key.
+- **`nuguard/image = git:<commit>`:** on a scan, this records which NuGuard
+  produced the result. Natively there is no image, so it is the NuGuard
+  checkout's commit, with `-dirty` when it had uncommitted changes to
+  tracked files, or new files under `nuguard/`, `pyproject.toml` or
+  `uv.lock`, at start. The same value is the AI components panel's
+  `image_digest`. A `-dirty` result cannot be reproduced from a commit.
+- **Updating NuGuard:** pull or commit in the checkout
+  (`../nuguard/nuguard`), then `stop` and `start`. `start` rebuilds the
+  environment when `pyproject.toml`, `uv.lock` or the Semgrep pin changed.
+  `status` warns when the checkout moved since the running NuGuard started.
+- **`version_ok` is false** (NuGuard page, or `start` refusing): the service
+  reports a different version from the one `vulnframework/config/tools.lock`
+  pins (`tool nuguard …`). Either check out the pinned NuGuard version, or
+  change the pin on purpose, in a reviewed commit, after checking the new
+  version.
+
 NuGuard is an optional extra scanner for AI-specific problems in code, plus
 an inventory of the AI parts of each repository: models, agents, prompts
 and tools (DECISIONS-NEEDED.md, D13 amendment). In real mode it runs on this
@@ -271,14 +299,17 @@ Without `--nuguard`, real mode is exactly as before.
 - the NuGuard checkout at `../nuguard`, or set `NUGUARD_DIR`. A folder
   holding the checkout one level down, `../nuguard/nuguard`, is found too;
 - Python 3.12 or newer (`brew install python@3.12`);
-- `uv` (`brew install uv`), if you have it. Without it, `pip` is used and
-  NuGuard's lockfile is not.
+- `uv` (`brew install uv`). Without it, `pip` is used, NuGuard's lockfile
+  is not, and `status` says "dependencies not from lockfile".
 
 **What happens.** `scripts/nuguard-local.sh start`:
 
-1. builds NuGuard its own Python environment, with the Semgrep version
-   NuGuard's CI pins. This happens the first time, and again when NuGuard's
-   dependencies change;
+1. builds NuGuard its own Python environment from its lockfile, and
+   Semgrep a separate one at the version NuGuard's CI pins. They have to be
+   separate: Semgrep in NuGuard's environment fails on start-up. This
+   happens the first time, and again when NuGuard's dependencies, the pin or
+   the install method change. It also writes `tools.json` (NuGuard's,
+   Semgrep's and git's versions) for the service to report;
 2. creates an API key the first time;
 3. starts `nuguard serve` on `127.0.0.1:8090` (`NUGUARD_PORT`), which is
    reachable from this Mac only;
@@ -339,9 +370,12 @@ readable only by you:
 - To reset, stop it and delete `~/.local/share/vulnframework/nuguard/`. A new
   key is made on the next start.
 
-**Known limit.** NuGuard's git clones do not use an HTTP proxy, because they
-keep only a few environment variables. Behind a proxy, clones fail, and each
-failure is recorded as a coverage gap. The status warns when a proxy is set.
+**Behind a proxy.** Export the proxy and CA variables (`HTTPS_PROXY`,
+`NO_PROXY`, `SSL_CERT_FILE` and so on) in the shell that runs `start` or
+`run.sh`. `start` passes them to NuGuard's workers, and NuGuard's git clones
+and GitHub API calls use them (NuGuard commit `0d00e7d` onwards). An older
+NuGuard checkout ignored them for clones. `status` warns when a proxy is set
+and the checkout lacks that fix. Not yet tried behind a real proxy.
 
 ## 7. Local auth gives full access to anything on this machine
 
