@@ -244,6 +244,14 @@ cut ("semgrep → left out (not offered by the service)"). Leave it closed and
 **Turning NuGuard off does not close its findings.** They stay open, flagged
 not re-observed, until a scan with NuGuard looks again.
 
+**On your own Mac.** `./run.sh --real --nuguard ~/clones` runs NuGuard locally,
+from the NuGuard checkout next to this repository, and scans your clones with
+it. NuGuard downloads each repository from GitHub, so a clone with no GitHub
+origin shows NuGuard as not requested. A commit not yet pushed is a coverage
+gap, owned by the repository. When your copy has uncommitted changes, NuGuard's
+findings say it scanned the commit, not your working tree. See REAL-REPOS.md,
+"NuGuard in real mode".
+
 ---
 
 ## Waves

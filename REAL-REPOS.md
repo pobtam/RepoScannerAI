@@ -238,6 +238,8 @@ unit-tested but has not yet been run against a real organisation's modules.
 | `www.cisa.gov`, `epss.empiricalsecurity.com` | one download of each whole catalogue per sweep; nothing about your code | every sweep |
 | `api.anthropic.com` (**only if AI triage is on**) | per finding: fingerprint, category, advisory and rule IDs, module, versions, severity, reachability, and **file path**. Per repository: its name, languages, tier, whether it has a test suite. Secret values are never sent: they are redacted at scan time, and every request is checked for credential-shaped content before it leaves. | only with both variables from section 4 set |
 | Docker Hub | the `postgres:16-alpine` image | first run |
+| `github.com`, `api.github.com`, `codeload.github.com` (**only with `--nuguard`**) | NuGuard, running on this Mac, clones each repository whose origin is on github.com, at the commit being scanned; with a token set, private repositories too. Your clone itself is not sent: NuGuard downloads GitHub's copy. | every scan, for clones with a GitHub origin |
+| `pypi.org`, `files.pythonhosted.org` (**only with `--nuguard`**) | NuGuard's Python packages and its Semgrep, installed into its own environment | first start, and when NuGuard's dependencies change |
 
 These stay on this machine:
 
@@ -247,7 +249,99 @@ These stay on this machine:
 - the gosec and staticcheck analyses;
 - the database.
 
-No GitHub API is called. Cloning is something you do yourself.
+Without `--nuguard`, no GitHub API is called, and cloning is something you
+do yourself. With it, NuGuard clones from GitHub as described in the table.
+
+## 6a. NuGuard in real mode
+
+NuGuard is an optional extra scanner for AI-specific problems in code, plus
+an inventory of the AI parts of each repository: models, agents, prompts
+and tools (DECISIONS-NEEDED.md, D13 amendment). In real mode it runs on this
+Mac, from the NuGuard checkout next to this repository, without a NuGuard
+image:
+
+```bash
+./run.sh --real --nuguard ~/clones
+```
+
+Without `--nuguard`, real mode is exactly as before.
+
+**Prerequisites.** These are needed only with `--nuguard`:
+
+- the NuGuard checkout at `../nuguard`, or set `NUGUARD_DIR`. A folder
+  holding the checkout one level down, `../nuguard/nuguard`, is found too;
+- Python 3.12 or newer (`brew install python@3.12`);
+- `uv` (`brew install uv`), if you have it. Without it, `pip` is used and
+  NuGuard's lockfile is not.
+
+**What happens.** `scripts/nuguard-local.sh start`:
+
+1. builds NuGuard its own Python environment, with the Semgrep version
+   NuGuard's CI pins. This happens the first time, and again when NuGuard's
+   dependencies change;
+2. creates an API key the first time;
+3. starts `nuguard serve` on `127.0.0.1:8090` (`NUGUARD_PORT`), which is
+   reachable from this Mac only;
+4. checks that NuGuard reports the version `config/tools.lock` pins, and
+   stops it if not.
+
+`./run.sh --real --nuguard` does this for you. It also:
+
+- passes the key into the scan containers by name only;
+- prints what will happen before the sweep;
+- on Ctrl-C, stops NuGuard if this run started it.
+
+Inside the scan container a small bridge (`cmd/loopbridge`) carries NuGuard's
+port from the container's own `127.0.0.1` to the Mac. This keeps the
+scanner's rule that the API key only ever travels over https or to a
+loopback address.
+
+**Which repositories NuGuard can scan.** NuGuard downloads the repository
+from GitHub; it never reads your clone:
+
+| Your clone | What you see |
+|---|---|
+| origin on github.com, commit pushed | NuGuard's findings and the AI inventory. The GitHub repository is read from the clone's `origin`, so the registered name need not match it. |
+| uncommitted changes, or untracked files | NuGuard scans the commit, not your working tree. Each NuGuard finding says "NuGuard scanned the committed state, not the working tree". |
+| origin on github.com, commit not pushed | a coverage gap, owned by the repository: "commit … is not on GitHub". Push it and scan again. |
+| no origin, or one elsewhere (GitLab, a path) | NuGuard "not requested: no GitHub origin; NuGuard needs the repository on GitHub". This is not a failure, and the other tools scan as usual. |
+
+**Private repositories.** Set `VULNFRAMEWORK_GITHUB_TOKEN` to a fine-grained,
+read-only token (Contents: read, Metadata: read) for those repositories
+before starting. It is passed to NuGuard only. Public repositories need no
+token.
+
+**The ceiling.** The interface's NuGuard controls work in real mode within
+these limits, set from the environment with the same defaults as
+`deploy/compose.yaml`:
+
+- `NUGUARD_ALLOW_TOOLS`, `NUGUARD_ALLOW_POSTURE` and `NUGUARD_MAX_TIMEOUT` set
+  the ceiling;
+- `NUGUARD_TOOLS`, `NUGUARD_INCLUDE_POSTURE` and `NUGUARD_TIMEOUT` set the
+  defaults.
+
+**Where its files are.** Everything is in `~/.local/share/vulnframework/nuguard/`,
+readable only by you:
+
+- the API key, `api-key`, which is never printed;
+- the service settings, which hold only the key's SHA-256;
+- NuGuard's environment, database and log.
+
+**Commands.**
+
+- `scripts/nuguard-local.sh status` shows:
+  - whether NuGuard is running, and its version;
+  - its Semgrep;
+  - the NuGuard commit, and whether that checkout has uncommitted changes.
+    Results from uncommitted NuGuard work cannot be reproduced later, and
+    the status says so.
+- `scripts/nuguard-local.sh stop` stops NuGuard.
+- To reset, stop it and delete `~/.local/share/vulnframework/nuguard/`. A new
+  key is made on the next start.
+
+**Known limit.** NuGuard's git clones do not use an HTTP proxy, because they
+keep only a few environment variables. Behind a proxy, clones fail, and each
+failure is recorded as a coverage gap. The status warns when a proxy is set.
 
 ## 7. Local auth gives full access to anything on this machine
 
@@ -445,6 +539,9 @@ Neither the password nor its file belongs in the repository, a chat or a
 ticket. Keep a copy in your password manager if you want one.
 
 ### Backing up and restoring
+
+`./run.sh --real` takes a backup by itself before a newer version migrates
+your database, and says where the backup is.
 
 ```sh
 scripts/db.sh backup                    # the real-mode database

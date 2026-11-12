@@ -72,6 +72,102 @@ read this file first and resume from "Next".
     The chart is drawn in the design system's colours and follows dark
     mode; scanner changes are a ring and partial runs a solid dot, so they
     differ by shape as well as colour. Tests on both backends, UI tests.
+- **Built 2026-11-11, at your request: NuGuard in real mode**
+  (branch `feature/real-mode-nuguard`, from `feature/nuguard-ui-controls`;
+  **not committed**). `./run.sh --real --nuguard ~/clones` runs NuGuard on
+  this Mac from the sibling checkout (`scripts/nuguard-local.sh`). It needs
+  no NuGuard image. See REAL-REPOS.md §6a.
+  - **Reachability experiment** (Docker Desktop 4.86.0, engine 29.7.2): a
+    server bound only to the Mac's `127.0.0.1` **is** reachable from the
+    scanner container at `host.docker.internal`, with or without
+    `--add-host`. The NuGuard client still refuses plain http to that name,
+    so option 1 was chosen: a loopback bridge, `cmd/loopbridge`, built and
+    mounted like the orchestrator. It listens on the container's
+    `127.0.0.1` and forwards to `host.docker.internal`. The client's
+    loopback rule is unchanged and there is no new flag.
+  - **The repository NuGuard scans** is the clone's github.com `origin`,
+    read from `.git/config` (`githubRepoFromGitConfig`, with table tests).
+    It is carried on `RunOpts.LocalClone`, filled by the `LocalDispatcher`
+    only when NuGuard is configured.
+    - With no GitHub origin: NuGuard not requested, "no GitHub origin;
+      NuGuard needs the repository on GitHub".
+    - With uncommitted changes, or a state that cannot be checked
+      (`git status` in the container, read-only): every NuGuard finding is
+      annotated "NuGuard scanned the committed state…". The note is shown
+      on the finding page, and it clears on a clean rescan.
+    - `ref_not_found` from a clone: gap `commit_not_on_github`, owner repo.
+  - **Found and fixed:**
+    - **The one-shot sweep ignored the stored NuGuard settings.** It called
+      `Sweep` without resolving them, so the start-of-run sweep and the
+      daily timer sweep would have scanned a repository switched off in
+      the interface. It now resolves them as the worker does
+      (`ResolveSweepNuGuard`). Without NuGuard configured, nothing changes.
+    - **`run.sh`'s stop trap never ran.** It ends with `exec npm run dev`,
+      which replaces the shell, so Ctrl-C left the scan worker container
+      running. Fixed **only for `--nuguard`** (no exec there), so that
+      real mode without it is exactly as before. `stop` now also ends the
+      server `go run` leaves behind.
+    - **`real_pg_up` returned during Postgres's first-start init**, so the
+      migration failed about half the time on a new database (seen in the
+      smoke test, 2 of 3 runs). It now waits for readiness over TCP.
+      `real_migrate` still hides a failure behind its `| tail` (existing
+      behaviour, left as it is).
+  - **The API server and the interface's dev server never get a
+    credential** (asked for after the first report). They start through
+    `scripts/launch.sh`, which removes `VULNFRAMEWORK_NUGUARD_API_KEY` and
+    `VULNFRAMEWORK_GITHUB_TOKEN` from their environment in every mode;
+    neither reads them. The scan containers still get theirs by name.
+    `scripts/test-real-cmdlines.sh` runs the launchers with both exported
+    and recorders as `go` and `npm`, and fails if either arrives (checked to
+    fail with the removal taken out). A live demo run with both exported
+    showed neither in the running servers' environments.
+  - **Backup before migrating:** `run.sh --real`, with or without
+    `--nuguard`, runs `scripts/db.sh backup` first when the database's
+    schema is older than the binary's. Checked on a throwaway database:
+    - a new database: no backup;
+    - a current one: no backup;
+    - schema 18 under this schema-19 binary: backed up, with its path
+      printed.
+  - **Verified:**
+    - `go vet`, and `go test ./...` on both backends;
+    - `-race` on scan, adapters, orchestrator, api, nuguard,
+      cmd/orchestrator and cmd/loopbridge;
+    - UI typecheck and 162 tests;
+    - `scripts/test-real-cmdlines.sh`: the container command lines without
+      `--nuguard` match those recorded from the unchanged `real.sh`; the
+      key and token are passed by name only;
+    - `scripts/smoke.sh --real` green 3 times in a row, with the same
+      output as before;
+    - `scripts/smoke.sh --real --nuguard-fake` green.
+  - **Real trial** with the real NuGuard 0.9.15 from the sibling checkout:
+    - **Setup:** the public `openai/openai-quickstart-node` at `6e6e034`,
+      registered as `trial/openai-quickstart-node`, so the origin decided
+      the repository. It used a throwaway database (`vf-trial-pg`, since
+      removed).
+    - **The sweep:** complete, with `nuguard/nga-rules`, `nuguard/atlas`
+      and `nuguard/semgrep` all ok, and the AI inventory recorded (4
+      models, an agent, a prompt and a tool; providers openai and
+      anthropic). NuGuard reported no findings for this repository.
+    - **Scan now:** worked through the worker's bridge, and the status page
+      showed NuGuard reachable at version 0.9.15.
+    - **Ctrl-C:** stopped the worker, the API and, when the run had started
+      it, NuGuard.
+  - **Not verified:**
+    - a private repository with a token;
+    - a proxy;
+    - a large repository's time limits;
+    - Python repositories (the adapter covers Go and JavaScript);
+    - `uv`, which is not installed here: the environment was built with
+      pip from Python 3.12, so NuGuard's lockfile was not used.
+  - **Observed once:** trivy failed to parse its own report on one of four
+    repositories scanned at once in the smoke test ("unexpected end of JSON
+    input"). It did not recur in four later runs.
+  - **The NuGuard checkout is uncommitted work** (`ad7873ee` plus local
+    changes, including the whole service). `status` says so.
+  - **The sibling's own `.venv` does not import NuGuard:** macOS had marked
+    its `.pth` files hidden, and Python 3.12 skips hidden ones. The script
+    builds a separate environment and clears that flag, and leaves the
+    sibling's `.venv` alone.
 - **Built 2026-11-06, at your request: NuGuard controls in the interface**
   (branch `feature/nuguard-ui-controls`, from `feature/nuguard-adapter`).
   - **Committed:** the adapter work as `9042e4e` on `feature/nuguard-adapter`
@@ -721,6 +817,31 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
   - **Python (step 6) not done:** an adapter cannot see which other tools
     covered a repository, so the "NuGuard alone is not a full scan" gap
     needs a worker-level rule. Listed in NOW-VS-LATER.md.
+- **Real-mode NuGuard choices** (2026-11-11):
+  - **Option 1, the bridge**, because the experiment showed the Mac's
+    loopback is reachable. The client's rule stays as it is, and no flag
+    can widen it.
+  - **NuGuard's own environment** lives in
+    `~/.local/share/vulnframework/nuguard/venv`, not the checkout's `.venv`.
+    `uv sync` would remove packages the developer installed there, and that
+    `.venv` does not import. With `uv`, the install uses `--frozen`, so the
+    checkout's lockfile is never rewritten.
+  - **The checkout is found one level down too** (`../nuguard/nuguard`, the
+    layout on this Mac). `NUGUARD_DIR` overrides.
+  - **The settings file is rewritten on every start**, so the proxy and
+    certificate variables passed through match the current shell. The key
+    is made once.
+  - **The rendering test runs the real functions** with `docker` and `go`
+    replaced by recorders, rather than a separate dry-run mode, so it checks
+    the code that runs.
+  - **The working-tree note is a finding annotation**
+    (`nuguard/<version>/scanned`), not a gap. A gap would mark the scan
+    partial, though NuGuard did complete. An untracked file counts as a
+    change, because the local tools scanned it.
+  - **The origin decides the repository.** The registered name is used for
+    everything else, and never for NuGuard in real mode.
+  - **`--nuguard` keeps the shell alive** (no `exec`) so its clean-up runs.
+    Without `--nuguard`, nothing about `run.sh`'s process changed.
 - **NuGuard controls choices** (2026-11-06):
   - **"Not requested" is a third list** (`tools_not_requested`, JSON with a
     reason per tool) beside `tools_ok` and `tools_failed`. The coverage
