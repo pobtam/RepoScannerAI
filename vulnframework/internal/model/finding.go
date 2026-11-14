@@ -35,6 +35,42 @@ func (c Category) Valid() bool { return categorySet[c] }
 
 func (c Category) String() string { return string(c) }
 
+// Domain says whether a finding is an application vulnerability or an AI
+// vulnerability: a defect in how the code uses models, agents, prompts and
+// tools. It is derived from which scanners reported the finding (DomainOf),
+// never stored, so it cannot drift from the provenance it is read from.
+type Domain string
+
+const (
+	DomainApp Domain = "app"
+	DomainAI  Domain = "ai"
+)
+
+// AllDomains is the closed enumeration, in display order.
+var AllDomains = []Domain{DomainApp, DomainAI}
+
+// Valid reports whether d is a member of the closed enumeration.
+func (d Domain) Valid() bool { return d == DomainApp || d == DomainAI }
+
+// AIScanners are the adapters whose findings are AI vulnerabilities: they
+// look only at how code uses AI (NuGuard's AI rules, NGA posture rules and
+// ATLAS mapping). A finding any of them reported is an AI vulnerability, even
+// if another tool reported it too. Add this project's own Phase 3 AI rules
+// here when they exist (D13).
+var AIScanners = []string{"nuguard"}
+
+// DomainOf classifies a finding by the tools that reported it.
+func DomainOf(f Finding) Domain {
+	for _, t := range f.Provenance.Tools {
+		for _, ai := range AIScanners {
+			if t == ai {
+				return DomainAI
+			}
+		}
+	}
+	return DomainApp
+}
+
 // Reachable is a tri-state: "true" | "false" | "unknown".
 //
 // It is deliberately NOT a bool (VM-F-243, VM-AD §4.1). The third value is

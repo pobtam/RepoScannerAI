@@ -21,12 +21,14 @@ import {
   type FlagDimension,
   type MultiDimension,
 } from '../../lib/view-state';
+import { domainLabel } from '../../lib/domain';
 
 const DIMENSION_LABELS: Record<MultiDimension, string> = {
   repo: 'Repository',
   tier: 'Tier',
   language: 'Language',
   category: 'Category',
+  domain: 'Type',
   state: 'State',
   reason: 'Reason code',
   priority: 'Priority',
@@ -75,6 +77,7 @@ const FACET_KEYS: Partial<Record<MultiDimension, keyof Facets>> = {
   tier: 'tiers',
   language: 'languages',
   category: 'categories',
+  domain: 'domains',
   state: 'states',
   reason: 'reasons',
   priority: 'priorities',
@@ -246,5 +249,6 @@ function labelFor(dim: MultiDimension, value: string): string {
     if (value === 'unknown') return 'unknown (not a determination)';
   }
   if (dim === 'tier') return `tier ${value}`;
+  if (dim === 'domain') return domainLabel(value);
   return value;
 }

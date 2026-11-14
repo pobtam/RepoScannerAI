@@ -46,6 +46,8 @@ type Filter struct {
 	// FoundBy selects findings any of these tools reported, by adapter name
 	// ("nuguard", "gosec"): the finding's provenance tools (VM-UI-F-1207).
 	FoundBy []string
+	// Domains selects application or AI vulnerabilities (model.DomainOf).
+	Domains []model.Domain
 
 	Transitive *bool
 	// FirstParty selects findings in a module this organisation owns.
@@ -78,7 +80,7 @@ func (f Filter) Empty() bool {
 	return len(f.Repos) == 0 && len(f.Tiers) == 0 && len(f.Languages) == 0 &&
 		len(f.Categories) == 0 && len(f.States) == 0 && len(f.Reasons) == 0 &&
 		len(f.Priorities) == 0 && len(f.Severities) == 0 && len(f.Reachable) == 0 &&
-		len(f.DepClasses) == 0 && len(f.FoundBy) == 0 && f.Transitive == nil && f.FirstParty == nil &&
+		len(f.DepClasses) == 0 && len(f.FoundBy) == 0 && len(f.Domains) == 0 && f.Transitive == nil && f.FirstParty == nil &&
 		f.Blocked == nil && f.HasPR == nil && f.HasTicket == nil &&
 		f.NotReobserved == nil && f.SLABreached == nil &&
 		f.FirstSeenFrom == nil && f.FirstSeenTo == nil &&
@@ -135,6 +137,9 @@ func (f Filter) Match(fd model.Finding, repo RepoFacts) bool {
 		return false
 	}
 	if len(f.FoundBy) > 0 && !anyString(fd.Provenance.Tools, f.FoundBy) {
+		return false
+	}
+	if len(f.Domains) > 0 && !containsDomain(f.Domains, model.DomainOf(fd)) {
 		return false
 	}
 	if f.Transitive != nil && fd.Classification.Transitive != *f.Transitive {
@@ -458,6 +463,7 @@ type FacetCounts struct {
 	Severities map[string]int `json:"severities"`
 	Reachable  map[string]int `json:"reachable"`
 	DepClasses map[string]int `json:"dep_classes"`
+	Domains    map[string]int `json:"domains"`
 }
 
 func newFacetCounts() FacetCounts {
@@ -465,11 +471,20 @@ func newFacetCounts() FacetCounts {
 		Repos: map[string]int{}, Tiers: map[int]int{}, Languages: map[string]int{},
 		Categories: map[string]int{}, States: map[string]int{}, Reasons: map[string]int{},
 		Priorities: map[string]int{}, Severities: map[string]int{}, Reachable: map[string]int{},
-		DepClasses: map[string]int{},
+		DepClasses: map[string]int{}, Domains: map[string]int{},
 	}
 }
 
 // --- small set helpers ------------------------------------------------------
+
+func containsDomain(set []model.Domain, v model.Domain) bool {
+	for _, s := range set {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
 
 func containsString(set []string, v string) bool {
 	for _, s := range set {

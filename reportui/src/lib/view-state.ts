@@ -16,6 +16,7 @@
  * someone a list they did not ask for, with no indication, is worse than
  * showing them the unfiltered one.
  */
+import { domainLabel } from './domain';
 import { z } from 'zod';
 
 export const scopeSchema = z.enum(['open', 'all', 'run']);
@@ -37,6 +38,8 @@ export const explorerState = z.object({
   tier: list.optional(),
   language: list.optional(),
   category: list.optional(),
+  // App or AI vulnerability (src/lib/domain.ts).
+  domain: list.optional(),
   state: list.optional(),
   reason: list.optional(),
   priority: list.optional(),
@@ -67,6 +70,7 @@ export const MULTI_DIMENSIONS = [
   'tier',
   'language',
   'category',
+  'domain',
   'state',
   'reason',
   'priority',
@@ -214,7 +218,11 @@ export function activeFilters(
   const out: { dimension: string; value: string; label: string }[] = [];
   for (const dim of MULTI_DIMENSIONS) {
     for (const value of state[dim] ?? []) {
-      out.push({ dimension: dim, value, label: `${dim}: ${value}` });
+      out.push({
+        dimension: dim,
+        value,
+        label: dim === 'domain' ? `type: ${domainLabel(value)}` : `${dim}: ${value}`,
+      });
     }
   }
   for (const flag of FLAG_DIMENSIONS) {

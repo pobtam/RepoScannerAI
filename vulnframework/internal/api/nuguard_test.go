@@ -441,6 +441,34 @@ func TestANuGuardFindingHasItsOwnSectionAndFilter(t *testing.T) {
 			if status, _, _ := e.do(t, http.MethodGet, "/v1/findings?scope=open&found_by=bogus", owner, "", nil); status != 400 {
 				t.Errorf("an unknown found_by = %d, want 400 (an ignored filter shows a list nobody asked for)", status)
 			}
+
+			// App or AI: on every finding, as a filter, and as counted options.
+			for fp, want := range map[string]string{fingerprint.Compute(ng): "ai", fingerprint.Compute(local): "app"} {
+				if _, m, raw := e.do(t, http.MethodGet, "/v1/findings/"+fp, owner, "", nil); m["domain"] != want {
+					t.Errorf("domain of %s = %v, want %s: %s", fp, m["domain"], want, raw)
+				}
+			}
+			for domain, wantFP := range map[string]string{"ai": fingerprint.Compute(ng), "app": fingerprint.Compute(local)} {
+				_, m, raw := e.do(t, http.MethodGet, "/v1/findings?scope=open&domain="+domain, owner, "", nil)
+				if fs := m["findings"].([]any); len(fs) != 1 || fs[0].(map[string]any)["fingerprint"] != wantFP {
+					t.Errorf("domain=%s = %s", domain, raw)
+				}
+			}
+			if _, m, raw := e.do(t, http.MethodGet, "/v1/findings?scope=open&domain=app,ai", owner, "", nil); len(m["findings"].([]any)) != 2 {
+				t.Errorf("domain=app,ai = %s", raw)
+			}
+			if status, _, _ := e.do(t, http.MethodGet, "/v1/findings?scope=open&domain=AI", owner, "", nil); status != 400 {
+				t.Errorf("an unknown domain = %d, want 400", status)
+			}
+			_, m, raw = e.do(t, http.MethodGet, "/v1/findings/facets?scope=open&domain=ai", owner, "", nil)
+			got := map[string]any{}
+			for _, o := range m["domains"].([]any) {
+				opt := o.(map[string]any)
+				got[opt["value"].(string)] = opt["count"]
+			}
+			if got["ai"] != float64(1) || got["app"] != float64(1) {
+				t.Errorf("domain facets = %v, want ai 1 and app 1 (own selection ignored): %s", got, raw)
+			}
 		})
 	}
 }

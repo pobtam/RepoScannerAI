@@ -200,9 +200,12 @@ type Triage struct {
 
 // Finding is the record as the interface reads it.
 type Finding struct {
-	Fingerprint    string         `json:"fingerprint"`
-	Repo           string         `json:"repo"`
-	Category       string         `json:"category"`
+	Fingerprint string `json:"fingerprint"`
+	Repo        string `json:"repo"`
+	Category    string `json:"category"`
+	// Domain is "app" (an application vulnerability) or "ai" (an AI
+	// vulnerability), from the scanners that reported it (model.DomainOf).
+	Domain         string         `json:"domain"`
 	Identity       Identity       `json:"identity"`
 	Location       Location       `json:"location"`
 	Versions       Versions       `json:"versions,omitempty"`
@@ -308,6 +311,7 @@ type Facets struct {
 	Severities []FacetOption `json:"severities"`
 	Reachable  []FacetOption `json:"reachable"`
 	DepClasses []FacetOption `json:"dep_classes"`
+	Domains    []FacetOption `json:"domains"`
 }
 
 // Transition is one state change, with who made it and why.

@@ -53,6 +53,13 @@ const (
 	sqlSLAStatus = `COALESCE(f.data->'derived'->>'sla_status', '')`
 )
 
+// sqlDomain mirrors model.DomainOf: "ai" when any of model.AIScanners
+// reported the finding, else "app". Built from the same list, so the two
+// backends cannot disagree about which scanners count. The names are
+// constants in this program, never input.
+var sqlDomain = `CASE WHEN COALESCE(f.data->'provenance'->'tools', '[]'::jsonb) ?| '` +
+	pgTextArray(model.AIScanners) + `'::text[] THEN 'ai' ELSE 'app' END`
+
 // sortExprSQL is the ordering key expression, rendered as TEXT so it compares
 // in the same order as SortKey's string.
 func sortExprSQL(field SortField) string {
@@ -118,6 +125,13 @@ func (b *builder) filterSQL(f Filter) {
 	}
 	if len(f.FoundBy) > 0 {
 		b.add("COALESCE(f.data->'provenance'->'tools', '[]'::jsonb) ?| $%d", pgTextArray(f.FoundBy))
+	}
+	if len(f.Domains) > 0 {
+		ds := make([]string, 0, len(f.Domains))
+		for _, d := range f.Domains {
+			ds = append(ds, string(d))
+		}
+		b.add(sqlDomain+" = ANY($%d)", pgTextArray(ds))
 	}
 	if len(f.Categories) > 0 {
 		b.add("f.category = ANY($%d)", pgTextArray(categoriesToStrings(f.Categories)))
@@ -327,6 +341,9 @@ func (p *Postgres) Facets(ctx context.Context, q SearchQuery) (FacetCounts, erro
 	for _, d := range []model.DepClass{model.DepProduction, model.DepDevelopment, model.DepNotApplicable} {
 		out.DepClasses[string(d)] = 0
 	}
+	for _, d := range model.AllDomains {
+		out.Domains[string(d)] = 0
+	}
 
 	type dimension struct {
 		expr  string
@@ -336,6 +353,7 @@ func (p *Postgres) Facets(ctx context.Context, q SearchQuery) (FacetCounts, erro
 	dims := []dimension{
 		{"f.repo", func(f *Filter) { f.Repos = nil }, func(k string, n int) { out.Repos[k] = n }},
 		{"f.category", func(f *Filter) { f.Categories = nil }, func(k string, n int) { out.Categories[k] = n }},
+		{sqlDomain, func(f *Filter) { f.Domains = nil }, func(k string, n int) { out.Domains[k] = n }},
 		{"f.state", func(f *Filter) { f.States = nil }, func(k string, n int) { out.States[k] = n }},
 		{"COALESCE(f.reason_code, '')", func(f *Filter) { f.Reasons = nil }, func(k string, n int) {
 			if k != "" {

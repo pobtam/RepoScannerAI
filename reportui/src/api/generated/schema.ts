@@ -595,6 +595,7 @@ export interface components {
                 credential_type?: string;
                 description?: string;
                 description_source?: string;
+                domain: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -761,6 +762,7 @@ export interface components {
                     credential_type?: string;
                     description?: string;
                     description_source?: string;
+                    domain: string;
                     fingerprint: string;
                     identity: {
                         aliases?: string[];
@@ -915,6 +917,7 @@ export interface components {
                 credential_type?: string;
                 description?: string;
                 description_source?: string;
+                domain: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -1215,6 +1218,11 @@ export interface components {
                 disabled: boolean;
                 value: string;
             }[];
+            domains: {
+                count: number;
+                disabled: boolean;
+                value: string;
+            }[];
             languages: {
                 count: number;
                 disabled: boolean;
@@ -1279,6 +1287,7 @@ export interface components {
             credential_type?: string;
             description?: string;
             description_source?: string;
+            domain: string;
             fingerprint: string;
             identity: {
                 aliases?: string[];
@@ -1438,6 +1447,7 @@ export interface components {
                 credential_type?: string;
                 description?: string;
                 description_source?: string;
+                domain: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -2435,6 +2445,7 @@ export interface components {
                 credential_type?: string;
                 description?: string;
                 description_source?: string;
+                domain: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];

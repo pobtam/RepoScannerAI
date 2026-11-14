@@ -29,6 +29,7 @@ import { api } from '../../api/client';
 import type { Finding } from '../../api/schemas';
 import { Absent, Badge, Caveat, CopyButton, ErrorState, Loading, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
+import { DOMAIN_HINT, DOMAIN_LABEL } from '../../lib/domain';
 import { NuGuardFindingSection } from '../nuguard/NuGuard';
 import {
   epssLabel,
@@ -490,6 +491,9 @@ function Header({ finding: f }: { finding: Finding }) {
         </Badge>
         <Badge mark={stateMark(f.state)} tone={`state-${f.partition}`}>
           {f.state}
+        </Badge>
+        <Badge tone={`domain-${f.domain}`} title={DOMAIN_HINT[f.domain]}>
+          {DOMAIN_LABEL[f.domain]}
         </Badge>
       </h1>
       <p className="muted">

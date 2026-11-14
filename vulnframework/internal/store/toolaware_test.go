@@ -254,6 +254,80 @@ func TestFindingsFilterByTheToolThatFoundThem(t *testing.T) {
 	})
 }
 
+// Each finding is an app or an AI vulnerability, by the scanners that found
+// it, and the type filters and counts the same on both backends.
+func TestFindingsFilterAndCountByAppOrAI(t *testing.T) {
+	run(t, func(t *testing.T, s store.Store) {
+		ctx := context.Background()
+		seed := seedToolAware(t, s)
+		for _, tc := range []struct {
+			domains []model.Domain
+			want    []string
+		}{
+			{[]model.Domain{model.DomainAI}, []string{seed.atlas, seed.semgrep}},
+			{[]model.Domain{model.DomainApp}, []string{seed.gosec}},
+			{[]model.Domain{model.DomainApp, model.DomainAI}, []string{seed.atlas, seed.gosec, seed.semgrep}},
+		} {
+			page, err := s.Search(ctx, store.SearchQuery{Scope: store.ScopeOpen,
+				Filter: store.Filter{Domains: tc.domains}, Limit: 50,
+				Sort: store.Sort{Field: store.SortPriority, Dir: store.SortDesc}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got []string
+			for _, f := range page.Findings {
+				got = append(got, f.Fingerprint)
+				if d := model.DomainOf(f); !containsDomainT(tc.domains, d) {
+					t.Errorf("%s classified %q, outside the filter %v", f.Fingerprint, d, tc.domains)
+				}
+			}
+			sort.Strings(got)
+			want := append([]string(nil), tc.want...)
+			sort.Strings(want)
+			if strings.Join(got, ",") != strings.Join(want, ",") {
+				t.Errorf("domain %v = %v, want %v", tc.domains, got, want)
+			}
+		}
+
+		// The type's own counts ignore its own selection (so "app" still
+		// says 1 with "ai" selected), and the other dimensions narrow to it.
+		facets, err := s.Facets(ctx, store.SearchQuery{Scope: store.ScopeOpen,
+			Filter: store.Filter{Domains: []model.Domain{model.DomainAI}}, Limit: 50,
+			Sort: store.Sort{Field: store.SortPriority, Dir: store.SortDesc}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if facets.Domains["ai"] != 2 || facets.Domains["app"] != 1 {
+			t.Errorf("domain counts = %v, want ai 2, app 1", facets.Domains)
+		}
+		if facets.Categories["code"] != 2 {
+			t.Errorf("code count with AI selected = %d, want 2", facets.Categories["code"])
+		}
+		// Every option is present, even at zero, on both backends.
+		empty, err := s.Facets(ctx, store.SearchQuery{Scope: store.ScopeOpen,
+			Filter: store.Filter{Repos: []string{"nobody/nothing"}}, Limit: 50,
+			Sort: store.Sort{Field: store.SortPriority, Dir: store.SortDesc}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n, ok := empty.Domains["ai"]; !ok || n != 0 {
+			t.Errorf("ai option missing or non-zero in an empty result: %v", empty.Domains)
+		}
+		if n, ok := empty.Domains["app"]; !ok || n != 0 {
+			t.Errorf("app option missing or non-zero in an empty result: %v", empty.Domains)
+		}
+	})
+}
+
+func containsDomainT(set []model.Domain, d model.Domain) bool {
+	for _, x := range set {
+		if x == d {
+			return true
+		}
+	}
+	return false
+}
+
 // The observation keeps the sub-tool, so reconciliation can read it back.
 func TestAnObservationKeepsItsSubTool(t *testing.T) {
 	run(t, func(t *testing.T, s store.Store) {

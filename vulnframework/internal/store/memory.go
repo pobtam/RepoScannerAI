@@ -651,6 +651,9 @@ func (m *Memory) Facets(_ context.Context, q SearchQuery) (FacetCounts, error) {
 	for _, d := range []model.DepClass{model.DepProduction, model.DepDevelopment, model.DepNotApplicable} {
 		out.DepClasses[string(d)] = 0
 	}
+	for _, d := range model.AllDomains {
+		out.Domains[string(d)] = 0
+	}
 
 	// Each dimension is counted with ITS OWN filter cleared, so the number
 	// answers "what would I get if I selected this" rather than "what did I
@@ -675,6 +678,9 @@ func (m *Memory) Facets(_ context.Context, q SearchQuery) (FacetCounts, error) {
 	})
 	count(func(f *Filter) { f.Categories = nil }, func(fd model.Finding, _ Repo) {
 		out.Categories[string(fd.Category)]++
+	})
+	count(func(f *Filter) { f.Domains = nil }, func(fd model.Finding, _ Repo) {
+		out.Domains[string(model.DomainOf(fd))]++
 	})
 	count(func(f *Filter) { f.States = nil }, func(fd model.Finding, _ Repo) {
 		out.States[string(fd.State)]++

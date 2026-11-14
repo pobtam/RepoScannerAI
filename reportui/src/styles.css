@@ -639,6 +639,10 @@ tbody tr:last-child td { border-bottom: 0; }
 .badge-state-unresolved { background: var(--surface-sunk); color: var(--text-2); }
 .badge-state-pending_verification { background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; }
 .badge-state-resolved { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-line); }
+/* App or AI vulnerability: AI in the accent colour, app neutral. The words
+   carry the meaning; the colour only helps a scan down the column. */
+.badge-domain-ai { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+.badge-domain-app { background: var(--surface-sunk); color: var(--text-2); }
 
 .reach-true { color: var(--sev-critical-ink); font-weight: 600; }
 .reach-false { color: var(--ok); }

@@ -185,6 +185,9 @@ export const finding = z.object({
   fingerprint: z.string(),
   repo: z.string(),
   category: z.string(),
+  // "app" (application vulnerability) or "ai" (AI vulnerability), from the
+  // scanners that reported it.
+  domain: z.enum(['app', 'ai']),
   identity: identity,
   location: location,
   versions: versions.optional(),
@@ -245,6 +248,7 @@ export const facets = z.object({
   severities: z.array(facetOption),
   reachable: z.array(facetOption),
   dep_classes: z.array(facetOption),
+  domains: z.array(facetOption),
 });
 
 export const transition = z.object({
