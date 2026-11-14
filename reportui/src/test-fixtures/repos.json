@@ -26,7 +26,7 @@
     "sla_breached": 3,
     "not_reobserved": 0,
     "last_scanned_run": "S-000006",
-    "last_scanned_at": "2026-09-18T09:00:00Z",
+    "last_scanned_at": "2026-11-12T02:00:00Z",
     "last_outcome": "complete"
   },
   {
@@ -53,7 +53,7 @@
     "sla_breached": 1,
     "not_reobserved": 3,
     "last_scanned_run": "S-000006",
-    "last_scanned_at": "2026-09-18T09:00:00Z",
+    "last_scanned_at": "2026-11-12T02:00:00Z",
     "last_outcome": "partial"
   },
   {
@@ -78,7 +78,7 @@
     "sla_breached": 3,
     "not_reobserved": 0,
     "last_scanned_run": "S-000006",
-    "last_scanned_at": "2026-09-18T09:00:00Z",
+    "last_scanned_at": "2026-11-12T02:00:00Z",
     "last_outcome": "complete"
   },
   {
@@ -103,7 +103,7 @@
     "sla_breached": 1,
     "not_reobserved": 0,
     "last_scanned_run": "S-000006",
-    "last_scanned_at": "2026-09-18T09:00:00Z",
+    "last_scanned_at": "2026-11-12T02:00:00Z",
     "last_outcome": "complete",
     "no_test_suite_note": "this repository has no test suite, so a remediation cannot be verified here: automated fixes are not attempted and every finding needs a person"
   },
@@ -129,7 +129,7 @@
     "sla_breached": 1,
     "not_reobserved": 0,
     "last_scanned_run": "S-000006",
-    "last_scanned_at": "2026-09-18T09:00:00Z",
+    "last_scanned_at": "2026-11-12T02:00:00Z",
     "last_outcome": "complete"
   },
   {
@@ -153,7 +153,7 @@
     "sla_breached": 0,
     "not_reobserved": 1,
     "last_scanned_run": "S-000006",
-    "last_scanned_at": "2026-09-18T09:00:00Z",
+    "last_scanned_at": "2026-11-12T02:00:00Z",
     "last_outcome": "no_result",
     "no_test_suite_note": "this repository has no test suite, so a remediation cannot be verified here: automated fixes are not attempted and every finding needs a person"
   }

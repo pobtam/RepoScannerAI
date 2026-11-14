@@ -4,6 +4,7 @@
       "fingerprint": "1be7a0a5488737ec",
       "repo": "demo-org/payments-api",
       "category": "secret",
+      "domain": "app",
       "identity": {
         "primary_id": "AWS-ACCESS-TOKEN",
         "aliases": [
@@ -43,8 +44,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -60,7 +61,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -89,6 +90,7 @@
       "fingerprint": "31d522ad3bd5e466",
       "repo": "demo-org/edge-proxy",
       "category": "secret",
+      "domain": "app",
       "identity": {
         "primary_id": "GENERIC-API-KEY",
         "aliases": [
@@ -128,8 +130,8 @@
       "observation": {
         "first_seen_run": "S-000003",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-10-01T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-22T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -145,7 +147,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-10-01T23:00:00Z",
+        "triaged_at": "2026-10-22T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -174,6 +176,7 @@
       "fingerprint": "913d32a7a4977946",
       "repo": "demo-org/payments-api",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70001",
         "aliases": [
@@ -193,9 +196,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.94,
-        "epss_as_of": "2026-10-22T03:00:00Z",
+        "epss_as_of": "2026-11-11T06:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-10-21T17:00:00Z",
+        "kev_as_of": "2026-11-10T20:00:00Z",
         "reachable": "true",
         "dep_class": "production",
         "transitive": false
@@ -217,8 +220,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -234,7 +237,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/http-router to v1.12.9.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -268,6 +271,7 @@
       "fingerprint": "999cc1a3ce1dd914",
       "repo": "demo-org/checkout-web",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70003",
         "aliases": [
@@ -287,9 +291,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.71,
-        "epss_as_of": "2026-10-22T03:00:00Z",
+        "epss_as_of": "2026-11-11T06:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-10-21T17:00:00Z",
+        "kev_as_of": "2026-11-10T20:00:00Z",
         "reachable": "true",
         "dep_class": "production",
         "transitive": false,
@@ -313,8 +317,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000005",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-15T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-05T02:00:00Z",
         "not_reobserved": true,
         "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
         "gap_repo_scan": "S-000006"
@@ -332,7 +336,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -366,6 +370,7 @@
       "fingerprint": "bd52d5bde4e84859",
       "repo": "demo-org/platform-common",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70003",
         "aliases": [
@@ -385,9 +390,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.71,
-        "epss_as_of": "2026-10-22T03:00:00Z",
+        "epss_as_of": "2026-11-11T06:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-10-21T17:00:00Z",
+        "kev_as_of": "2026-11-10T20:00:00Z",
         "reachable": "true",
         "dep_class": "production",
         "transitive": false
@@ -409,8 +414,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -426,7 +431,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -460,6 +465,7 @@
       "fingerprint": "f2224855ab1d7224",
       "repo": "demo-org/edge-proxy",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70006",
         "aliases": [
@@ -479,9 +485,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.55,
-        "epss_as_of": "2026-10-22T03:00:00Z",
+        "epss_as_of": "2026-11-11T06:00:00Z",
         "kev": false,
-        "kev_as_of": "2026-10-21T17:00:00Z",
+        "kev_as_of": "2026-11-10T20:00:00Z",
         "reachable": "true",
         "dep_class": "production",
         "transitive": false
@@ -503,8 +509,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -521,7 +527,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/http-router to v1.12.9.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -555,6 +561,7 @@
       "fingerprint": "77d01b87b868df35",
       "repo": "demo-org/batch-jobs",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70005",
         "aliases": [
@@ -598,8 +605,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -615,7 +622,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/csv-reader to v0.9.4.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -654,6 +661,7 @@
       "fingerprint": "1668a63e78aacba1",
       "repo": "demo-org/payments-api",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70002",
         "aliases": [
@@ -673,9 +681,9 @@
         "severity": "HIGH",
         "cvss": 7.5,
         "epss": 0.08,
-        "epss_as_of": "2026-10-22T03:00:00Z",
+        "epss_as_of": "2026-11-11T06:00:00Z",
         "kev": false,
-        "kev_as_of": "2026-10-21T17:00:00Z",
+        "kev_as_of": "2026-11-10T20:00:00Z",
         "reachable": "unknown",
         "dep_class": "production",
         "transitive": false
@@ -697,8 +705,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -714,7 +722,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/yaml-parse to v3.0.4.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -748,6 +756,7 @@
       "fingerprint": "302d9fc629b37cef",
       "repo": "demo-org/legacy-reporting",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70009",
         "aliases": [
@@ -790,8 +799,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000004",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-08T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-10-29T02:00:00Z",
         "not_reobserved": true,
         "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
         "gap_repo_scan": "S-000006"
@@ -809,7 +818,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -848,6 +857,7 @@
       "fingerprint": "bf1c815b879cc77f",
       "repo": "demo-org/batch-jobs",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70003",
         "aliases": [
@@ -867,9 +877,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.71,
-        "epss_as_of": "2026-10-22T03:00:00Z",
+        "epss_as_of": "2026-11-11T06:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-10-21T17:00:00Z",
+        "kev_as_of": "2026-11-10T20:00:00Z",
         "reachable": "unknown",
         "dep_class": "production",
         "transitive": false,
@@ -892,8 +902,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -909,7 +919,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -943,6 +953,7 @@
       "fingerprint": "de380b7aa8643131",
       "repo": "demo-org/edge-proxy",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70003",
         "aliases": [
@@ -962,9 +973,9 @@
         "severity": "CRITICAL",
         "cvss": 9.1,
         "epss": 0.71,
-        "epss_as_of": "2026-10-22T03:00:00Z",
+        "epss_as_of": "2026-11-11T06:00:00Z",
         "kev": true,
-        "kev_as_of": "2026-10-21T17:00:00Z",
+        "kev_as_of": "2026-11-10T20:00:00Z",
         "reachable": "false",
         "dep_class": "production",
         "transitive": false,
@@ -988,8 +999,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -1005,7 +1016,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/crypto-lib to v0.32.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1039,6 +1050,7 @@
       "fingerprint": "1a03f76b5c637590",
       "repo": "demo-org/payments-api",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70007",
         "aliases": [
@@ -1081,8 +1093,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -1098,7 +1110,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/log-shim to v0.4.3.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1137,6 +1149,7 @@
       "fingerprint": "67d0679b7d6dcf15",
       "repo": "demo-org/payments-api",
       "category": "code",
+      "domain": "app",
       "identity": {
         "primary_id": "G404",
         "aliases": [
@@ -1175,8 +1188,8 @@
       "observation": {
         "first_seen_run": "S-000003",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-10-01T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-22T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {},
@@ -1190,7 +1203,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-10-01T23:00:00Z",
+        "triaged_at": "2026-10-22T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1229,6 +1242,7 @@
       "fingerprint": "778f7185639b53ce",
       "repo": "demo-org/checkout-web",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70008",
         "aliases": [
@@ -1271,8 +1285,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000005",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-15T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-05T02:00:00Z",
         "not_reobserved": true,
         "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
         "gap_repo_scan": "S-000006"
@@ -1291,7 +1305,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/json-stream to v2.2.0.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1330,6 +1344,7 @@
       "fingerprint": "9533b4c6fad8d531",
       "repo": "demo-org/platform-common",
       "category": "dependency",
+      "domain": "app",
       "identity": {
         "primary_id": "CVE-DEMO-70004",
         "aliases": [
@@ -1372,8 +1387,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
         "not_reobserved": false
       },
       "refs": {
@@ -1389,7 +1404,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Upgrade example.com/proto-runtime to v1.34.1.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1428,6 +1443,7 @@
       "fingerprint": "e45d1b7efef82ba4",
       "repo": "demo-org/payments-api",
       "category": "config",
+      "domain": "app",
       "identity": {
         "primary_id": "DEMO-K8S-001",
         "aliases": [
@@ -1466,9 +1482,9 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000006",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-22T23:00:00Z",
-        "resolved_at": "2026-10-15T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-12T02:00:00Z",
+        "resolved_at": "2026-11-05T02:00:00Z",
         "not_reobserved": false,
         "residual_possible": true,
         "residual_detail": "This finding is located to a file and a resource key. A second misconfiguration under the same key may not have been reported separately (OQ-AUDIT-02)."
@@ -1484,7 +1500,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-10-22T23:00:00Z",
+        "triaged_at": "2026-11-12T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {
@@ -1523,6 +1539,7 @@
       "fingerprint": "fe84cc055eec8886",
       "repo": "demo-org/checkout-web",
       "category": "code",
+      "domain": "app",
       "identity": {
         "primary_id": "G402",
         "aliases": [
@@ -1561,8 +1578,8 @@
       "observation": {
         "first_seen_run": "S-000001",
         "last_seen_run": "S-000005",
-        "first_seen_at": "2026-09-17T23:00:00Z",
-        "last_seen_at": "2026-10-15T23:00:00Z",
+        "first_seen_at": "2026-10-08T02:00:00Z",
+        "last_seen_at": "2026-11-05T02:00:00Z",
         "not_reobserved": true,
         "not_reobserved_note": "the most recent applicable run did not observe this finding while it remains unresolved. That is AMBIGUOUS between remediation and a coverage gap: check the coverage view for this repository before concluding it was fixed (VM-ADR-12). A coverage gap in run S-000006 is recorded for this repository, which is the more likely explanation",
         "gap_repo_scan": "S-000006"
@@ -1578,7 +1595,7 @@
         "impact": "Impact depends on whether the affected path is exercised in production.",
         "remediation": "Review the affected code path; no fixed version is published.",
         "false_positive_candidate": false,
-        "triaged_at": "2026-09-17T23:00:00Z",
+        "triaged_at": "2026-10-08T02:00:00Z",
         "model": "claude-sonnet-5"
       },
       "score": {

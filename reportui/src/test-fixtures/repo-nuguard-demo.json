@@ -20,32 +20,32 @@
   "recent": [
     {
       "run_id": "S-000006",
-      "run_at": "2026-11-07T00:00:00Z",
+      "run_at": "2026-11-12T02:00:00Z",
       "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
     },
     {
       "run_id": "S-000005",
-      "run_at": "2026-10-31T00:00:00Z",
+      "run_at": "2026-11-05T02:00:00Z",
       "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
     },
     {
       "run_id": "S-000004",
-      "run_at": "2026-10-24T00:00:00Z",
+      "run_at": "2026-10-29T02:00:00Z",
       "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
     },
     {
       "run_id": "S-000003",
-      "run_at": "2026-10-17T00:00:00Z",
+      "run_at": "2026-10-22T02:00:00Z",
       "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
     },
     {
       "run_id": "S-000002",
-      "run_at": "2026-10-10T00:00:00Z",
+      "run_at": "2026-10-15T02:00:00Z",
       "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
     },
     {
       "run_id": "S-000001",
-      "run_at": "2026-10-03T00:00:00Z",
+      "run_at": "2026-10-08T02:00:00Z",
       "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
     }
   ],

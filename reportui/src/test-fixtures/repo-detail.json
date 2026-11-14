@@ -23,7 +23,7 @@
     "sla_breached": 1,
     "not_reobserved": 3,
     "last_scanned_run": "S-000006",
-    "last_scanned_at": "2026-11-04T02:00:00Z",
+    "last_scanned_at": "2026-11-12T02:00:00Z",
     "last_outcome": "partial"
   },
   "sla_windows": {
@@ -70,12 +70,12 @@
       "url": "https://github.com/demo-org/checkout-web/pull/2",
       "state": "open",
       "merged": false,
-      "opened_at": "2026-09-30T02:00:00Z",
+      "opened_at": "2026-10-08T02:00:00Z",
       "findings": [
         "778f7185639b53ce"
       ],
       "ticket_url": "https://github.example/demo-org/checkout-web/5",
-      "confirmed_at": "2026-11-04T02:00:00Z"
+      "confirmed_at": "2026-11-12T02:00:00Z"
     }
   ],
   "consumers": [

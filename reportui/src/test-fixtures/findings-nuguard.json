@@ -27,6 +27,7 @@
       },
       "description": "Untrusted request input is concatenated into the system prompt without a delimiter or role separation, so a user can override the model's instructions.",
       "description_source": "nuguard",
+      "domain": "ai",
       "fingerprint": "e184414e81b24670",
       "identity": {
         "rule_id": "NGA-PROMPT-INJ-001"
@@ -37,9 +38,9 @@
         "line": 42
       },
       "observation": {
-        "first_seen_at": "2026-11-07T00:34:38.578699Z",
+        "first_seen_at": "2026-11-12T02:02:34.74602Z",
         "first_seen_run": "M-000001",
-        "last_seen_at": "2026-11-07T00:34:38.578699Z",
+        "last_seen_at": "2026-11-12T02:02:34.74602Z",
         "last_seen_run": "M-000001",
         "not_reobserved": false
       },
@@ -111,6 +112,7 @@
       },
       "description": "Agent tool can write files with no path allow-list",
       "description_source": "nuguard",
+      "domain": "ai",
       "fingerprint": "e66829894b0fe7e4",
       "identity": {
         "rule_id": "ATLAS-TOOL-SCOPE-002"
@@ -120,9 +122,9 @@
         "line": 7
       },
       "observation": {
-        "first_seen_at": "2026-11-07T00:34:38.578699Z",
+        "first_seen_at": "2026-11-12T02:02:34.74602Z",
         "first_seen_run": "M-000001",
-        "last_seen_at": "2026-11-07T00:34:38.578699Z",
+        "last_seen_at": "2026-11-12T02:02:34.74602Z",
         "last_seen_run": "M-000001",
         "not_reobserved": false
       },

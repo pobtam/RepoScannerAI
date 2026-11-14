@@ -2,8 +2,8 @@
   "run": {
     "id": "S-000001",
     "kind": "sweep",
-    "started_at": "2026-09-08T22:00:00Z",
-    "finished_at": "2026-09-08T22:00:00Z",
+    "started_at": "2026-10-08T02:00:00Z",
+    "finished_at": "2026-10-08T02:00:00Z",
     "trigger": "cron",
     "scanner_image": "demo-scanner@sha256:1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
     "repos_planned": 6,
@@ -13,7 +13,7 @@
   },
   "live": false,
   "snapshot_id": "R-S-000001-2011a101",
-  "content_hash": "2b56c106326c5a3ccae6b016526198f084053feafe0624aeb54135ad6ce6820d",
+  "content_hash": "6730a6f73fd672fa4142cc0aadb2bc807b2b61d9629582466450444df74f8822",
   "counts": {
     "total": 16,
     "unresolved": 16,

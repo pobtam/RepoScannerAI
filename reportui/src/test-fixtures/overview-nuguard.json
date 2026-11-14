@@ -101,14 +101,14 @@
     "thresholds_calibrated": false
   },
   "run": {
-    "finished_at": "2026-11-07T00:34:38.578762Z",
+    "finished_at": "2026-11-12T02:02:34.746123Z",
     "id": "M-000001",
     "kind": "manual",
     "partial": false,
     "repos_failed": 0,
     "repos_planned": 1,
     "repos_scanned": 1,
-    "started_at": "2026-11-07T00:34:38.577311Z",
-    "trigger": "scan request sr_20261022T100000.000Z_b02571f5"
+    "started_at": "2026-11-12T02:02:34.744051Z",
+    "trigger": "scan request sr_20261022T100000.000Z_17b6361f"
   }
 }

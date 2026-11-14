@@ -50,7 +50,7 @@
     ],
     "last_commit_sha": "5d0c7e9a1b2c3d4e5f60718293a4b5c6d7e8f901",
     "last_outcome": "complete",
-    "last_scanned_at": "2026-11-07T00:34:38.577311Z",
+    "last_scanned_at": "2026-11-12T02:02:34.744051Z",
     "last_scanned_run": "M-000001",
     "name": "octo/api",
     "no_test_suite_note": "this repository has no test suite, so a remediation cannot be verified here: automated fixes are not attempted and every finding needs a person",

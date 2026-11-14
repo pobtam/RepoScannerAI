@@ -3,7 +3,7 @@
     {
       "repo": "demo-org/checkout-web",
       "run_id": "S-000006",
-      "run_at": "2026-11-07T00:00:00Z",
+      "run_at": "2026-11-12T02:00:00Z",
       "outcome": "partial",
       "classification": "partial",
       "cause": "execution_failed",
@@ -19,8 +19,8 @@
       "consecutive_runs": 1,
       "consecutive_deferrals": 0,
       "last_qualifying_run": "S-000005",
-      "last_qualifying_at": "2026-10-31T00:00:00Z",
-      "hours_without_data": 168.66353061416666,
+      "last_qualifying_at": "2026-11-05T02:00:00Z",
+      "hours_without_data": 168.02860313138888,
       "never_scanned": false,
       "not_reobserved": 3,
       "findings_query": "scope=open&repo=demo-org/checkout-web&notReobserved=true"
@@ -28,7 +28,7 @@
     {
       "repo": "demo-org/legacy-reporting",
       "run_id": "S-000006",
-      "run_at": "2026-11-07T00:00:00Z",
+      "run_at": "2026-11-12T02:00:00Z",
       "outcome": "no_result",
       "classification": "total",
       "cause": "worker_produced_no_result",
@@ -36,8 +36,8 @@
       "consecutive_runs": 2,
       "consecutive_deferrals": 0,
       "last_qualifying_run": "S-000004",
-      "last_qualifying_at": "2026-10-24T00:00:00Z",
-      "hours_without_data": 336.6635306233333,
+      "last_qualifying_at": "2026-10-29T02:00:00Z",
+      "hours_without_data": 336.0286031413889,
       "never_scanned": false,
       "not_reobserved": 1,
       "findings_query": "scope=open&repo=demo-org/legacy-reporting&notReobserved=true"
@@ -49,9 +49,9 @@
   "staleness": {
     "in_scope": 6,
     "never_scanned": 0,
-    "max_age": 1211988710206000,
-    "p95_age": 1211988710206000,
-    "median_age": 2388710206000,
+    "max_age": 1209702971269000,
+    "p95_age": 1209702971269000,
+    "median_age": 102971269000,
     "stalest_repo": "demo-org/legacy-reporting"
   },
   "escalations": [
@@ -60,7 +60,7 @@
       "sweeps_since_qualifying": 2,
       "cause": "worker_produced_no_result",
       "last_qualifying_run": "S-000004",
-      "last_qualifying_at": "2026-10-24T00:00:00Z"
+      "last_qualifying_at": "2026-10-29T02:00:00Z"
     }
   ],
   "warning": "a failed scan and a clean scan are indistinguishable in every aggregate on the run overview. Findings in a repository with a gap are not absent because they were fixed; nobody looked. Read the gaps here before believing a drop in counts (VM-UI-F-757, VM-ADR-12)",
