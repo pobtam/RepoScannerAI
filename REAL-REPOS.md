@@ -238,6 +238,7 @@ unit-tested but has not yet been run against a real organisation's modules.
 | `www.cisa.gov`, `epss.empiricalsecurity.com` | one download of each whole catalogue per sweep; nothing about your code | every sweep |
 | `api.anthropic.com` (**only if AI triage is on**) | per finding: fingerprint, category, advisory and rule IDs, module, versions, severity, reachability, and **file path**. Per repository: its name, languages, tier, whether it has a test suite. Secret values are never sent: they are redacted at scan time, and every request is checked for credential-shaped content before it leaves. | only with both variables from section 4 set |
 | Docker Hub | the `postgres:16-alpine` image | first run |
+| Anthropic, through Claude (**only if you use the Claude connector**, `vfmcp`) | whatever Claude reads through it becomes part of your conversation: finding details, descriptions and advisory text, repository names, **file paths**, rule names, run history. Secret values never: vulnframework does not store them. Not sent by vulnframework itself but by the Claude app you asked. | each question you ask Claude that uses it (`USAGE.md`, "Ask Claude about your findings"; decision D15) |
 | `github.com`, `api.github.com`, `codeload.github.com` (**only with `--nuguard`**) | NuGuard, running on this Mac, clones each repository whose origin is on github.com, at the commit being scanned; with a token set, private repositories too. Your clone itself is not sent: NuGuard downloads GitHub's copy. | every scan, for clones with a GitHub origin |
 | `pypi.org`, `files.pythonhosted.org` (**only with `--nuguard`**) | NuGuard's Python packages and its Semgrep, installed into its own environment | first start, and when NuGuard's dependencies change |
 
@@ -400,7 +401,9 @@ Safeguards:
   requests made to it directly.
 
 What it does **not** protect against: **while it is on, any program running on
-this machine that connects to `127.0.0.1:5173` gets security-owner access.**
+this machine that connects to `127.0.0.1:5173` gets security-owner access.** That includes the read-only Claude connector
+(`vfmcp`, `USAGE.md` "Ask Claude about your findings"), which reads through
+this address by design.
 That includes other user accounts on a shared machine, and any local software
 you would not hand your findings to. Only run it on a machine you alone use,
 and stop it (Ctrl-C) when you are done browsing.

@@ -681,3 +681,53 @@ on this deployment" and nothing else.
      (`VF_NUGUARD_E2E=1 … go test ./internal/scan/adapters -run NuGuardEndToEnd`).
 3. **The pin.** `config/tools.lock` now pins `nuguard 0.9.15`. A service
    reporting any other version is refused at start-up and on every result.
+
+---
+
+## D15 — Claude connector (read-only), proposed 2026-11-14, awaiting owner
+
+**Blocks:** using the connector on real data, and any version that writes.
+
+**What it is.** `vulnframework/cmd/vfmcp` (branch
+`feature/claude-connector-readonly`) is a local MCP server. People ask Claude
+Desktop, Cowork or Claude Code questions such as "which tier-1 repos have
+critical findings past their SLA?", and Claude answers from vulnframework's
+API, with links into the interface. It is **read-only by construction**:
+- its HTTP client sends only GET and HEAD;
+- it can reach only a fixed list of read routes;
+- every tool is declared read-only;
+- tests prove each of these (VM-F-1101..1108, `USAGE.md` "Ask Claude about
+  your findings").
+
+**The decisions:**
+
+1. **The data notice.** Whatever Claude reads through the connector goes to
+   Anthropic as part of the conversation: finding details, descriptions,
+   advisory text, repository names, file paths, rule names, run history.
+   Secret *values* never do, because vulnframework never stores them. This
+   is the same question AI triage raised (opt-in, `REAL-REPOS.md` §4 and §6),
+   for a wider set of fields. Accept it, accept it for some repositories
+   only, or reject it.
+2. **Local only.** Version 1 runs on one machine, over stdio, against the
+   local stack. There is no remote (HTTPS) transport. It does not work with
+   the Compose stack's Caddy login, because it won't automate a login or
+   store a password.
+3. **The access level it inherits.** It sees exactly what its identity sees
+   in the interface. In `./run.sh --real` that is the development server's
+   local identity, `security_owner`: full access, including secret
+   findings' locations, for any program on this Mac that starts the
+   connector (`REAL-REPOS.md` §7). It can't be set lower: the API has no
+   per-request way to answer at a lower level, and filtering in the
+   connector would be pretend.
+4. **What a write version would need** (starting with "request a scan"):
+   - per-user API tokens, so each request is attributable and revocable;
+   - an explicit confirmation step for every write, shown to the person
+     before it happens, not decided by the model;
+   - the access log recording that the request came through Claude
+     (today the connector sends `User-Agent: vfmcp/<version>`, which the log
+     does not record);
+   - the existing write gates (security-owner level, CSRF, rate limit)
+     applied unchanged.
+
+**Not decided here.** Nothing about this is marked decided. The connector
+is built and tested; whether, where and for whom to use it is yours.

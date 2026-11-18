@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "vulnframework": {
+      "type": "stdio",
+      "command": "go",
+      "args": [
+        "-C",
+        "vulnframework",
+        "run",
+        "./cmd/vfmcp",
+        "-api-url",
+        "http://127.0.0.1:5173"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -72,6 +72,72 @@ read this file first and resume from "Next".
     The chart is drawn in the design system's colours and follows dark
     mode; scanner changes are a ring and partial runs a solid dot, so they
     differ by shape as well as colour. Tests on both backends, UI tests.
+- **Built 2026-11-14, at your request: a read-only Claude connector**
+  (`vulnframework/cmd/vfmcp`, branch `feature/claude-connector-readonly`
+  from `feature/real-mode-nuguard` @ `8895c3e`). Not committed, not pushed.
+  Proposed as D15, not decided.
+  - **First, on `feature/real-mode-nuguard`:** the App/AI finding type was
+    committed as `1ed1230` (feature) and `8895c3e` (regenerated fixtures).
+  - **What it is:** an MCP server over stdio with eight tools:
+    `search_findings`, `get_finding`, `list_repositories`, `get_repository`,
+    `list_runs`, `compare_runs`, `get_coverage_gaps`, `get_nuguard_status`.
+    Each maps onto existing GET routes; no API change. The MCP subset
+    (initialize, ping, tools/list, tools/call) is hand-written to keep the
+    module's dependency set as it is (`scan/manifest.go`).
+  - **Auth:** it reads through the interface's development server
+    (`-api-url` defaults to `http://127.0.0.1:5173`, not 8080). In real mode
+    the API on 8080 refuses anonymous callers, and the development server
+    vouches for header-less local clients as `security_owner`
+    (`REAL-REPOS.md` §7). So the connector inherits full access. It sets no
+    identity header, and there is no `-level` option, because the API cannot
+    project a lower level per request. The Caddy stack is not supported;
+    that needs per-user tokens.
+  - **Verified:**
+    - 19 tests in `cmd/vfmcp` against the real API on the memory store with
+      demonstration data, also with `-race`. They cover:
+      - the protocol;
+      - writes refused by the transport;
+      - the route inventory checked against the published OpenAPI;
+      - every request on the wire is an inventoried GET with no identity
+        header;
+      - no store, database or exec imports;
+      - an engineer-level identity gets restricted secret findings;
+      - a hostile description arrives unchanged in `description`;
+      - no credential-shaped string, and no value-carrying field in
+        `api.Finding`;
+      - limits and paging;
+      - IDs and links;
+      - "not measured" in words;
+      - the API down, slow or 401 gives errors naming `-api-url`.
+    - `go vet ./...`; `go test ./...` on memory and on a throwaway Postgres
+      container.
+    - **Claude Code, live, on the demonstration data** (a separate demo API
+      on port 18181, so no real findings were sent to Anthropic). Three
+      questions were answered correctly through the tools:
+      - tier-1 critical past SLA: 6 findings in 3 repos;
+      - incomplete scans: checkout-web partial, legacy-reporting no
+        result, escalated;
+      - payments-api AI components: "not measured", not none.
+
+      A fourth question, why a merged finding isn't fixed yet, was also
+      answered from its observations.
+    - **Hand-run over stdio against real mode:** every tool. `compare_runs`
+      M-000007 → M-000008 shows only the canary fix `2c9b3e7776350975`
+      VERIFIED, and limit 500 is refused.
+  - **Found on the way:**
+    - vfmcp ignored SIGINT and SIGTERM while waiting on stdin, and Claude
+      Code had to SIGKILL it. It now exits on either signal.
+    - `/v1/runs`'s `total` is the page length, not a count, so the
+      connector says "not counted" rather than repeating it.
+    - In `claude -p`, servers from `--mcp-config` connect asynchronously,
+      so the first turn can run without them. Interactive Claude Code is
+      not affected. For the scripted try, `MCP_CONNECTION_NONBLOCKING=0`
+      fixed it.
+  - **Not verified:**
+    - Claude Desktop and Cowork (only the config is documented);
+    - the project `.mcp.json` inside an interactive Claude Code session (the
+      live try used an equivalent `--mcp-config`);
+    - Claude's answers on real data, by design.
 - **Done 2026-11-11 (evening), at your request: NuGuard live in real mode,
   committed and reproducible.** Nothing pushed or merged.
   - **NuGuard commits** (`nuguard/nuguard`, branch

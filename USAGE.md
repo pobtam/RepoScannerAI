@@ -282,6 +282,121 @@ be reproduced, and a citation to it could not be checked.
 
 ---
 
+## Ask Claude about your findings
+
+`vfmcp` is a **read-only Claude connector** (an MCP server). Add it to Claude
+Desktop, Cowork or Claude Code and ask questions in plain words; Claude
+answers from the same data the interface shows, with links back to it.
+
+It **only reads**. It can't request scans, change NuGuard settings, or
+change any finding, approval or record. This is enforced in code, not by
+convention: its HTTP client sends only `GET` and `HEAD`, it can reach only a
+fixed list of read endpoints, and the tests prove both.
+
+> **What it sends to Anthropic.** Whatever Claude reads through the
+> connector becomes part of your conversation with Claude and is sent to
+> Anthropic: finding details, descriptions and advisory text, repository
+> names, file paths, rule names and run history. **Secret values are never
+> included**, because vulnframework never stores them: a secret finding
+> shows its category, file, detector rule and state only. Use it only where
+> sending that to Anthropic is acceptable. It is an open decision
+> (`DECISIONS-NEEDED.md` D15), like AI triage.
+
+### What it sees
+
+Exactly what you see in the interface, never more. It reads through the
+interface's own address and is given the same identity:
+
+* **`./run.sh --real`:** the development server vouches for you as
+  `security_owner` (`REAL-REPOS.md` §7), so the connector has **full access,
+  including secret findings' locations**. Anything on this Mac that can start
+  the connector, or connect to `127.0.0.1:5173`, has the same access.
+* **`./run.sh` (the demonstration):** the demonstration's fixed identity and
+  its invented data.
+* **The Compose stack behind the Caddy login** (`https://localhost:18443`):
+  **not supported yet.** That needs per-user API tokens; the connector won't
+  automate a login or store a password. See `NOW-VS-LATER.md`.
+
+There is no option to make it see less: the API has no way to answer at a
+lower level for one request, and filtering in the connector would only hide
+data it had already received.
+
+### Add it to Claude Code
+
+It is already configured for this repository in `.mcp.json`. Start the stack
+(`./run.sh` or `./run.sh --real`), then start Claude Code at the repository
+root and approve the `vulnframework` server when asked. To add it yourself:
+
+```sh
+claude mcp add -s project vulnframework -- \
+  go -C vulnframework run ./cmd/vfmcp -api-url http://127.0.0.1:5173
+```
+
+### Add it to Claude Desktop or Cowork
+
+Build it once:
+
+```sh
+cd vulnframework && go build -o bin/vfmcp ./cmd/vfmcp
+```
+
+Then add this to the `mcpServers` section of Claude Desktop's configuration
+(Settings → Developer → Edit Config), with the full path to the binary, and
+restart Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "vulnframework": {
+      "command": "/full/path/to/vulnerabilityAI/vulnframework/bin/vfmcp",
+      "args": ["-api-url", "http://127.0.0.1:5173"]
+    }
+  }
+}
+```
+
+Flags:
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `-api-url` | `http://127.0.0.1:5173` | Where to read. The interface's address, because in real mode the API's own port (8080) refuses callers the development server has not vouched for. Plain `http` is refused to anything but this machine. |
+| `-ui-url` | same as `-api-url` | The address used in links. |
+| `-timeout` | `15s` | The time allowed for each API call. |
+
+### Questions to try
+
+* "Which tier-1 repos have critical findings past their SLA?"
+* "Why wasn't finding 2c9b3e7776350975 marked fixed?" (or "…why was it?")
+* "Which repos haven't had a complete scan, and why?"
+* "What AI components does pobtampal/nuguard-canary use?"
+* "What open AI findings does this repo have?"
+* "What changed between runs M-000007 and M-000008?"
+* "Is NuGuard up, and who changed its settings last?"
+
+Its tools: `search_findings`, `get_finding`, `list_repositories`,
+`get_repository`, `list_runs`, `compare_runs`, `get_coverage_gaps` and
+`get_nuguard_status`. Every answer carries fingerprints, run IDs and
+repository names with links into the interface, so you can check it.
+
+### What it can't do
+
+* **Change anything.** Requesting a scan comes later, as a separate step
+  with its own confirmation.
+* **Recompute priorities.** Priority, severity, score and SLA status are
+  vulnframework's. Claude is told to explain them, never to re-derive them.
+* **Show an AI-SBOM or raw tool output.** It links to them instead.
+* **Look back further than the API does.** Coverage gaps are as of each
+  repository's latest scan; there is no "this week" filter in the API, and
+  the run list doesn't count runs, so the connector says "not counted".
+* **Trust what it reads.** Descriptions, file paths and NuGuard text come
+  from scanned code and tools. Claude is told they are data, never
+  instructions.
+* **Show in the access log as "via Claude".** Its requests are logged as
+  yours. They carry `User-Agent: vfmcp/0.1.0`, but the access log doesn't
+  record that yet.
+
+---
+
 ## If something goes wrong
 
 Every error says what failed and what you can do about it. Two are worth
