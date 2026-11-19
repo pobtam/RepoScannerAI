@@ -119,7 +119,7 @@ export function assertNoCredential(path: string, raw: string): void {
 async function request<T>(
   path: string,
   schema: z.ZodType<T>,
-  init?: { method: 'POST'; body?: string; headers?: Record<string, string> },
+  init?: { method: 'POST' | 'PUT'; body?: string; headers?: Record<string, string> },
 ): Promise<T> {
   const res = await fetch(API_BASE + path, {
     method: init?.method ?? 'GET',
@@ -176,9 +176,9 @@ export function qs(params: Record<string, string | number | boolean | undefined 
 
 // --- writes ----------------------------------------------------------------
 //
-// The interface's only writes are scan requests. Each carries the caller's
-// CSRF token in X-CSRF-Token: a custom header no other site can send without
-// a CORS preflight this API never answers. The token is fetched once and
+// The interface's writes are scan requests and NuGuard settings. Each
+// carries the caller's CSRF token in X-CSRF-Token: a custom header no other
+// site can send without a CORS preflight this API never answers. The token is fetched once and
 // refetched once if the server says it has gone stale (a restart, or the hour
 // turning twice).
 
@@ -189,10 +189,10 @@ async function freshCSRF(): Promise<string> {
   return csrfToken;
 }
 
-async function write<T>(path: string, schema: z.ZodType<T>, body?: unknown): Promise<T> {
+async function write<T>(path: string, schema: z.ZodType<T>, body?: unknown, method: 'POST' | 'PUT' = 'POST'): Promise<T> {
   const send = (token: string) =>
     request(path, schema, {
-      method: 'POST',
+      method,
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
@@ -228,6 +228,37 @@ export const api = {
   reports: () => request('/reports', z.array(s.reportSummary)),
   github: () => request('/github', s.githubView),
   scans: (repo?: string, limit = 20) => request(`/scans${qs({ repo, limit })}`, z.array(s.scanRequest)),
-  requestScan: (repo: string) => write('/scans', s.scanRequestResult, { repo }),
-  requestScanAll: () => write('/scans/all', s.scanBatchResult),
+  // With no NuGuard options the body is exactly today's: {repo}, or none.
+  requestScan: (repo: string, nuguard?: s.ScanNuGuardOptions) =>
+    write('/scans', s.scanRequestResult, nuguard ? { repo, nuguard } : { repo }),
+  requestScanAll: (nuguard?: s.ScanNuGuardOptions) =>
+    write('/scans/all', s.scanBatchResult, nuguard ? { nuguard } : undefined),
+
+  nuguard: () => request('/nuguard', s.nuguardView),
+  nuguardAudit: (cursor?: string, repo?: string) => request(`/nuguard/audit${qs({ cursor, repo })}`, s.nuguardAuditPage),
+  nuguardPreview: (repo: string, nuguard?: s.ScanNuGuardOptions) =>
+    request(
+      `/nuguard/preview${qs({
+        repo,
+        nuguard: nuguard?.mode,
+        tools: nuguard?.tools?.join(','),
+        include_posture: nuguard?.include_posture === undefined ? undefined : String(nuguard.include_posture),
+        keep_sbom: nuguard?.keep_sbom ? 'true' : undefined,
+      })}`,
+      s.nuguardPreview,
+    ),
+  repoNuGuard: (name: string) => request(`/repos/${name}/nuguard`, s.repoNuGuard),
+  putNuGuardSettings: (body: {
+    enabled: boolean;
+    tools: string[];
+    include_posture: boolean;
+    timeout_s: number;
+    reason?: string;
+  }) => write('/nuguard/settings', s.nuguardView, body, 'PUT'),
+  putRepoNuGuard: (
+    name: string,
+    body: { mode: 'inherit' | 'on' | 'off'; tools?: string[]; include_posture?: boolean; reason?: string },
+  ) => write(`/repos/${name}/nuguard`, s.repoNuGuard, body, 'PUT'),
+  /** Where the stored AI-SBOM is served; a download link, not a fetch. */
+  aiSbomURL: (repo: string, runID: string) => `${API_BASE}/repos/${repo}/ai-sbom/${encodeURIComponent(runID)}?format=json`,
 };

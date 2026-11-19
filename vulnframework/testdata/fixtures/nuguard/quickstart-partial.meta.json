@@ -1,0 +1,6 @@
+{
+  "tool": "nuguard",
+  "tool_version": "0.9.15",
+  "image": "nuguard-service (local build, no image digest)",
+  "captured_from": "openai/openai-quickstart-python@ec8890d101bdc17d66512d94a76b5e7131d188a1 via the NuGuard 0.9.15 Remote Scan service, captured 2026-11-03 (tools nga-rules, atlas, osv; osv failed, so the job is partial)"
+}

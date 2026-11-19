@@ -29,6 +29,8 @@ import { api } from '../../api/client';
 import type { Finding } from '../../api/schemas';
 import { Absent, Badge, Caveat, CopyButton, ErrorState, Loading, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
+import { DOMAIN_HINT, DOMAIN_LABEL } from '../../lib/domain';
+import { NuGuardFindingSection } from '../nuguard/NuGuard';
 import {
   epssLabel,
   formatDate,
@@ -131,7 +133,7 @@ export function FindingDetail({ fingerprint }: { fingerprint: string }) {
                   {f.location.function ? ` · ${f.location.function}` : ''}
                 </span>
               ) : (
-                <Absent why="no pinned tool reports the enclosing symbol, so findings are located to a FILE (OQ-AUDIT-02). This is a known limitation, not a missing value" />
+                <Absent why="the scanner that found this does not report the enclosing symbol (of the pinned tools, only NuGuard does, when configured); findings are located to a FILE (OQ-AUDIT-02). This is a known limitation, not a missing value" />
               )}
             </Field>
             <Field label="Versions">
@@ -181,6 +183,8 @@ export function FindingDetail({ fingerprint }: { fingerprint: string }) {
             </Field>
           </dl>
         </Panel>
+
+        {f.nuguard && <NuGuardFindingSection d={f.nuguard} />}
 
         <Panel title="Risk">
           <dl className="record">
@@ -487,6 +491,9 @@ function Header({ finding: f }: { finding: Finding }) {
         </Badge>
         <Badge mark={stateMark(f.state)} tone={`state-${f.partition}`}>
           {f.state}
+        </Badge>
+        <Badge tone={`domain-${f.domain}`} title={DOMAIN_HINT[f.domain]}>
+          {DOMAIN_LABEL[f.domain]}
         </Badge>
       </h1>
       <p className="muted">

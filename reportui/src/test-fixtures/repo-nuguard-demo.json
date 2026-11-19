@@ -1,0 +1,53 @@
+{
+  "repo": "demo-org/checkout-web",
+  "configured": false,
+  "note": "NuGuard is not configured on this deployment",
+  "effective": {
+    "enabled": false,
+    "tools": [],
+    "include_posture": false,
+    "timeout_s": 0,
+    "keep_sbom": false,
+    "from": "deployment",
+    "reason": "NuGuard is not configured on this deployment",
+    "not_requested": [
+      {
+        "tool": "nuguard",
+        "reason": "NuGuard is not configured on this deployment"
+      }
+    ]
+  },
+  "recent": [
+    {
+      "run_id": "S-000006",
+      "run_at": "2026-11-12T02:00:00Z",
+      "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
+    },
+    {
+      "run_id": "S-000005",
+      "run_at": "2026-11-05T02:00:00Z",
+      "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
+    },
+    {
+      "run_id": "S-000004",
+      "run_at": "2026-10-29T02:00:00Z",
+      "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
+    },
+    {
+      "run_id": "S-000003",
+      "run_at": "2026-10-22T02:00:00Z",
+      "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
+    },
+    {
+      "run_id": "S-000002",
+      "run_at": "2026-10-15T02:00:00Z",
+      "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
+    },
+    {
+      "run_id": "S-000001",
+      "run_at": "2026-10-08T02:00:00Z",
+      "note": "this scan recorded no NuGuard options: NuGuard was not configured, or the scan predates them"
+    }
+  ],
+  "can_edit": false
+}

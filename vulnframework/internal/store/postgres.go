@@ -12,6 +12,7 @@ import (
 
 	"github.com/wanaware/vulnframework/internal/fingerprint"
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 )
 
 // Postgres is the production findings store (VM-AD §3, §4.2).
@@ -243,11 +244,22 @@ func (p *Postgres) RecordScanResult(ctx context.Context, res RepoScanResult) err
 		res.RunID, res.Repo, string(res.Outcome),
 		pgTextArray(res.ToolsOK), pgTextArray(res.ToolsFailed),
 		nullString(res.FailureCause), nullString(res.FailureDetail),
-		nullString(res.FailureOwner), res.DurationSec)
+		nullString(res.FailureOwner), res.DurationSec,
+		nullString(res.CommitSHA), nullJSON(res.AIInventory),
+		nullJSON(rawOrNil(res.EffectiveNuGuard)), nullJSON(notRequestedJSON(res.ToolsNotRequested)))
 	if err != nil {
 		return fmt.Errorf("store: record scan result %s/%s: %w", res.RunID, res.Repo, err)
 	}
 	return nil
+}
+
+// notRequestedJSON is nil for an empty list, so "nothing not requested" and
+// "not recorded" read back the same on both backends.
+func notRequestedJSON(l []ToolNotRequested) json.RawMessage {
+	if len(l) == 0 {
+		return nil
+	}
+	return rawOrNil(l)
 }
 
 func (p *Postgres) ScanResults(ctx context.Context, repo string, limit int) ([]RepoScanResult, error) {
@@ -269,9 +281,27 @@ func (p *Postgres) ScanResults(ctx context.Context, repo string, limit int) ([]R
 			cause, detail sql.NullString
 			owner         sql.NullString
 			duration      sql.NullInt64
+			commit, inv   sql.NullString
+			eff, notReq   sql.NullString
 		)
-		if err := rows.Scan(&r.RunID, &r.Repo, &outcome, &ok, &failed, &cause, &detail, &owner, &duration); err != nil {
+		if err := rows.Scan(&r.RunID, &r.Repo, &outcome, &ok, &failed, &cause, &detail, &owner, &duration,
+			&commit, &inv, &eff, &notReq); err != nil {
 			return nil, err
+		}
+		if eff.Valid {
+			r.EffectiveNuGuard = &nuguardopt.Effective{}
+			if err := json.Unmarshal([]byte(eff.String), r.EffectiveNuGuard); err != nil {
+				return nil, fmt.Errorf("store: unreadable NuGuard options on %s/%s: %w", r.RunID, r.Repo, err)
+			}
+		}
+		if notReq.Valid {
+			if err := json.Unmarshal([]byte(notReq.String), &r.ToolsNotRequested); err != nil {
+				return nil, fmt.Errorf("store: unreadable tools-not-requested on %s/%s: %w", r.RunID, r.Repo, err)
+			}
+		}
+		r.CommitSHA = commit.String
+		if inv.Valid {
+			r.AIInventory = json.RawMessage(inv.String)
 		}
 		r.Outcome = ScanOutcome(outcome)
 		r.ToolsOK, r.ToolsFailed = parseTextArray(ok), parseTextArray(failed)
@@ -381,8 +411,9 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 	defer tx.Rollback()
 
 	var outcome string
-	err = tx.QueryRowContext(ctx,
-		`SELECT outcome FROM repo_scan_results WHERE run_id = $1 AND repo = $2`, runID, repo).Scan(&outcome)
+	var okText, failedText string
+	var notRequested int
+	err = tx.QueryRowContext(ctx, qReconcileResult, runID, repo).Scan(&outcome, &okText, &failedText, &notRequested)
 	if errors.Is(err, sql.ErrNoRows) {
 		return stats, fmt.Errorf("%w: no scan result for repo %q in run %q; reconciliation requires one (VM-ADR-12)",
 			ErrNotFound, repo, runID)
@@ -411,8 +442,16 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 	if err := rows.Err(); err != nil {
 		return stats, err
 	}
+	toolsOK, toolsFailed := parseTextArray(okText), parseTextArray(failedText)
+	sources, err := absentSources(ctx, tx, repo, runID)
+	if err != nil {
+		return stats, err
+	}
+	for i := range absent {
+		absent[i].Sources = sources[absent[i].Fingerprint]
+	}
 
-	actions := resolveGapLinks(PlanReconcile(ScanOutcome(outcome), absent), runID)
+	actions := resolveGapLinks(PlanReconcile(ScanOutcome(outcome), toolList(toolsOK, toolsFailed, notRequested), absent), runID)
 	now := p.clock()
 
 	stateOf := map[string]model.State{}
@@ -460,8 +499,30 @@ func (p *Postgres) Reconcile(ctx context.Context, runID, repo string) (Reconcile
 		if a.RetainedUnverified {
 			stats.RetainedUnverified++
 		}
+		if a.SourceNotRun {
+			stats.SourceNotRun++
+		}
 	}
 	return stats, tx.Commit()
+}
+
+// absentSources is, for each finding of repo the run did not observe, every
+// source that has ever observed it (SourceObservation.Source), sorted.
+func absentSources(ctx context.Context, tx *sql.Tx, repo, runID string) (map[string][]string, error) {
+	rows, err := tx.QueryContext(ctx, qAbsentSources, repo, runID)
+	if err != nil {
+		return nil, fmt.Errorf("store: reading the sources of absent findings: %w", err)
+	}
+	defer rows.Close()
+	out := map[string][]string{}
+	for rows.Next() {
+		var fp, tool, sub string
+		if err := rows.Scan(&fp, &tool, &sub); err != nil {
+			return nil, err
+		}
+		out[fp] = append(out[fp], SourceName(tool, sub))
+	}
+	return out, rows.Err()
 }
 
 func (p *Postgres) GetFinding(ctx context.Context, fp string) (model.Finding, error) {
@@ -866,6 +927,15 @@ func nullString(s string) any {
 		return nil
 	}
 	return s
+}
+
+// nullJSON stores an absent document as NULL, so "not measured" stays
+// distinguishable from an empty one.
+func nullJSON(b json.RawMessage) any {
+	if len(b) == 0 || string(b) == "null" {
+		return nil
+	}
+	return string(b)
 }
 
 // pgTextArray renders a Go slice as a Postgres text array literal. Written by

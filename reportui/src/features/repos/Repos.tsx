@@ -13,10 +13,12 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client';
+import type { RepoDetail as RepoDetailData } from '../../api/schemas';
 import { Absent, Empty, ErrorState, Loading, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
 import { formatDate, pct } from '../../lib/format';
 import { ScanNow, ScanQueue, ScanRow, useLatestScans } from '../scans/ScanControls';
+import { AISBOMDownload, CommitSHA, RepoNuGuardSection } from '../nuguard/NuGuard';
 
 export function RepoIndex() {
   const q = useQuery({ queryKey: ['repos'], queryFn: api.repos });
@@ -112,7 +114,7 @@ export function RepoDetail({ repo }: { repo: string }) {
         <h1>{r.name}</h1>
         <p className="muted">
           tier {r.tier} · {r.languages.join(', ')} · {r.module_topology ?? 'topology unrecorded'} ·
-          owners: {r.codeowners?.join(', ') || 'none recorded'}
+          owners: {r.codeowners?.join(', ') || 'none recorded'} · scanned commit <CommitSHA sha={r.last_commit_sha} />
         </p>
         <ScanNow repo={r.name} />
       </header>
@@ -260,6 +262,9 @@ export function RepoDetail({ repo }: { repo: string }) {
         )}
       </Panel>
 
+      <AIComponentsPanel ai={d.ai_components} repo={r.name} />
+      <RepoNuGuardSection repo={r.name} />
+
       <Panel title="Findings observed per run" subtitle={trend.data?.note}>
         {trend.isLoading && <Loading what="the trend" />}
         {trend.data && (
@@ -329,3 +334,57 @@ function Counts({
 }
 
 export { pct };
+
+/**
+ * What the latest scan found of the repository's AI use. An inventory, not
+ * findings: nothing here is a defect, and nothing here is scored or routed.
+ * Where no scan measured it, it says so in words; a zero would claim the
+ * repository uses no AI, which nobody looked at.
+ */
+function AIComponentsPanel({ ai, repo }: { ai: RepoDetailData['ai_components']; repo: string }) {
+  const counts = Object.entries(ai.node_counts ?? {}).sort(([a], [b]) => a.localeCompare(b));
+  const posture = Object.values(ai.posture_observations ?? {}).reduce((n, v) => n + v, 0);
+  return (
+    <Panel title="AI components detected" subtitle="an inventory signal, not findings">
+      {!ai.measured ? (
+        <p className="muted">{ai.note}</p>
+      ) : (
+        <>
+          <dl className="record">
+            <dt>Components</dt>
+            <dd>
+              {counts.length === 0
+                ? 'none found'
+                : counts.map(([kind, n]) => `${n} ${kind.toLowerCase().replace(/_/g, ' ')}`).join(' · ')}
+            </dd>
+            <dt>Connections</dt>
+            <dd>{ai.edge_count ?? 0}</dd>
+            <dt>Frameworks</dt>
+            <dd>{ai.frameworks?.join(', ') || 'none found'}</dd>
+            <dt>Model providers</dt>
+            <dd>{ai.model_providers?.join(', ') || 'none found'}</dd>
+            <dt>Posture observations</dt>
+            <dd>
+              {ai.posture_observations == null ? (
+                <Absent why="posture was not requested for this scan" />
+              ) : (
+                `${posture} across ${Object.keys(ai.posture_observations).length} rules, counted and not reported as findings`
+              )}
+            </dd>
+          </dl>
+          <p className="muted small">
+            {ai.note}
+            {ai.run_id && (
+              <>
+                {' · '}
+                <Link to={`/runs/${encodeURIComponent(ai.run_id)}`}>run {ai.run_id}</Link>
+              </>
+            )}
+            {ai.rulepack_sha256 && <> · rule pack {ai.rulepack_sha256.slice(0, 12)}</>}
+          </p>
+          <AISBOMDownload repo={repo} runID={ai.run_id} sbom={ai.ai_sbom} />
+        </>
+      )}
+    </Panel>
+  );
+}

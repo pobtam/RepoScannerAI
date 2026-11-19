@@ -1,0 +1,476 @@
+{
+  "coverage": {
+    "files_scanned": 12,
+    "files_skipped": 0,
+    "gaps": [],
+    "languages_detected": [
+      "javascript",
+      "typescript"
+    ],
+    "tool_runs": [
+      {
+        "duration_ms": 5,
+        "findings": 2,
+        "reason": null,
+        "status": "ok",
+        "tool": "nga-rules",
+        "version": "nuguard 0.9.15"
+      },
+      {
+        "duration_ms": 5,
+        "findings": 1,
+        "reason": null,
+        "status": "ok",
+        "tool": "atlas",
+        "version": "nuguard 0.9.15"
+      },
+      {
+        "duration_ms": 5,
+        "findings": 1,
+        "reason": null,
+        "status": "ok",
+        "tool": "semgrep",
+        "version": "1.172.0"
+      }
+    ]
+  },
+  "findings": [
+    {
+      "affected_component": null,
+      "description": "Untrusted request input is concatenated into the system prompt without a delimiter or role separation, so a user can override the model's instructions.",
+      "fingerprint": "nf1_1a1b1c1d1e1f10111213141516171819",
+      "kind": "code",
+      "locations": [
+        {
+          "end_line": 42,
+          "path": "src/agent/chat.ts",
+          "start_line": 42,
+          "symbol": "buildSystemPrompt"
+        },
+        {
+          "end_line": 57,
+          "path": "src/agent/chat.ts",
+          "start_line": 57,
+          "symbol": "buildSystemPrompt"
+        }
+      ],
+      "mitre_atlas_technique": "AML.T0051",
+      "owasp_asi_ref": null,
+      "owasp_llm_ref": "LLM01",
+      "raw": {
+        "affected_component": null,
+        "attack_steps": [],
+        "authorization_decision": "",
+        "callback_evidence": null,
+        "catalog_id": null,
+        "chain_id": null,
+        "component_ref": "MODEL:gpt-3.5-turbo",
+        "container_image": null,
+        "container_image_locations": [],
+        "decorator_name": null,
+        "description": "Untrusted request input is concatenated into the system prompt without a delimiter or role separation, so a user can override the model's instructions.",
+        "dual_path_verdict": null,
+        "effect_verified": null,
+        "evasion_differential": false,
+        "evidence": null,
+        "evidence_kind": null,
+        "evidence_quote": "",
+        "finding_id": "NG-171819",
+        "framework_versions": [],
+        "goal_type": null,
+        "golden_data_excerpt": null,
+        "golden_ids": [],
+        "golden_name": null,
+        "guardrail_control": "",
+        "kind": "code",
+        "locations": [
+          {
+            "end_line": 42,
+            "path": "src/agent/chat.ts",
+            "start_line": 42,
+            "symbol": "buildSystemPrompt"
+          },
+          {
+            "end_line": 57,
+            "path": "src/agent/chat.ts",
+            "start_line": 57,
+            "symbol": "buildSystemPrompt"
+          }
+        ],
+        "log_correlation_status": null,
+        "mitre_atlas_technique": null,
+        "ngrs_score": null,
+        "ngrs_vector": null,
+        "owasp_asi_ref": null,
+        "owasp_cicd_ref": null,
+        "owasp_llm_ref": "LLM01",
+        "policy_clauses_violated": [],
+        "reasoning": "",
+        "references": [],
+        "regression_paraphrase_kind": null,
+        "remediation": "Pin the model to a specific API version in your provider configuration. Log the model version identifier returned with each inference call. Maintain an approved-model registry and require change-control review before upgrading to a newer model version. Artifact integrity hashing does not apply to hosted API models.",
+        "reproduction_status": null,
+        "rule_id": "NGA-PROMPT-INJ-001",
+        "sbom_path": [],
+        "sbom_path_descriptions": [],
+        "scenario_type": null,
+        "scores": {},
+        "severity": "high",
+        "source_tool": "nga-rules",
+        "state_diff_outcome": null,
+        "success_indicator": null,
+        "title": "User input concatenated into the system prompt",
+        "verified": null
+      },
+      "references": [
+        "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
+      ],
+      "remediation": null,
+      "rule_id": "NGA-PROMPT-INJ-001",
+      "severity": "high",
+      "source_tool": "nga-rules",
+      "title": "User input concatenated into the system prompt"
+    },
+    {
+      "affected_component": null,
+      "description": "Untrusted request input is concatenated into the system prompt without a delimiter or role separation, so a user can override the model's instructions.",
+      "fingerprint": "nf1_2a2b2c2d2e2f20212223242526272829",
+      "kind": "code",
+      "locations": [
+        {
+          "end_line": 88,
+          "path": "src/agent/chat.ts",
+          "start_line": 88,
+          "symbol": "summarise"
+        }
+      ],
+      "mitre_atlas_technique": "AML.T0051",
+      "owasp_asi_ref": null,
+      "owasp_llm_ref": "LLM01",
+      "raw": {
+        "affected_component": null,
+        "attack_steps": [],
+        "authorization_decision": "",
+        "callback_evidence": null,
+        "catalog_id": null,
+        "chain_id": null,
+        "component_ref": "MODEL:gpt-3.5-turbo",
+        "container_image": null,
+        "container_image_locations": [],
+        "decorator_name": null,
+        "description": "Untrusted request input is concatenated into the system prompt without a delimiter or role separation, so a user can override the model's instructions.",
+        "dual_path_verdict": null,
+        "effect_verified": null,
+        "evasion_differential": false,
+        "evidence": null,
+        "evidence_kind": null,
+        "evidence_quote": "",
+        "finding_id": "NG-272829",
+        "framework_versions": [],
+        "goal_type": null,
+        "golden_data_excerpt": null,
+        "golden_ids": [],
+        "golden_name": null,
+        "guardrail_control": "",
+        "kind": "code",
+        "locations": [
+          {
+            "end_line": 88,
+            "path": "src/agent/chat.ts",
+            "start_line": 88,
+            "symbol": "summarise"
+          }
+        ],
+        "log_correlation_status": null,
+        "mitre_atlas_technique": null,
+        "ngrs_score": null,
+        "ngrs_vector": null,
+        "owasp_asi_ref": null,
+        "owasp_cicd_ref": null,
+        "owasp_llm_ref": "LLM01",
+        "policy_clauses_violated": [],
+        "reasoning": "",
+        "references": [],
+        "regression_paraphrase_kind": null,
+        "remediation": "Pin the model to a specific API version in your provider configuration. Log the model version identifier returned with each inference call. Maintain an approved-model registry and require change-control review before upgrading to a newer model version. Artifact integrity hashing does not apply to hosted API models.",
+        "reproduction_status": null,
+        "rule_id": "NGA-PROMPT-INJ-001",
+        "sbom_path": [],
+        "sbom_path_descriptions": [],
+        "scenario_type": null,
+        "scores": {},
+        "severity": "high",
+        "source_tool": "nga-rules",
+        "state_diff_outcome": null,
+        "success_indicator": null,
+        "title": "User input concatenated into the system prompt",
+        "verified": null
+      },
+      "references": [
+        "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
+      ],
+      "remediation": null,
+      "rule_id": "NGA-PROMPT-INJ-001",
+      "severity": "high",
+      "source_tool": "nga-rules",
+      "title": "User input concatenated into the system prompt"
+    },
+    {
+      "affected_component": null,
+      "description": "The model's reply reaches child_process.exec without validation, so a prompt that steers the model can run commands on the server.",
+      "fingerprint": "nf1_3a3b3c3d3e3f30313233343536373839",
+      "kind": "code",
+      "locations": [
+        {
+          "end_line": 19,
+          "path": "src/tools/run.ts",
+          "start_line": 19,
+          "symbol": "runTool"
+        }
+      ],
+      "mitre_atlas_technique": null,
+      "owasp_asi_ref": "ASI02",
+      "owasp_llm_ref": "LLM05",
+      "raw": {
+        "affected_component": null,
+        "attack_steps": [],
+        "authorization_decision": "",
+        "callback_evidence": null,
+        "catalog_id": null,
+        "chain_id": null,
+        "component_ref": "MODEL:gpt-3.5-turbo",
+        "container_image": null,
+        "container_image_locations": [],
+        "decorator_name": null,
+        "description": "The model's reply reaches child_process.exec without validation, so a prompt that steers the model can run commands on the server.",
+        "dual_path_verdict": null,
+        "effect_verified": null,
+        "evasion_differential": false,
+        "evidence": null,
+        "evidence_kind": null,
+        "evidence_quote": "",
+        "finding_id": "NG-373839",
+        "framework_versions": [],
+        "goal_type": null,
+        "golden_data_excerpt": null,
+        "golden_ids": [],
+        "golden_name": null,
+        "guardrail_control": "",
+        "kind": "code",
+        "locations": [
+          {
+            "end_line": 19,
+            "path": "src/tools/run.ts",
+            "start_line": 19,
+            "symbol": "runTool"
+          }
+        ],
+        "log_correlation_status": null,
+        "mitre_atlas_technique": null,
+        "ngrs_score": null,
+        "ngrs_vector": null,
+        "owasp_asi_ref": null,
+        "owasp_cicd_ref": null,
+        "owasp_llm_ref": "LLM01",
+        "policy_clauses_violated": [],
+        "reasoning": "",
+        "references": [],
+        "regression_paraphrase_kind": null,
+        "remediation": "Pin the model to a specific API version in your provider configuration. Log the model version identifier returned with each inference call. Maintain an approved-model registry and require change-control review before upgrading to a newer model version. Artifact integrity hashing does not apply to hosted API models.",
+        "reproduction_status": null,
+        "rule_id": "nuguard.ai.model-output-to-shell",
+        "sbom_path": [],
+        "sbom_path_descriptions": [],
+        "scenario_type": null,
+        "scores": {},
+        "severity": "critical",
+        "source_tool": "semgrep",
+        "state_diff_outcome": null,
+        "success_indicator": null,
+        "title": "Model output passed to a shell",
+        "verified": null
+      },
+      "references": [
+        "https://genai.owasp.org/llmrisk/llm052025-improper-output-handling/"
+      ],
+      "remediation": "Never execute model output; map it to an allow-listed set of commands.",
+      "rule_id": "nuguard.ai.model-output-to-shell",
+      "severity": "critical",
+      "source_tool": "semgrep",
+      "title": "Model output passed to a shell"
+    },
+    {
+      "affected_component": null,
+      "description": "",
+      "fingerprint": "nf1_4a4b4c4d4e4f40414243444546474849",
+      "kind": "code",
+      "locations": [
+        {
+          "end_line": 7,
+          "path": "src/tools/files.ts",
+          "start_line": 7,
+          "symbol": null
+        },
+        {
+          "end_line": 31,
+          "path": "src/tools/files.ts",
+          "start_line": 31,
+          "symbol": null
+        }
+      ],
+      "mitre_atlas_technique": null,
+      "owasp_asi_ref": null,
+      "owasp_llm_ref": null,
+      "raw": {
+        "affected_component": null,
+        "attack_steps": [],
+        "authorization_decision": "",
+        "callback_evidence": null,
+        "catalog_id": null,
+        "chain_id": null,
+        "component_ref": "MODEL:gpt-3.5-turbo",
+        "container_image": null,
+        "container_image_locations": [],
+        "decorator_name": null,
+        "description": "",
+        "dual_path_verdict": null,
+        "effect_verified": null,
+        "evasion_differential": false,
+        "evidence": null,
+        "evidence_kind": null,
+        "evidence_quote": "",
+        "finding_id": "NG-474849",
+        "framework_versions": [],
+        "goal_type": null,
+        "golden_data_excerpt": null,
+        "golden_ids": [],
+        "golden_name": null,
+        "guardrail_control": "",
+        "kind": "code",
+        "locations": [
+          {
+            "end_line": 7,
+            "path": "src/tools/files.ts",
+            "start_line": 7,
+            "symbol": null
+          },
+          {
+            "end_line": 31,
+            "path": "src/tools/files.ts",
+            "start_line": 31,
+            "symbol": null
+          }
+        ],
+        "log_correlation_status": null,
+        "mitre_atlas_technique": null,
+        "ngrs_score": null,
+        "ngrs_vector": null,
+        "owasp_asi_ref": null,
+        "owasp_cicd_ref": null,
+        "owasp_llm_ref": "LLM01",
+        "policy_clauses_violated": [],
+        "reasoning": "",
+        "references": [],
+        "regression_paraphrase_kind": null,
+        "remediation": "Pin the model to a specific API version in your provider configuration. Log the model version identifier returned with each inference call. Maintain an approved-model registry and require change-control review before upgrading to a newer model version. Artifact integrity hashing does not apply to hosted API models.",
+        "reproduction_status": null,
+        "rule_id": "ATLAS-TOOL-SCOPE-002",
+        "sbom_path": [],
+        "sbom_path_descriptions": [],
+        "scenario_type": null,
+        "scores": {},
+        "severity": "medium",
+        "source_tool": "atlas",
+        "state_diff_outcome": null,
+        "success_indicator": null,
+        "title": "Agent tool can write files with no path allow-list",
+        "verified": null
+      },
+      "references": [],
+      "remediation": null,
+      "rule_id": "ATLAS-TOOL-SCOPE-002",
+      "severity": "medium",
+      "source_tool": "atlas",
+      "title": "Agent tool can write files with no path allow-list"
+    }
+  ],
+  "inventory": {
+    "edge_count": 9,
+    "frameworks": [
+      "LangChain.js"
+    ],
+    "model_providers": [
+      "anthropic",
+      "openai"
+    ],
+    "node_counts": {
+      "AGENT": 2,
+      "MODEL": 2,
+      "PROMPT": 3,
+      "TOOL": 4
+    }
+  },
+  "job": {
+    "client_reference": "S-000001",
+    "commit_sha": "5d0c7e9a1b2c3d4e5f60718293a4b5c6d7e8f901",
+    "created_at": "2026-11-04T01:41:09Z",
+    "error": null,
+    "finished_at": "2026-11-04T01:41:10Z",
+    "id": "scn_01HANDMADE0000000000000001",
+    "links": {
+      "result": "/v1/scans/x/result",
+      "sarif": "/v1/scans/x/result?format=sarif",
+      "sbom": "/v1/scans/x/sbom",
+      "self": "/v1/scans/x"
+    },
+    "phase": null,
+    "ref_requested": "5d0c7e9a1b2c3d4e5f60718293a4b5c6d7e8f901",
+    "repo_url": "https://github.com/acme/support-agent",
+    "started_at": "2026-11-04T01:41:09Z",
+    "status": "succeeded"
+  },
+  "provenance": {
+    "image_digest": null,
+    "llm_used": false,
+    "nuguard_version": "0.9.15",
+    "options_effective": {
+      "include_posture": false,
+      "include_sbom": false,
+      "min_severity": "low",
+      "network": false,
+      "subpath": null,
+      "tools": [
+        "nga-rules",
+        "atlas",
+        "semgrep"
+      ],
+      "use_llm": false
+    },
+    "rulepack_sha256": "397fd47bbc1b3313c3c8ac22e482c72edf3eda16046a3fc3b1e2d009ed97161b",
+    "service_version": "0.9.15",
+    "tools": [
+      {
+        "name": "atlas",
+        "version": "nuguard 0.9.15"
+      },
+      {
+        "name": "nga-rules",
+        "version": "nuguard 0.9.15"
+      },
+      {
+        "name": "semgrep",
+        "version": "1.172.0"
+      }
+    ]
+  },
+  "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "sbom": null,
+  "schema_version": "1.0",
+  "summary": {
+    "critical": 1,
+    "high": 2,
+    "info": 0,
+    "low": 0,
+    "medium": 1
+  }
+}

@@ -15,6 +15,7 @@ import type { Overview as OverviewData } from '../../api/schemas';
 import { Badge, Caveat, CopyButton, ErrorState, Loading, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
 import { formatDateTime, pct } from '../../lib/format';
+import { ClipNotes, EffectiveText, NotRequestedList } from '../nuguard/NuGuard';
 
 export function LatestOverview() {
   const q = useQuery({ queryKey: ['run', 'latest'], queryFn: api.latestRun, refetchInterval: 60_000 });
@@ -286,6 +287,33 @@ export function RunOverview({ data }: { data: OverviewData }) {
           <dd>{provenance.sla_windows_calibrated ? 'yes' : 'no (VM-OQ-02)'}</dd>
         </dl>
       </Panel>
+
+      {data.nuguard && data.nuguard.length > 0 && (
+        <Panel title="NuGuard in this run" subtitle="the options each repository's scan actually used, after the operator's ceiling (VM-UI-F-1206)">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Repository</th>
+                <th scope="col">Options used</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.nuguard.map((n) => (
+                <tr key={n.repo}>
+                  <td className="mono">
+                    <Link to={`/repos/${n.repo}`}>{n.repo}</Link>
+                  </td>
+                  <td>
+                    <EffectiveText e={n.effective} />
+                    <ClipNotes clips={n.effective.clips} />
+                    <NotRequestedList items={n.not_requested} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { api } from '../../api/client';
 import { Absent, Empty, ErrorState, Loading, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
 import { formatDate, formatHours, formatNanoseconds, pct } from '../../lib/format';
+import { NotRequestedList } from '../nuguard/NuGuard';
 
 export function Coverage() {
   const q = useQuery({ queryKey: ['coverage'], queryFn: () => api.coverage() });
@@ -57,6 +58,38 @@ export function Coverage() {
           which is why both are here (OQ-P4-01).
         </p>
       </Panel>
+
+      {v.not_requested.length > 0 && (
+        <Panel
+          title="Tools not requested"
+          subtitle="neither ok nor failed: a scan that did not ask for a tool is not a gap, and its findings keep their state, flagged not re-observed (VM-UI-F-1206)"
+        >
+          <table className="not-requested-table">
+            <thead>
+              <tr>
+                <th scope="col">Repository</th>
+                <th scope="col">Run</th>
+                <th scope="col">Not requested</th>
+              </tr>
+            </thead>
+            <tbody>
+              {v.not_requested.map((n) => (
+                <tr key={n.repo}>
+                  <td className="mono">
+                    <Link to={`/repos/${n.repo}`}>{n.repo}</Link>
+                  </td>
+                  <td className="mono">
+                    <Link to={`/runs/${encodeURIComponent(n.run_id)}`}>{n.run_id}</Link>
+                  </td>
+                  <td>
+                    <NotRequestedList items={n.tools} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      )}
 
       <Panel title="Gaps" subtitle={`${v.gaps.length} repositories with no qualifying scan`}>
         {v.gaps.length === 0 ? (
@@ -120,6 +153,7 @@ export function Coverage() {
                     ) : (
                       <Absent why="no individual tool was recorded as failed" />
                     )}
+                    <NotRequestedList items={g.tools_not_requested} />
                   </td>
                   <td>{g.consecutive_runs}</td>
                   <td>

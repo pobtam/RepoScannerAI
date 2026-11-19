@@ -26,4 +26,10 @@ tool  semgrep       1.177.0
 tool  npm-audit     10.8.2
 tool  actions-pin   v1.0.0
 
+# NuGuard is a remote service, not a binary in the scanner image, and is used
+# only when -nuguard-url is set. Its version is checked against this pin at
+# start-up (GET /v1/capabilities) and on every result (provenance
+# .nuguard_version); a mismatch is a coverage gap, never accepted output.
+tool  nuguard       0.9.15
+
 image vulnframework-scanner:v1

@@ -1,0 +1,107 @@
+{
+  "coverage": {
+    "files_scanned": 12,
+    "files_skipped": 0,
+    "gaps": [],
+    "languages_detected": [
+      "javascript",
+      "typescript"
+    ],
+    "tool_runs": [
+      {
+        "duration_ms": 5,
+        "findings": 0,
+        "reason": null,
+        "status": "ok",
+        "tool": "nga-rules",
+        "version": "nuguard 0.9.15"
+      },
+      {
+        "duration_ms": 5,
+        "findings": 0,
+        "reason": null,
+        "status": "ok",
+        "tool": "atlas",
+        "version": "nuguard 0.9.15"
+      },
+      {
+        "duration_ms": 5,
+        "findings": 0,
+        "reason": null,
+        "status": "ok",
+        "tool": "semgrep",
+        "version": "1.172.0"
+      }
+    ]
+  },
+  "findings": [],
+  "inventory": {
+    "edge_count": 0,
+    "frameworks": [],
+    "model_providers": [],
+    "node_counts": {}
+  },
+  "job": {
+    "client_reference": "S-000001",
+    "commit_sha": "5d0c7e9a1b2c3d4e5f60718293a4b5c6d7e8f901",
+    "created_at": "2026-11-04T01:41:09Z",
+    "error": null,
+    "finished_at": "2026-11-04T01:41:10Z",
+    "id": "scn_01HANDMADE0000000000000002",
+    "links": {
+      "result": "/v1/scans/x/result",
+      "sarif": "/v1/scans/x/result?format=sarif",
+      "sbom": "/v1/scans/x/sbom",
+      "self": "/v1/scans/x"
+    },
+    "phase": null,
+    "ref_requested": "5d0c7e9a1b2c3d4e5f60718293a4b5c6d7e8f901",
+    "repo_url": "https://github.com/acme/empty-agent",
+    "started_at": "2026-11-04T01:41:09Z",
+    "status": "succeeded"
+  },
+  "provenance": {
+    "image_digest": null,
+    "llm_used": false,
+    "nuguard_version": "0.9.15",
+    "options_effective": {
+      "include_posture": false,
+      "include_sbom": false,
+      "min_severity": "low",
+      "network": false,
+      "subpath": null,
+      "tools": [
+        "nga-rules",
+        "atlas",
+        "semgrep"
+      ],
+      "use_llm": false
+    },
+    "rulepack_sha256": "397fd47bbc1b3313c3c8ac22e482c72edf3eda16046a3fc3b1e2d009ed97161b",
+    "service_version": "0.9.15",
+    "tools": [
+      {
+        "name": "atlas",
+        "version": "nuguard 0.9.15"
+      },
+      {
+        "name": "nga-rules",
+        "version": "nuguard 0.9.15"
+      },
+      {
+        "name": "semgrep",
+        "version": "1.172.0"
+      }
+    ]
+  },
+  "result_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "sbom": null,
+  "schema_version": "1.0",
+  "summary": {
+    "critical": 0,
+    "high": 0,
+    "info": 0,
+    "low": 0,
+    "medium": 0
+  }
+}

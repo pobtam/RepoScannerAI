@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -50,6 +51,7 @@ type Memory struct {
 	discovered    map[string]DiscoveredRepo
 	exclusions    map[string]RepoExclusion
 	scanRequests  map[string]ScanRequest
+	ng            memNuGuard
 }
 
 type memFinding struct {
@@ -223,6 +225,13 @@ func (m *Memory) RecordScanResult(_ context.Context, res RepoScanResult) error {
 	if _, ok := m.runs[res.RunID]; !ok {
 		return fmt.Errorf("%w: run %q", ErrNotFound, res.RunID)
 	}
+	// As Postgres stores it: an absent inventory is NULL, and the stored
+	// document is a copy, not the caller's buffer.
+	if len(res.AIInventory) == 0 || string(res.AIInventory) == "null" {
+		res.AIInventory = nil
+	} else {
+		res.AIInventory = append(json.RawMessage(nil), res.AIInventory...)
+	}
 	// Replace any prior result for this (run, repo) so replay is idempotent.
 	existing := m.scanResults[res.Repo]
 	for i, r := range existing {
@@ -347,10 +356,11 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	outcome, err := m.outcomeFor(runID, repo)
+	result, err := m.resultFor(runID, repo)
 	if err != nil {
 		return ReconcileStats{}, err
 	}
+	outcome := result.Outcome
 
 	observed := map[string]bool{}
 	for fp, obs := range m.observations {
@@ -367,11 +377,12 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 		if f.Repo != repo || observed[fp] {
 			continue
 		}
-		absent = append(absent, FindingState{Fingerprint: fp, State: f.State, Category: f.Category})
+		absent = append(absent, FindingState{Fingerprint: fp, State: f.State, Category: f.Category,
+			Sources: m.sourcesLocked(fp)})
 	}
 	sort.Slice(absent, func(i, j int) bool { return absent[i].Fingerprint < absent[j].Fingerprint })
 
-	actions := resolveGapLinks(PlanReconcile(outcome, absent), runID)
+	actions := resolveGapLinks(PlanReconcile(outcome, toolList(result.ToolsOK, result.ToolsFailed, len(result.ToolsNotRequested)), absent), runID)
 
 	now := m.clock()
 	var stats ReconcileStats
@@ -418,17 +429,34 @@ func (m *Memory) Reconcile(_ context.Context, runID, repo string) (ReconcileStat
 		if a.RetainedUnverified {
 			stats.RetainedUnverified++
 		}
+		if a.SourceNotRun {
+			stats.SourceNotRun++
+		}
 	}
 	return stats, nil
 }
 
-func (m *Memory) outcomeFor(runID, repo string) (ScanOutcome, error) {
-	for _, r := range m.scanResults[repo] {
-		if r.RunID == runID {
-			return r.Outcome, nil
+// sourcesLocked is every source that has observed a finding, sorted.
+func (m *Memory) sourcesLocked(fp string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, o := range m.observations[fp] {
+		if s := o.Source(); !seen[s] {
+			seen[s] = true
+			out = append(out, s)
 		}
 	}
-	return "", fmt.Errorf("%w: no scan result for repo %q in run %q; reconciliation requires one (VM-ADR-12)",
+	sort.Strings(out)
+	return out
+}
+
+func (m *Memory) resultFor(runID, repo string) (RepoScanResult, error) {
+	for _, r := range m.scanResults[repo] {
+		if r.RunID == runID {
+			return r, nil
+		}
+	}
+	return RepoScanResult{}, fmt.Errorf("%w: no scan result for repo %q in run %q; reconciliation requires one (VM-ADR-12)",
 		ErrNotFound, repo, runID)
 }
 
@@ -623,6 +651,9 @@ func (m *Memory) Facets(_ context.Context, q SearchQuery) (FacetCounts, error) {
 	for _, d := range []model.DepClass{model.DepProduction, model.DepDevelopment, model.DepNotApplicable} {
 		out.DepClasses[string(d)] = 0
 	}
+	for _, d := range model.AllDomains {
+		out.Domains[string(d)] = 0
+	}
 
 	// Each dimension is counted with ITS OWN filter cleared, so the number
 	// answers "what would I get if I selected this" rather than "what did I
@@ -647,6 +678,9 @@ func (m *Memory) Facets(_ context.Context, q SearchQuery) (FacetCounts, error) {
 	})
 	count(func(f *Filter) { f.Categories = nil }, func(fd model.Finding, _ Repo) {
 		out.Categories[string(fd.Category)]++
+	})
+	count(func(f *Filter) { f.Domains = nil }, func(fd model.Finding, _ Repo) {
+		out.Domains[string(model.DomainOf(fd))]++
 	})
 	count(func(f *Filter) { f.States = nil }, func(fd model.Finding, _ Repo) {
 		out.States[string(fd.State)]++

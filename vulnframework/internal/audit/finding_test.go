@@ -261,8 +261,7 @@ var findingExemptions = map[audit.FieldPath]audit.Exemption{
 		Producer: "internal/scan/adapters (govulncheck)",
 		Why:      "boolean; its false value is indistinguishable from unwritten",
 	},
-	"Location.Function": {Producer: "nothing — no pinned tool reports it", Why: "see OQ-AUDIT-02"},
-	"Location.Package":  {Producer: "nothing — no pinned tool reports it", Why: "see OQ-AUDIT-02"},
+	"Location.Package": {Producer: "nothing — no pinned tool reports it", Why: "see OQ-AUDIT-02"},
 	"Refs.UpstreamFinding": {
 		Producer: "internal/firstparty.Driver.ApplyWaveOne",
 		Why:      "written only for a finding blocked upstream, which needs the first-party registry",

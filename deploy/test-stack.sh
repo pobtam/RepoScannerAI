@@ -11,13 +11,27 @@
 #   * a sweep, through the real sweep image, discovers a local fake GitHub
 #     account (internal/gh/ghfake), downloads and scans its two fabricated
 #     repositories, and records them; the planted test secret is reported
-#     and its value never served.
+#     and its value never served;
+#   * NuGuard, as a local fake in the NuGuard sidecar's place (the worker's
+#     network namespace, loopback only): a scan with a NuGuard code finding
+#     and an AI inventory; a NuGuard scan that is partial, recorded as a
+#     gap; and NuGuard down, recorded as a gap with the scan otherwise
+#     complete. The real NuGuard image is not used: see DEPLOY.md.
+#   * NuGuard controls: a security owner turns NuGuard off for a
+#     repository, scans it, and its open NuGuard finding stays open, flagged
+#     not re-observed; an engineer sees the settings read-only and cannot
+#     change them (403); a scan asking for fewer tools records the narrowing
+#     on the run.
 #
 # Run deploy/build.sh first (SKIP_SCANNER=1 deploy/build.sh if the scanner
-# image is already built). The test's database lives in memory (tmpfs), so
-# each run starts empty and leaves no database volume. The stack is stopped
-# at the end; its other Docker
-# volumes (vf-stacktest_*) are kept, as nothing here deletes volumes.
+# image is already built). To test a branch without touching the v1 images a
+# running stack uses, build and test under another tag:
+#   VF_IMAGE_TAG=branch-test SKIP_SCANNER=1 deploy/build.sh
+#   VF_IMAGE_TAG=branch-test deploy/test-stack.sh
+#
+# The test's database lives in memory (tmpfs), so each run starts empty and
+# leaves no database volume. The stack is stopped at the end; its other
+# Docker volumes (vf-stacktest_*) are kept, as nothing here deletes volumes.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -48,14 +62,33 @@ HTTP_PORT=${STACK_HTTP_PORT:-18580}
 HTTPS_PORT=${STACK_HTTPS_PORT:-18543}
 SWEEP_CONCURRENCY=2
 VULNFRAMEWORK_GITHUB_API=http://host.docker.internal:18090
+NUGUARD_URL=http://127.0.0.1:8085
+NUGUARD_API_KEY_SHA256=unused-by-the-fake
 EOF
+# The fake NuGuard, built for the containers' platform, with its scripted
+# answers for octo/go-api: a scan with code findings, then a partial one.
+mkdir -p "$WORK/nuguard"
+(cd vulnframework && CGO_ENABLED=0 GOOS=linux GOARCH="$(docker version --format '{{.Server.Arch}}')" \
+  go build -o "$WORK/nuguard/nuguardfake" ./internal/nuguard/nuguardfake/cmd/nuguardfake)
+cp vulnframework/testdata/fixtures/nuguard/ai-code.json vulnframework/testdata/fixtures/nuguard/quickstart-partial.json "$WORK/nuguard/"
 # The test's database in memory: a fresh, empty database every run.
-cat >"$WORK/test.override.yaml" <<'YAML'
+cat >"$WORK/test.override.yaml" <<YAML
 services:
   db:
     volumes: !reset []
     tmpfs:
       - /var/lib/postgresql/data
+  # The fake in the NuGuard sidecar's place: same network namespace, same
+  # loopback address, no real NuGuard image.
+  nuguard:
+    image: caddy:2.8.4-alpine
+    entrypoint: ["/fake/nuguardfake", "-addr", "127.0.0.1:8085",
+      "-script", "https://github.com/octo/go-api=/fake/ai-code.json",
+      "-script", "https://github.com/octo/go-api=/fake/quickstart-partial.json"]
+    environment:
+      NUGUARD_FAKE_KEY: stacktest-nuguard-key
+    volumes: !override
+      - $WORK/nuguard:/fake:ro
 YAML
 export VF_ENV_FILE="$WORK/env" VF_COMPOSE_OVERRIDE="$WORK/test.override.yaml" COMPOSE_PROJECT_NAME="$PROJECT"
 COMPOSE=(docker compose --env-file "$WORK/env" -p "$PROJECT" -f deploy/compose.yaml -f "$WORK/test.override.yaml")
@@ -126,7 +159,8 @@ curl -sk -u "admin:$PW" "$U/v1/github" | grep -q '"stack test"' || fail "the exc
 ok "vfctl runs against the stack; an exclusion shows on the GitHub page"
 
 echo "Scan now, through the front door, run by the scan worker"
-VULNFRAMEWORK_GITHUB_TOKEN=stacktest-token deploy/scanworker.sh start >"$WORK/worker.log" 2>&1 ||
+VULNFRAMEWORK_GITHUB_TOKEN=stacktest-token VULNFRAMEWORK_NUGUARD_API_KEY=stacktest-nuguard-key \
+  deploy/scanworker.sh start >"$WORK/worker.log" 2>&1 ||
   fail "starting the scan worker: $(tail -n 5 "$WORK/worker.log")"
 csrf="$(curl -sk -u "admin:$PW" "$U/v1/csrf" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
 [ "$(code -u "admin:$PW" -X POST -H 'Sec-Fetch-Site: cross-site' -H "X-CSRF-Token: $csrf" \
@@ -148,8 +182,127 @@ ok "Scan now: queued, run by the worker, finished with its run"
 docker logs "$PROJECT-api-1" 2>&1 | grep 'path=/v1/scans' | grep 'method=POST' | grep -q 'subject="repo=octo/go-api queued' ||
   fail "the access log has no record of who asked for which repository"
 ok "the access log records who asked for which repository"
+
+echo "NuGuard, through the sidecar (a local fake)"
+# scan_now asks for a fresh scan of octo/go-api, waits for it to end, and
+# prints "status|reason".
+scan_now() {
+  local csrf st
+  csrf="$(curl -sk -u "admin:$PW" "$U/v1/csrf" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
+  [ "$(code -u "admin:$PW" -X POST -H 'Sec-Fetch-Site: same-origin' -H "X-CSRF-Token: $csrf" \
+    -d '{"repo":"octo/go-api"}' "$U/v1/scans")" = "201" ] || fail "Scan now was not accepted"
+  for _ in $(seq 1 120); do
+    st="$(curl -sk -u "admin:$PW" "$U/v1/scans?repo=octo/go-api&limit=1" |
+      python3 -c 'import json,sys; r=json.load(sys.stdin)[0]; print(r["status"]+"|"+(r.get("reason") or ""))')"
+    case "$st" in queued\|*|running\|*) sleep 2 ;; *) break ;; esac
+  done
+  printf '%s' "$st"
+}
+ai_measured() {
+  curl -sk -u "admin:$PW" "$U/v1/repos/octo/go-api" |
+    python3 -c 'import json,sys; print(json.load(sys.stdin)["ai_components"]["measured"])'
+}
+# The scan above took NuGuard's first script: code findings.
+curl -sk -u "admin:$PW" "$U/v1/findings?scope=open&repo=octo/go-api&category=code&limit=500" >"$WORK/code.json"
+grep -q '"nuguard"' "$WORK/code.json" || fail "no NuGuard code finding was recorded: $(head -c 400 "$WORK/code.json")"
+grep -q 'NGA-PROMPT-INJ-001' "$WORK/code.json" || fail "NuGuard's prompt-injection finding is missing"
+[ "$(ai_measured)" = "True" ] || fail "the AI inventory was not recorded"
+ok "a scan with a NuGuard code finding and an AI inventory"
+if grep -q 'stacktest-nuguard-key\|stacktest-token' "$WORK/code.json"; then fail "a credential was served"; fi
+ok "neither credential is served"
+
+echo "NuGuard controls"
+# put PATH BODY: a security owner's settings write through the front door.
+put() {
+  local csrf
+  csrf="$(curl -sk -u "admin:$PW" "$U/v1/csrf" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
+  code -u "admin:$PW" -X PUT -H 'Sec-Fetch-Site: same-origin' -H "X-CSRF-Token: $csrf" -d "$2" "$U$1"
+}
+# as_engineer METHOD PATH: the API as an engineer, from inside the compose
+# network (the front door has one login, a security owner, and strips any
+# identity header a client sends). Prints the status, then the body.
+as_engineer() {
+  docker exec "$PROJECT-scanworker-1" curl -s -w '\n%{http_code}' -X "$1" \
+    -H 'X-Auth-User: eng' -H 'X-Auth-Level: engineer' -H 'Sec-Fetch-Site: same-origin' \
+    -H 'Content-Type: application/json' -d "${3:-}" "http://api:8080$2"
+}
+# ng_finding prints the NuGuard prompt-injection finding's state, and
+# whether it is flagged not re-observed.
+ng_finding() {
+  curl -sk -u "admin:$PW" "$U/v1/findings?scope=all&repo=octo/go-api&found_by=nuguard&limit=500" |
+    python3 -c 'import json,sys
+fs=[f for f in json.load(sys.stdin)["findings"] if f["identity"].get("rule_id")=="NGA-PROMPT-INJ-001"]
+print((fs[0]["state"] if fs else "missing"), "flagged" if fs and fs[0]["observation"]["not_reobserved"] else "unflagged")'
+}
+st_json() { curl -sk -u "admin:$PW" "$U/v1/nuguard" | python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
+# The worker checked at start-up, before the sidecar listened, and re-checks
+# every 30 seconds while NuGuard cannot be reached.
+for _ in $(seq 1 45); do
+  [ "$(st_json 'd["configured"] and d["status"].get("reachable") and d["status"].get("version_ok")')" = "True" ] && break
+  sleep 2
+done
+[ "$(st_json 'd["configured"] and d["status"].get("reachable") and d["status"].get("version_ok")')" = "True" ] ||
+  fail "the worker's NuGuard status is not configured, reachable and on the pinned version: $(curl -sk -u "admin:$PW" "$U/v1/nuguard" | head -c 400)"
+ok "the scan worker publishes NuGuard's status: configured, reachable, pinned version"
+
+out="$(as_engineer GET /v1/nuguard)"
+[ "$(printf '%s' "$out" | tail -n1)" = "200" ] || fail "an engineer cannot read the NuGuard page: $out"
+printf '%s' "$out" | sed '$d' | grep -q '"can_edit":false' || fail "the NuGuard page is not read-only for an engineer: $out"
+out="$(as_engineer PUT /v1/nuguard/settings '{"enabled":false,"tools":[],"include_posture":false,"timeout_s":60}')"
+[ "$(printf '%s' "$out" | tail -n1)" = "403" ] || fail "an engineer changed NuGuard's settings: $out"
+printf '%s' "$out" | grep -q 'security-owner level' || fail "the engineer's refusal does not say why: $out"
+out="$(as_engineer PUT /v1/repos/octo/go-api/nuguard '{"mode":"off"}')"
+[ "$(printf '%s' "$out" | tail -n1)" = "403" ] || fail "an engineer set a repository override: $out"
+ok "an engineer sees NuGuard read-only and is refused a change (403)"
+
+before="$(ng_finding | cut -d' ' -f1)"
+case "$before" in missing|VERIFIED) fail "the NuGuard finding is $before before the test" ;; esac
+[ "$(put /v1/repos/octo/go-api/nuguard '{"mode":"off","reason":"stack test"}')" = "200" ] ||
+  fail "a security owner could not turn NuGuard off for octo/go-api"
+st="$(scan_now)"
+case "$st" in "finished|") ;; *) fail "the scan with NuGuard off ended '$st'" ;; esac
+[ "$(ng_finding)" = "$before flagged" ] ||
+  fail "turning NuGuard off changed its finding: $(ng_finding); want it still $before, flagged not re-observed"
+curl -sk -u "admin:$PW" "$U/v1/repos/octo/go-api/nuguard" | python3 -c '
+import json,sys
+r=json.load(sys.stdin)["recent"][0]
+assert r["effective"]["enabled"] is False and r["effective"]["reason"]=="off for this repository", r
+assert {"tool":"nuguard","reason":"off for this repository"} in r["not_requested"], r' ||
+  fail "the scan with NuGuard off does not record it as not requested"
+ok "NuGuard off for a repository: not run, recorded not requested, and its open finding stays open, flagged"
+[ "$(put /v1/repos/octo/go-api/nuguard '{"mode":"inherit"}')" = "200" ] || fail "clearing the override"
+
+csrf="$(curl -sk -u "admin:$PW" "$U/v1/csrf" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')"
+[ "$(code -u "admin:$PW" -X POST -H 'Sec-Fetch-Site: same-origin' -H "X-CSRF-Token: $csrf" \
+  -d '{"repo":"octo/go-api","nuguard":{"mode":"on","tools":["atlas"]}}' "$U/v1/scans")" = "201" ] ||
+  fail "a scan asking NuGuard for fewer tools was not accepted"
+for _ in $(seq 1 120); do
+  st="$(curl -sk -u "admin:$PW" "$U/v1/scans?repo=octo/go-api&limit=1" | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["status"])')"
+  case "$st" in queued|running) sleep 2 ;; *) break ;; esac
+done
+run="$(curl -sk -u "admin:$PW" "$U/v1/scans?repo=octo/go-api&limit=1" | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["run_id"])')"
+curl -sk -u "admin:$PW" "$U/v1/runs/$run" | python3 -c '
+import json,sys
+ng=[n for n in json.load(sys.stdin).get("nuguard",[]) if n["repo"]=="octo/go-api"]
+assert ng and ng[0]["effective"]["tools"]==["atlas"], ng
+tools={n["tool"] for n in ng[0].get("not_requested",[])}
+assert {"nuguard/nga-rules","nuguard/semgrep"} <= tools, ng' ||
+  fail "the run $run does not record the scan's narrowing: $(curl -sk -u "admin:$PW" "$U/v1/runs/$run" | head -c 600)"
+ok "a scan asking for fewer tools records the narrowing on its run ($run)"
+
+st="$(scan_now)"
+case "$st" in "finished|partial: tool_failed: nuguard/osv"*) ;; *) fail "a partial NuGuard scan ended '$st'" ;; esac
+ok "a partial NuGuard scan is a gap: $st"
+
+docker stop "$PROJECT-nuguard-1" >/dev/null
+st="$(scan_now)"
+case "$st" in "finished|partial: execution_failed: nuguard"*) ;; *) fail "with NuGuard down the scan ended '$st'" ;; esac
+[ "$(ai_measured)" = "False" ] || fail "with NuGuard down, the AI inventory still reads as measured"
+ok "NuGuard down is a gap, the scan otherwise complete, the inventory not measured: $st"
+
 deploy/scanworker.sh stop >/dev/null 2>&1
 [ -z "$(docker ps -q --filter "name=$PROJECT-scanworker")" ] || fail "the scan worker is still running after stop"
-ok "stopping the worker removes it, and the token with it"
+[ -z "$(docker ps -aq --filter "name=$PROJECT-nuguard")" ] || fail "the NuGuard sidecar is still there after stop"
+ok "stopping the worker removes it and the NuGuard sidecar, and the token and key with them"
 
 echo "STACK OK"

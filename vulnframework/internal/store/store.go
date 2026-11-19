@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 )
 
 // RunKind is the class of run. Each kind draws from its own sequence so that
@@ -93,6 +94,25 @@ type RepoScanResult struct {
 	FailureDetail string      `json:"failure_detail,omitempty"`
 	FailureOwner  string      `json:"failure_owner,omitempty"`
 	DurationSec   int         `json:"duration_sec,omitempty"`
+
+	// CommitSHA is the commit the scanned tree was taken at; empty where
+	// nothing recorded it.
+	CommitSHA string `json:"commit_sha,omitempty"`
+	// AIInventory is the AI component inventory as the adapter reported it
+	// (scan.AIInventory, kept as a document so the store does not depend on
+	// the scanner). Nil is "not measured", never "none".
+	AIInventory json.RawMessage `json:"ai_inventory,omitempty"`
+
+	// EffectiveNuGuard is the NuGuard options this scan actually used, after
+	// inheritance and the operator's ceiling, with any clip notes: the
+	// provenance a NuGuard finding or inventory is read against (VM-F-202).
+	// Nil where the scan worker resolved none (NuGuard not configured, or a
+	// scan from before migration 0019).
+	EffectiveNuGuard *nuguardopt.Effective `json:"effective_nuguard,omitempty"`
+	// ToolsNotRequested are the tools this scan did not ask for, with the
+	// reason: neither ok nor failed. A finding from one of them keeps its
+	// state and is flagged not re-observed (VM-F-160/161).
+	ToolsNotRequested []ToolNotRequested `json:"tools_not_requested,omitempty"`
 }
 
 // Report is an issued report record (VM-ADR-15).
@@ -163,6 +183,11 @@ type ReconcileStats struct {
 	// RetainedUnverified counts findings that would have verified had the scan
 	// succeeded. This is the number VM-F-216 requires reported alongside a gap.
 	RetainedUnverified int
+	// SourceNotRun counts findings a complete scan did not observe while one
+	// of their sources did not run ok in it: retained and flagged, as for a
+	// gap, because the scan did not look (VM-F-160). Each is also counted in
+	// NotReobserved.
+	SourceNotRun int
 	// SecretsRemoved counts secrets a complete scan no longer saw, held open
 	// for a human to confirm rotation rather than verified (VM-F-856).
 	SecretsRemoved int
@@ -255,9 +280,10 @@ type Store interface {
 
 	// Reconcile applies the absence rules after a repository's scan completes.
 	//
-	// Findings absent from a successful scan verify. Findings absent because the
-	// scan did not complete retain their state and are flagged not re-observed
-	// (VM-ADR-12, VM-F-160/161).
+	// Findings absent from a successful scan verify, provided every source
+	// that has observed them ran ok in it. Findings absent because the scan
+	// did not complete, or because a source of theirs did not run, retain
+	// their state and are flagged not re-observed (VM-ADR-12, VM-F-160/161).
 	Reconcile(ctx context.Context, runID, repo string) (ReconcileStats, error)
 
 	// GetFinding returns the merged view of one finding.
@@ -557,6 +583,7 @@ type Store interface {
 	GitHubStore
 	// --- Scan queue (migration 0017) ---
 	ScanQueue
+	NuGuardStore
 
 	// Close releases resources.
 	Close() error

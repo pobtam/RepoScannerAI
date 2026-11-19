@@ -1,0 +1,83 @@
+{
+  "ai_components": {
+    "ai_sbom": {
+      "sha256": "879034ec91d8f5e02aa9d50b59263afb43e8db915b758a55fecd1ff691294c66",
+      "size_bytes": 106,
+      "stored": true
+    },
+    "edge_count": 9,
+    "frameworks": [
+      "LangChain.js"
+    ],
+    "measured": true,
+    "model_providers": [
+      "anthropic",
+      "openai"
+    ],
+    "node_counts": {
+      "AGENT": 2,
+      "MODEL": 2,
+      "PROMPT": 3,
+      "TOOL": 4
+    },
+    "note": "an inventory signal, not findings: what nuguard 0.9.15 found of this repository's AI use",
+    "rulepack_sha256": "397fd47bbc1b3313c3c8ac22e482c72edf3eda16046a3fc3b1e2d009ed97161b",
+    "run_id": "M-000001",
+    "source": "nuguard 0.9.15"
+  },
+  "coverage": [
+    {
+      "outcomes": [
+        "complete"
+      ],
+      "repo": "octo/api",
+      "runs": [
+        "M-000001"
+      ]
+    }
+  ],
+  "repo": {
+    "by_category": {
+      "code": 2
+    },
+    "by_severity": {
+      "HIGH": 1,
+      "MEDIUM": 1
+    },
+    "has_test_suite": false,
+    "languages": [
+      "go"
+    ],
+    "last_commit_sha": "5d0c7e9a1b2c3d4e5f60718293a4b5c6d7e8f901",
+    "last_outcome": "complete",
+    "last_scanned_at": "2026-11-12T02:02:34.744051Z",
+    "last_scanned_run": "M-000001",
+    "name": "octo/api",
+    "no_test_suite_note": "this repository has no test suite, so a remediation cannot be verified here: automated fixes are not attempted and every finding needs a person",
+    "not_reobserved": 0,
+    "open_findings": 2,
+    "sla_breached": 0,
+    "tier": 2
+  },
+  "sla_windows": {
+    "1": {
+      "P0": "24h",
+      "P1": "168h",
+      "P2": "720h",
+      "P3": "2160h"
+    },
+    "2": {
+      "P0": "48h",
+      "P1": "336h",
+      "P2": "1440h",
+      "P3": "4320h"
+    },
+    "3": {
+      "P0": "72h",
+      "P1": "720h",
+      "P2": "2160h",
+      "P3": "8760h"
+    }
+  },
+  "sla_windows_provisional": true
+}

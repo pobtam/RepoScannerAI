@@ -86,6 +86,13 @@ export const icons = {
       <path d="M18 11.5c0 3-3 3.5-6 3.5H8.3" />
     </Svg>
   ),
+  ai: (
+    <Svg>
+      <rect x="5" y="5" width="14" height="14" rx="3" />
+      <path d="M9 9h6v6H9z" />
+      <path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3" />
+    </Svg>
+  ),
   shield: (
     <Svg size={18}>
       <path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6L12 3z" />

@@ -88,6 +88,8 @@ func run() error {
 		scanTimeout   = flag.Duration("scan-timeout", 15*time.Minute, "worker mode: time limit per repository scan; a timeout is recorded as a coverage gap")
 		discoverEvery = flag.Duration("discover-every", 24*time.Hour, "worker mode with -github: how often to rediscover the account's repositories")
 	)
+	// NuGuard, the opt-in remote AI code-rule and inventory adapter.
+	nuguardFlags := adapters.RegisterNuGuardFlags(flag.CommandLine)
 	flag.Parse()
 
 	if *dsn == "" {
@@ -121,7 +123,17 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	reg, err := adapters.NewRegistry(runner.Exec{}, lock)
+	// NuGuard is given the token account mode already holds, and in local
+	// mode one only if the environment has it (public repositories need none).
+	ngToken := adapters.OptionalToken(githubTokenEnv)
+	if *githubMode {
+		ngToken = githubToken
+	}
+	ng, err := nuguardFlags.Build(ctx, lock, ngToken, log)
+	if err != nil {
+		return err
+	}
+	reg, err := adapters.NewRegistryWith(runner.Exec{}, lock, adapters.Optional{NuGuard: ng})
 	if err != nil {
 		return err
 	}
@@ -137,9 +149,14 @@ func run() error {
 		}
 	}
 
+	// The run records the tools it can run: the registered adapters. An
+	// opt-in adapter that is off (NuGuard with no URL) is pinned in
+	// tools.lock but is not on the run, so a run without it is recorded
+	// exactly as before it existed.
 	toolVersions := map[string]string{}
-	for _, name := range lock.Names() {
-		toolVersions[name] = lock.MustVersion(name)
+	for _, name := range reg.Names() {
+		a, _ := reg.Get(name)
+		toolVersions[name] = a.Version()
 	}
 
 	var dispatcher orchestrator.Dispatcher = &orchestrator.LocalDispatcher{
@@ -150,6 +167,10 @@ func run() error {
 			}
 			return *workDir + "/" + lastPath(repo)
 		},
+		// NuGuard scans GitHub's copy of a clone's commit: it needs the
+		// clone's origin and whether the tree on disk differs. Without
+		// NuGuard nothing is read.
+		ReadClone: ng != nil,
 	}
 	var account *gh.TokenClient
 	if *githubMode {
@@ -180,6 +201,7 @@ func run() error {
 		ToolVersions:       toolVersions,
 		LeaseDuration:      *leaseFor,
 		FirstParty:         owners,
+		SBOMMaxBytes:       nuguardFlags.SBOMMaxBytes(),
 	})
 
 	// The lease sweeper runs alongside the sweep. It is the only thing
@@ -224,8 +246,22 @@ func run() error {
 	}
 
 	if *workerMode {
+		// The NuGuard ceiling, from this worker's flags: Build has already
+		// refused a default above it.
+		ceiling, err := nuguardFlags.Ceiling()
+		if err != nil {
+			return err
+		}
+		control := &orchestrator.NuGuardControl{Ceiling: ceiling, Pinned: lock.MustVersion("nuguard")}
+		if ng != nil {
+			control.Probe = func(ctx context.Context) orchestrator.NuGuardProbe {
+				p := ng.Probe(ctx)
+				return orchestrator.NuGuardProbe{Reachable: p.Reachable, ServiceVersion: p.ServiceVersion,
+					ToolsAllowed: p.ToolsAllowed, Err: p.Err}
+			}
+		}
 		return runWorker(ctx, log, workerConfig{
-			orch: o, pass: pass, account: account, credits: *credits, id: *workerID,
+			orch: o, pass: pass, account: account, credits: *credits, id: *workerID, nuguard: control,
 			discoverEvery: *discoverEvery,
 			discover:      gh.DiscoverOptions{IncludeCollaborator: *inclCollab, IncludeForks: *inclForks, MaxSizeMB: *maxSizeMB},
 		})
@@ -252,7 +288,21 @@ func run() error {
 		return fmt.Errorf("no repositories registered; add them with vfctl before running a sweep")
 	}
 
-	stats, err := o.Sweep(ctx, store.RunKind(*kind), *trigger, repos, orchestrator.DefaultSelector)
+	// The stored NuGuard settings apply to a sweep as to a requested scan.
+	ceiling, err := nuguardFlags.Ceiling()
+	if err != nil {
+		return err
+	}
+	if ng != nil && ceiling.Configured {
+		if p := ng.Probe(ctx); p.Reachable {
+			ceiling.ServiceTools = p.ToolsAllowed
+		}
+	}
+	sweepOpts, err := orchestrator.ResolveSweepNuGuard(ctx, st, ceiling, repos)
+	if err != nil {
+		return err
+	}
+	stats, err := o.SweepWith(ctx, store.RunKind(*kind), *trigger, repos, orchestrator.DefaultSelector, sweepOpts)
 	if err != nil {
 		return err
 	}

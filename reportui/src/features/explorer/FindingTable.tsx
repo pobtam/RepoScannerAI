@@ -20,6 +20,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Finding } from '../../api/schemas';
 import { Absent, Badge, Caveat } from '../../components/primitives';
 import { Link } from '../../lib/router';
+import { DOMAIN_HINT, DOMAIN_SHORT } from '../../lib/domain';
 import {
   epssLabel,
   formatDate,
@@ -232,7 +233,10 @@ function Row({
           <>
             <Link to={`/findings/${f.fingerprint}`} className="mono">
               {f.identity.primary_id || f.fingerprint}
-            </Link>
+            </Link>{' '}
+            <Badge tone={`domain-${f.domain}`} title={DOMAIN_HINT[f.domain]}>
+              {DOMAIN_SHORT[f.domain]}
+            </Badge>
             {f.description && (
               <div className="finding-desc" title={f.description}>
                 {f.description}

@@ -7,11 +7,11 @@
     "url": "https://github.com/demo-org/edge-proxy/pull/3",
     "state": "open",
     "merged": false,
-    "opened_at": "2026-08-14T09:00:00Z",
+    "opened_at": "2026-10-08T02:00:00Z",
     "findings": [
       "f2224855ab1d7224"
     ],
     "ticket_url": "https://github.example/demo-org/edge-proxy/6",
-    "confirmed_at": "2026-09-18T09:00:00Z"
+    "confirmed_at": "2026-11-12T02:00:00Z"
   }
 ]

@@ -1,0 +1,114 @@
+{
+  "caveats": [
+    "Priorities in this report derive from static analysis thresholds that have NOT been calibrated (VM-OQ-06). Treat P0/P1 routing as provisional: the thresholds are the specification's defaults and are expected to be noisy until shadow-run data has been reviewed.",
+    "SLA figures in this report are measured against PROVISIONAL remediation windows (VM-OQ-02 is unanswered): the windows are the specification's working defaults and have not been agreed with the teams they bind. A breach here means \"older than an unreviewed window\", not \"late against a commitment\".",
+    "Blast radius is recorded but does not influence priority (VM-OQ-12 is unanswered), so a vulnerability in a widely consumed shared module may rank below one confined to a single repository."
+  ],
+  "counts": {
+    "by_category": {
+      "code": 2
+    },
+    "by_priority": {},
+    "by_state": {
+      "DETECTED": 2
+    },
+    "not_fixed_unexplained": 2,
+    "not_reobserved": 0,
+    "pending_verification": 0,
+    "resolved": 0,
+    "secrets_removed_rotation_unconfirmed": 0,
+    "sla_breached": 0,
+    "sla_not_computed": 2,
+    "sla_paused": 0,
+    "suppression_proposals_overdue": 0,
+    "suppression_proposals_pending": 0,
+    "total": 2,
+    "unresolved": 2
+  },
+  "coverage": {
+    "complete": 1,
+    "failed": 0,
+    "in_scope": 1,
+    "no_result": 0,
+    "not_dispatched": 0,
+    "partial": 0,
+    "percent": 100,
+    "staleness": {
+      "in_scope": 1,
+      "max_age": 0,
+      "median_age": 0,
+      "never_scanned": 0,
+      "p95_age": 0,
+      "stalest_repo": "octo/api"
+    }
+  },
+  "delta": {
+    "comparable": false,
+    "new": 0,
+    "no_longer_observed": 0,
+    "regressed": 0,
+    "total_change": 0,
+    "unresolved_change": 0,
+    "verified": 0
+  },
+  "live": true,
+  "live_note": "no report was issued for this run, so these figures are computed from the store NOW rather than read from a snapshot taken at the time. Findings that have changed state since the run are shown in their CURRENT state (VM-UI-F-424)",
+  "nuguard": [
+    {
+      "effective": {
+        "clips": [
+          {
+            "asked": "semgrep",
+            "field": "tools",
+            "used": "left out",
+            "why": "not offered by the service"
+          }
+        ],
+        "enabled": true,
+        "from": "scan",
+        "include_posture": true,
+        "keep_sbom": true,
+        "not_requested": [
+          {
+            "reason": "not offered by the service",
+            "tool": "nuguard/semgrep"
+          }
+        ],
+        "timeout_s": 300,
+        "tools": [
+          "nga-rules",
+          "atlas"
+        ]
+      },
+      "not_requested": [
+        {
+          "reason": "not offered by the service",
+          "tool": "nuguard/semgrep"
+        }
+      ],
+      "repo": "octo/api"
+    }
+  ],
+  "provenance": {
+    "caveats": [
+      "Priorities in this report derive from static analysis thresholds that have NOT been calibrated (VM-OQ-06). Treat P0/P1 routing as provisional: the thresholds are the specification's defaults and are expected to be noisy until shadow-run data has been reviewed.",
+      "SLA figures in this report are measured against PROVISIONAL remediation windows (VM-OQ-02 is unanswered): the windows are the specification's working defaults and have not been agreed with the teams they bind. A breach here means \"older than an unreviewed window\", not \"late against a commitment\".",
+      "Blast radius is recorded but does not influence priority (VM-OQ-12 is unanswered), so a vulnerability in a widely consumed shared module may rank below one confined to a single repository."
+    ],
+    "scoring_inputs_available": 5,
+    "scoring_inputs_declared": 5,
+    "sla_windows_calibrated": false,
+    "thresholds_calibrated": false
+  },
+  "run": {
+    "finished_at": "2026-11-12T02:02:34.746123Z",
+    "id": "M-000001",
+    "kind": "manual",
+    "partial": false,
+    "repos_failed": 0,
+    "repos_planned": 1,
+    "repos_scanned": 1,
+    "started_at": "2026-11-12T02:02:34.744051Z",
+    "trigger": "scan request sr_20261022T100000.000Z_17b6361f"
+  }
+}

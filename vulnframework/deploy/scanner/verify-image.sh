@@ -52,6 +52,13 @@ while read -r kind name want _; do
     checked=$((checked + 1))
     continue
   fi
+  if [ "$name" = "nuguard" ]; then
+    # A remote service, not part of this image: its version is checked
+    # against the service itself, at start-up and on every result.
+    printf '  ok        %-12s %s (remote service, checked against the service)\n' "$name" "$want"
+    checked=$((checked + 1))
+    continue
+  fi
   got="$(printf '%s\n' "$actual" | awk -v n="$name" '$1==n{print $2; exit}')"
   if [ -z "$got" ]; then
     printf '  MISSING   %-12s tools.lock pins %s; the image does not report it\n' "$name" "$want"

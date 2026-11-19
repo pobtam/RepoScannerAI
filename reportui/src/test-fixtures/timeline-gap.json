@@ -1,1 +1,108 @@
-{"fingerprint":"999cc1a3ce1dd914","transitions":[{"to":"DETECTED","actor":"scanworker","cause":"first observation in S-000001","at":"2026-08-14T09:00:00Z"},{"from":"DETECTED","to":"TRIAGED","actor":"triage","cause":"triage complete","at":"2026-08-14T09:00:00Z"},{"from":"TRIAGED","to":"BLOCKED_UPSTREAM","actor":"orchestrator","cause":"policy rule 6 (upstream): defer_upstream","at":"2026-08-14T09:00:00Z"}],"observations":[{"run_id":"S-000006","kind":"sweep","at":"2026-09-18T09:00:00Z","observed":false,"outcome":"partial","tools":["gitleaks"],"note":"the scan did not qualify (partial), so its silence says nothing about this finding (VM-ADR-12)"},{"run_id":"S-000005","kind":"sweep","at":"2026-09-11T09:00:00Z","observed":true,"outcome":"complete","tools":["govulncheck","gosec","gitleaks","trivy","osv-scanner"]},{"run_id":"S-000004","kind":"sweep","at":"2026-09-04T09:00:00Z","observed":true,"outcome":"complete","tools":["govulncheck","gosec","gitleaks","trivy","osv-scanner"]},{"run_id":"S-000003","kind":"sweep","at":"2026-08-28T09:00:00Z","observed":true,"outcome":"complete","tools":["govulncheck","gosec","gitleaks","trivy","osv-scanner"]},{"run_id":"S-000002","kind":"sweep","at":"2026-08-21T09:00:00Z","observed":true,"outcome":"complete","tools":["govulncheck","gosec","gitleaks","trivy","osv-scanner"]},{"run_id":"S-000001","kind":"sweep","at":"2026-08-14T09:00:00Z","observed":true,"outcome":"complete","tools":["govulncheck","gosec","gitleaks","trivy","osv-scanner"]}]}
+{
+  "fingerprint": "999cc1a3ce1dd914",
+  "transitions": [
+    {
+      "to": "DETECTED",
+      "actor": "scanworker",
+      "cause": "first observation in S-000001",
+      "at": "2026-10-08T02:00:00Z"
+    },
+    {
+      "from": "DETECTED",
+      "to": "TRIAGED",
+      "actor": "triage",
+      "cause": "triage complete",
+      "at": "2026-10-08T02:00:00Z"
+    },
+    {
+      "from": "TRIAGED",
+      "to": "BLOCKED_UPSTREAM",
+      "actor": "orchestrator",
+      "cause": "policy rule 6 (upstream): defer_upstream",
+      "at": "2026-10-08T02:00:00Z"
+    }
+  ],
+  "observations": [
+    {
+      "run_id": "S-000006",
+      "kind": "sweep",
+      "at": "2026-11-12T02:00:00Z",
+      "observed": false,
+      "outcome": "partial",
+      "tools": [
+        "gitleaks"
+      ],
+      "note": "the scan did not qualify (partial), so its silence says nothing about this finding (VM-ADR-12)"
+    },
+    {
+      "run_id": "S-000005",
+      "kind": "sweep",
+      "at": "2026-11-05T02:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy",
+        "osv-scanner"
+      ]
+    },
+    {
+      "run_id": "S-000004",
+      "kind": "sweep",
+      "at": "2026-10-29T02:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy",
+        "osv-scanner"
+      ]
+    },
+    {
+      "run_id": "S-000003",
+      "kind": "sweep",
+      "at": "2026-10-22T02:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy",
+        "osv-scanner"
+      ]
+    },
+    {
+      "run_id": "S-000002",
+      "kind": "sweep",
+      "at": "2026-10-15T02:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy",
+        "osv-scanner"
+      ]
+    },
+    {
+      "run_id": "S-000001",
+      "kind": "sweep",
+      "at": "2026-10-08T02:00:00Z",
+      "observed": true,
+      "outcome": "complete",
+      "tools": [
+        "govulncheck",
+        "gosec",
+        "gitleaks",
+        "trivy",
+        "osv-scanner"
+      ]
+    }
+  ]
+}

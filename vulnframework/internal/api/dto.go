@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 	"github.com/wanaware/vulnframework/internal/report"
 	"github.com/wanaware/vulnframework/internal/store"
 )
@@ -199,9 +200,12 @@ type Triage struct {
 
 // Finding is the record as the interface reads it.
 type Finding struct {
-	Fingerprint    string         `json:"fingerprint"`
-	Repo           string         `json:"repo"`
-	Category       string         `json:"category"`
+	Fingerprint string `json:"fingerprint"`
+	Repo        string `json:"repo"`
+	Category    string `json:"category"`
+	// Domain is "app" (an application vulnerability) or "ai" (an AI
+	// vulnerability), from the scanners that reported it (model.DomainOf).
+	Domain         string         `json:"domain"`
 	Identity       Identity       `json:"identity"`
 	Location       Location       `json:"location"`
 	Versions       Versions       `json:"versions,omitempty"`
@@ -235,6 +239,10 @@ type Finding struct {
 	Provenance  Provenance        `json:"provenance"`
 	Triage      *Triage           `json:"triage,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
+	// NuGuard is a NuGuard finding's own detail, read out of its
+	// version-tagged annotations, with the options of the scan that last
+	// observed it; detail view only (VM-UI-F-1208).
+	NuGuard *NuGuardDetail `json:"nuguard,omitempty"`
 
 	// Score is the decomposition, present on the detail view and on list rows
 	// (the caveat has to travel with the priority wherever the priority goes).
@@ -303,6 +311,7 @@ type Facets struct {
 	Severities []FacetOption `json:"severities"`
 	Reachable  []FacetOption `json:"reachable"`
 	DepClasses []FacetOption `json:"dep_classes"`
+	Domains    []FacetOption `json:"domains"`
 }
 
 // Transition is one state change, with who made it and why.
@@ -408,6 +417,39 @@ type Overview struct {
 	// inline wherever the figure they qualify appears; this copy is for a
 	// reader who starts at the top.
 	Caveats []string `json:"caveats,omitempty"`
+	// NuGuard is each repository's NuGuard options in this run, with clip
+	// notes, where any were recorded (VM-UI-F-1206). Provenance, read from
+	// the scan results, not from the snapshot.
+	NuGuard []RunNuGuard `json:"nuguard,omitempty"`
+}
+
+// RunNuGuard is one repository's NuGuard options in a run.
+type RunNuGuard struct {
+	Repo         string                    `json:"repo"`
+	Effective    nuguardopt.Effective      `json:"effective"`
+	NotRequested []nuguardopt.NotRequested `json:"not_requested,omitempty"`
+}
+
+// NuGuardDetail is a NuGuard finding's own detail.
+type NuGuardDetail struct {
+	Version string `json:"version"`
+	Rule    string `json:"rule"`
+	// SubTool is which of NuGuard's tools reported it (nga-rules, atlas,
+	// semgrep).
+	SubTool             string `json:"sub_tool,omitempty"`
+	OWASPLLMRef         string `json:"owasp_llm_ref,omitempty"`
+	OWASPASIRef         string `json:"owasp_asi_ref,omitempty"`
+	MITREAtlasTechnique string `json:"mitre_atlas_technique,omitempty"`
+	Function            string `json:"function,omitempty"`
+	// Scanned says what NuGuard scanned where it differs from the tree the
+	// local tools scanned: in real mode, the commit on GitHub when the
+	// clone had uncommitted changes, or could not be checked.
+	Scanned string `json:"scanned,omitempty"`
+	// LastRun is the run that last observed it, and Effective its options;
+	// absent where that scan recorded none, and Note says so.
+	LastRun   string                `json:"last_run,omitempty"`
+	Effective *nuguardopt.Effective `json:"effective,omitempty"`
+	Note      string                `json:"note,omitempty"`
 }
 
 // CoverageGap is one repository's missing or partial coverage (VM-UI-F-75x).
@@ -428,6 +470,9 @@ type CoverageGap struct {
 	// lost, which is what makes a partial gap actionable (VM-F-212).
 	ToolsOK     []string `json:"tools_ok,omitempty"`
 	ToolsFailed []string `json:"tools_failed,omitempty"`
+	// ToolsNotRequested are tools the scan did not ask for, with the reason:
+	// neither ok nor failed, and never a gap's cause (VM-UI-F-1206).
+	ToolsNotRequested []nuguardopt.NotRequested `json:"tools_not_requested,omitempty"`
 
 	// ConsecutiveRuns is how many runs in a row have produced no qualifying
 	// scan, and LastQualifyingRun the last one that did. A single-run view
@@ -463,6 +508,17 @@ type CoverageView struct {
 	// History is the per-repository outcome across recent runs, so coverage
 	// decay is visible without reading individual gaps (VM-UI-F-756).
 	History []RepoCoverageHistory `json:"history,omitempty"`
+	// NotRequested lists repositories whose latest scan did not ask for a
+	// tool, with the reason, apart from the gaps (VM-UI-F-1206).
+	NotRequested []CoverageNotRequested `json:"not_requested"`
+}
+
+// CoverageNotRequested is one repository's tools its latest scan did not
+// ask for.
+type CoverageNotRequested struct {
+	Repo  string                    `json:"repo"`
+	RunID string                    `json:"run_id"`
+	Tools []nuguardopt.NotRequested `json:"tools"`
 }
 
 // RepoCoverageHistory is one repository's recent scan outcomes, newest first.
@@ -490,6 +546,9 @@ type RepoSummary struct {
 	LastScannedRun string         `json:"last_scanned_run,omitempty"`
 	LastScannedAt  *time.Time     `json:"last_scanned_at,omitempty"`
 	LastOutcome    string         `json:"last_outcome,omitempty"`
+	// LastCommitSHA is the commit the latest scan read, where it was
+	// recorded.
+	LastCommitSHA string `json:"last_commit_sha,omitempty"`
 	// NoTestSuiteNote states what the absence constrains, because it decides
 	// what the framework may do there (VM-UI-F-607).
 	NoTestSuiteNote string `json:"no_test_suite_note,omitempty"`
@@ -510,6 +569,48 @@ type RepoDetail struct {
 	// repository owns (VM-UI-F-606).
 	Consumers []Consumer            `json:"consumers,omitempty"`
 	Coverage  []RepoCoverageHistory `json:"coverage,omitempty"`
+
+	// AIComponents is what the latest scan found of the repository's AI
+	// use. Always present, because "not measured" must be said, not implied
+	// by absence or rendered as zero (OQ-AUDIT-01's discipline).
+	AIComponents AIComponents `json:"ai_components"`
+}
+
+// AIComponents is an AI component inventory: an inventory signal, never
+// findings. Nothing here is a defect, and nothing here is scored or routed.
+type AIComponents struct {
+	// Measured is false where the latest scan reported no inventory: the
+	// adapter that produces one (NuGuard) is not configured, or did not run.
+	Measured bool   `json:"measured"`
+	Note     string `json:"note"`
+	RunID    string `json:"run_id,omitempty"`
+
+	// Source names the producing tool and version; RulepackSHA256 and
+	// ImageDigest pin it further.
+	Source         string         `json:"source,omitempty"`
+	RulepackSHA256 string         `json:"rulepack_sha256,omitempty"`
+	ImageDigest    string         `json:"image_digest,omitempty"`
+	NodeCounts     map[string]int `json:"node_counts,omitempty"`
+	EdgeCount      *int           `json:"edge_count,omitempty"`
+	Frameworks     []string       `json:"frameworks,omitempty"`
+	ModelProviders []string       `json:"model_providers,omitempty"`
+	// PostureObservations counts posture observations by rule, where they
+	// were requested. Not findings: they describe the components' shape and
+	// do not tell safe code from vulnerable code.
+	PostureObservations map[string]int `json:"posture_observations,omitempty"`
+	// AISBOM is the AI-SBOM this scan kept, or why it was not kept; absent
+	// where the scan did not ask to keep one.
+	AISBOM *AISBOMRef `json:"ai_sbom,omitempty"`
+}
+
+// AISBOMRef describes a kept AI-SBOM, served at
+// /v1/repos/{repo}/ai-sbom/{run_id}.
+type AISBOMRef struct {
+	Stored    bool   `json:"stored"`
+	SizeBytes int64  `json:"size_bytes"`
+	SHA256    string `json:"sha256"`
+	// Withheld says why it was not stored (over the size cap).
+	Withheld string `json:"withheld,omitempty"`
 }
 
 // Dependency is one module in a repository's manifest.
