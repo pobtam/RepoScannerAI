@@ -10,7 +10,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api, ApiRequestError } from '../../api/client';
-import type { ScanNuGuardOptions, ScanRequest } from '../../api/schemas';
+import type { NuGuardView, ScanNuGuardOptions, ScanRequest } from '../../api/schemas';
 import { ScanOptions, requestText } from '../nuguard/NuGuard';
 import { Badge, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
@@ -257,6 +257,94 @@ export function ScanQueue() {
           </tbody>
         </table>
       )}
+    </Panel>
+  );
+}
+
+/**
+ * "Scan" on the AI scanning page: one repository, or every included one, with
+ * NuGuard on for the scan unless the options say otherwise. Security owners
+ * only, as the API requires; it queues a request like "Scan now" does.
+ */
+export function NuGuardScan({ v }: { v: NuGuardView }) {
+  const enabled = useScansEnabled() && v.configured && v.can_edit;
+  const qc = useQueryClient();
+  const repos = useQuery({ queryKey: ['repos'], queryFn: api.repos, enabled });
+  const included = (repos.data ?? []).filter((r) => !r.archived).map((r) => r.name);
+  // '' is every included repository.
+  const [target, setTarget] = useState('');
+  const [options, setOptions] = useState<ScanNuGuardOptions | undefined>({ mode: 'on' });
+  const latest = useQuery({
+    queryKey: ['scans', 'nuguard-page', target],
+    queryFn: () => api.scans(target, 1),
+    enabled: enabled && target !== '',
+    refetchInterval: (q) => (q.state.data?.some((r) => ACTIVE.has(r.status)) ? 5000 : false),
+  });
+  const one = useMutation({
+    mutationFn: () => api.requestScan(target, options),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['scans'] }),
+  });
+  const all = useMutation({
+    mutationFn: () => api.requestScanAll(options),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['scans'] }),
+  });
+  if (!enabled) return null;
+
+  const s = v.status;
+  const doubt = s.stale
+    ? 'the scan worker has not reported on NuGuard recently'
+    : s.reachable === false
+      ? 'the scan worker last found NuGuard unreachable'
+      : s.service_version && !s.version_ok
+        ? "NuGuard's version does not match the pinned one, so its results would be refused"
+        : '';
+  const last = target ? latest.data?.[0] : undefined;
+  const busy = one.isPending || all.isPending || (last != null && ACTIVE.has(last.status));
+  const err = target ? one.error : all.error;
+  return (
+    <Panel title="Scan with NuGuard" subtitle="queues a scan; the scan worker runs it with NuGuard as chosen below">
+      <div className="scan-now">
+        <label className="field">
+          <span>Repository</span>
+          <select
+            value={target}
+            onChange={(e) => {
+              setTarget(e.target.value);
+              one.reset();
+              all.reset();
+            }}
+          >
+            <option value="">all included repositories ({included.length})</option>
+            {included.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <ScanOptions repo={target || included[0]} value={options} onChange={setOptions} open />
+        {doubt && (
+          <p className="warn-text small">
+            NuGuard may not answer: {doubt}. A scan that cannot reach it records the gap on the coverage page.
+          </p>
+        )}
+        <button type="submit" onClick={() => (target ? one.mutate() : all.mutate())} disabled={busy}>
+          {busy ? 'Scan queued' : 'Scan'}
+        </button>
+        <span role="status" aria-live="polite">
+          {err != null && <span className="warn-text">{errorText(err)}</span>}
+          {target && !one.isError && one.data?.merged && (
+            <span className="muted">Already queued; this request was merged into it. </span>
+          )}
+          {target && last && <ScanStatus r={last} onRetry={() => one.mutate()} />}
+          {!target && all.data && (
+            <span className="muted">
+              {all.data.queued} queued, {all.data.merged} already queued or running.{' '}
+              <Link to="/repos">See the queue</Link>
+            </span>
+          )}
+        </span>
+      </div>
     </Panel>
   );
 }

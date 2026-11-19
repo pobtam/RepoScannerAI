@@ -185,6 +185,74 @@ describe('the AI scanning page', () => {
   });
 });
 
+describe('the Scan button on the AI scanning page', () => {
+  const batch = { batch_id: 'b-1', requests: [queued.request], queued: 6, merged: 0 };
+
+  it('scans every included repository with NuGuard on by default', async () => {
+    const calls = stub([
+      { path: '/health', body: healthOn },
+      { path: '/nuguard/preview', body: preview },
+      { path: '/nuguard', body: page },
+      { path: '/repos', body: repos },
+      csrf,
+      { method: 'POST', path: '/scans/all', status: 201, body: batch },
+      { path: '/scans', body: [] },
+    ]);
+    renderApp(<NuGuardPage />);
+    const button = await screen.findByRole('button', { name: 'Scan' });
+    expect(await screen.findByRole('option', { name: 'all included repositories (6)' })).toBeTruthy();
+    fireEvent.click(button);
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    const post = calls.find((c) => c.method === 'POST')!;
+    expect(post.url).toContain('/scans/all');
+    expect(JSON.parse(post.body!)).toEqual({ nuguard: { mode: 'on' } });
+    expect(await screen.findByText(/6 queued, 0 already queued or running/)).toBeTruthy();
+  });
+
+  it('scans one chosen repository, with the options sent', async () => {
+    const calls = stub([
+      { path: '/health', body: healthOn },
+      { path: '/nuguard/preview', body: preview },
+      { path: '/nuguard', body: page },
+      { path: '/repos', body: repos },
+      csrf,
+      { method: 'POST', path: '/scans', status: 201, body: queued },
+      { path: '/scans', body: [] },
+    ]);
+    renderApp(<NuGuardPage />);
+    await screen.findByRole('option', { name: 'demo-org/edge-proxy' });
+    fireEvent.change(screen.getByLabelText('Repository'), { target: { value: 'demo-org/edge-proxy' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Scan' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    const post = calls.find((c) => c.method === 'POST')!;
+    expect(post.url).not.toContain('/scans/all');
+    expect(JSON.parse(post.body!)).toEqual({ repo: 'demo-org/edge-proxy', nuguard: { mode: 'on' } });
+  });
+
+  it('is not offered to an engineer, who may not request scans', async () => {
+    stub([
+      { path: '/health', body: healthOn },
+      { path: '/nuguard', body: pageEngineer },
+      { path: '/repos', body: repos },
+      { path: '/scans', body: [] },
+    ]);
+    renderApp(<NuGuardPage />);
+    await screen.findByText('Fleet settings');
+    expect(screen.queryByText('Scan with NuGuard')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Scan' })).toBeNull();
+  });
+
+  it('is not offered where the deployment takes no scan requests', async () => {
+    stub([
+      { path: '/health', body: { ...healthOn, scan_requests: false } },
+      { path: '/nuguard', body: page },
+    ]);
+    renderApp(<NuGuardPage />);
+    await screen.findByText('Fleet settings');
+    await waitFor(() => expect(screen.queryByText('Scan with NuGuard')).toBeNull());
+  });
+});
+
 describe('NuGuard on the repository page', () => {
   it('says where the effective setting comes from, and lists the last scans with their clips', async () => {
     stub([

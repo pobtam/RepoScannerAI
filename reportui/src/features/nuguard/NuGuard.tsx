@@ -26,6 +26,7 @@ import type {
 import { Absent, Badge, CopyButton, ErrorState, Loading, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
 import { formatDateTime } from '../../lib/format';
+import { NuGuardScan } from '../scans/ScanControls';
 
 /** The plain-language account of what NuGuard is for (VM-UI-F-1201). */
 export const NUGUARD_NOTE =
@@ -154,6 +155,7 @@ export function NuGuardPage() {
       ) : (
         <>
           <StatusCard v={v} />
+          <NuGuardScan v={v} />
           <FleetSettings v={v} />
           <OverridesTable v={v} />
           <History entries={v.audit} />
@@ -636,11 +638,14 @@ export function ScanOptions({
   repo,
   value,
   onChange,
+  open,
 }: {
   /** The repository to preview against; for "scan all", any one of them. */
   repo?: string;
   value?: ScanNuGuardOptions;
   onChange: (next?: ScanNuGuardOptions) => void;
+  /** Shown expanded, where NuGuard is the point of the page. */
+  open?: boolean;
 }) {
   const view = useNuGuard();
   const preview = useQuery({
@@ -662,7 +667,7 @@ export function ScanOptions({
     onChange(next.mode === 'default' && !next.tools && next.include_posture == null && !next.keep_sbom ? undefined : next);
   };
   return (
-    <details className="scan-options">
+    <details className="scan-options" open={open}>
       <summary>NuGuard options</summary>
       <fieldset className="filter-group">
         <legend>NuGuard for this scan</legend>
