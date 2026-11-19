@@ -37,8 +37,9 @@ FROM runs WHERE id = $1`
 
 	qUpsertScanResult = `
 INSERT INTO repo_scan_results
-  (run_id, repo, outcome, tools_ok, tools_failed, failure_cause, failure_detail, failure_owner, duration_sec)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  (run_id, repo, outcome, tools_ok, tools_failed, failure_cause, failure_detail, failure_owner, duration_sec,
+   commit_sha, ai_inventory, effective_nuguard, tools_not_requested)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 ON CONFLICT (run_id, repo) DO UPDATE SET
   outcome = EXCLUDED.outcome,
   tools_ok = EXCLUDED.tools_ok,
@@ -46,14 +47,19 @@ ON CONFLICT (run_id, repo) DO UPDATE SET
   failure_cause = EXCLUDED.failure_cause,
   failure_detail = EXCLUDED.failure_detail,
   failure_owner = EXCLUDED.failure_owner,
-  duration_sec = EXCLUDED.duration_sec`
+  duration_sec = EXCLUDED.duration_sec,
+  commit_sha = EXCLUDED.commit_sha,
+  ai_inventory = EXCLUDED.ai_inventory,
+  effective_nuguard = EXCLUDED.effective_nuguard,
+  tools_not_requested = EXCLUDED.tools_not_requested`
 
 	// Most recent first by when the run STARTED. Ordering by run_id compared
 	// identifiers as text across run kinds, so every sweep run (S-...) sorted
 	// above every manual run (M-...) whatever their times.
 	qScanResults = `
 SELECT s.run_id, s.repo, s.outcome, s.tools_ok::text, s.tools_failed::text,
-       s.failure_cause, s.failure_detail, s.failure_owner, s.duration_sec
+       s.failure_cause, s.failure_detail, s.failure_owner, s.duration_sec,
+       s.commit_sha, s.ai_inventory::text, s.effective_nuguard::text, s.tools_not_requested::text
 FROM repo_scan_results s JOIN runs r ON r.id = s.run_id
 WHERE s.repo = $1 ORDER BY r.started_at DESC, s.run_id DESC LIMIT $2`
 
@@ -82,6 +88,23 @@ ON CONFLICT (fingerprint, run_id, tool) DO UPDATE SET
 SELECT source FROM finding_observations WHERE fingerprint = $1 ORDER BY run_id, tool`
 
 	// Unresolved findings in a repository that the given run did not observe.
+	qReconcileResult = `
+SELECT outcome, tools_ok::text, tools_failed::text, COALESCE(jsonb_array_length(tools_not_requested), 0)
+FROM repo_scan_results WHERE run_id = $1 AND repo = $2`
+
+	// Every source that has observed each absent finding: what tool-aware
+	// reconciliation checks against the scan's ToolsOK (VM-F-160).
+	qAbsentSources = `
+SELECT DISTINCT o.fingerprint, o.tool, COALESCE(o.source->>'sub_tool', '') AS sub
+FROM finding_observations o
+JOIN findings f ON f.fingerprint = o.fingerprint
+WHERE f.repo = $1
+  AND NOT EXISTS (
+    SELECT 1 FROM finding_observations x
+    WHERE x.fingerprint = f.fingerprint AND x.run_id = $2
+  )
+ORDER BY o.fingerprint, o.tool, sub`
+
 	qAbsentFindings = `
 SELECT f.fingerprint, f.state, f.category
 FROM findings f

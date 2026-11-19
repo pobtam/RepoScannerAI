@@ -15,11 +15,14 @@ import (
 // recomputed from them and audited against them (VM-AD §8.6): it must remain
 // possible to ask which tool asserted what.
 type SourceObservation struct {
-	Fingerprint string    `json:"fingerprint"`
-	RunID       string    `json:"run_id"`
-	Tool        string    `json:"tool"`
-	ToolVersion string    `json:"tool_version"`
-	ObservedAt  time.Time `json:"observed_at"`
+	Fingerprint string `json:"fingerprint"`
+	RunID       string `json:"run_id"`
+	Tool        string `json:"tool"`
+	ToolVersion string `json:"tool_version"`
+	// SubTool is the tool inside a wrapping adapter that made this
+	// observation (model.RawFinding.SubTool); empty for a one-tool adapter.
+	SubTool    string    `json:"sub_tool,omitempty"`
+	ObservedAt time.Time `json:"observed_at"`
 
 	// Asserted values. A source that does not determine a value leaves it at
 	// its zero: SeverityUnknown, ReachableUnknown, zero CVSS/EPSS.
@@ -81,6 +84,7 @@ func SourceOf(fp, runID string, observedAt time.Time, raw model.RawFinding) Sour
 		RunID:          runID,
 		Tool:           raw.Tool,
 		ToolVersion:    raw.ToolVersion,
+		SubTool:        raw.SubTool,
 		ObservedAt:     observedAt.UTC(),
 		PrimaryID:      raw.PrimaryID,
 		Aliases:        raw.Aliases,
@@ -107,6 +111,19 @@ func SourceOf(fp, runID string, observedAt time.Time, raw model.RawFinding) Sour
 		Description:    model.SafeDescription(raw.Description),
 		Annotations:    raw.Annotations,
 	}
+}
+
+// Source is the name a scan result lists this observation's tool under in
+// ToolsOK: the adapter, or adapter/sub-tool for a wrapping adapter.
+func (o SourceObservation) Source() string { return SourceName(o.Tool, o.SubTool) }
+
+// SourceName joins an adapter and the tool inside it the way the scan worker
+// names them in ToolsOK and ToolsFailed ("nuguard/semgrep").
+func SourceName(tool, sub string) string {
+	if sub == "" {
+		return tool
+	}
+	return tool + "/" + sub
 }
 
 // Projection is the merged view of a finding across its sources (VM-AD §8.6).

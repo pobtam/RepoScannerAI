@@ -31,13 +31,14 @@ type probe struct {
 
 type probeSaw struct {
 	files []string
+	opts  scan.RunOpts
 }
 
 func (p *probe) Name() string                                         { return "probe" }
 func (p *probe) Version() string                                      { return "v0" }
 func (p *probe) Supports(scan.RepoProfile) bool                       { return true }
 func (p *probe) Normalize(scan.RawOutput) ([]model.RawFinding, error) { return nil, nil }
-func (p *probe) Run(_ context.Context, dir string, _ scan.RunOpts) (scan.RawOutput, error) {
+func (p *probe) Run(_ context.Context, dir string, opts scan.RunOpts) (scan.RawOutput, error) {
 	var files []string
 	_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err == nil && !d.IsDir() {
@@ -48,7 +49,7 @@ func (p *probe) Run(_ context.Context, dir string, _ scan.RunOpts) (scan.RawOutp
 	})
 	sort.Strings(files)
 	p.mu.Lock()
-	p.seen[filepath.Base(filepath.Dir(dir))+"/"+filepath.Base(dir)] = probeSaw{files: files}
+	p.seen[filepath.Base(filepath.Dir(dir))+"/"+filepath.Base(dir)] = probeSaw{files: files, opts: opts}
 	p.mu.Unlock()
 	return scan.RawOutput{Tool: "probe", ToolVersion: "v0"}, nil
 }
@@ -340,4 +341,71 @@ func mustRegistry(t *testing.T, a scan.Adapter) *scan.Registry {
 		t.Fatal(err)
 	}
 	return r
+}
+
+// Every adapter scans the same commit (NuGuard depends on it): the head is
+// resolved first, the tarball fetched at that commit, and the commit handed
+// to each adapter and recorded on the result.
+func TestTheTarballIsFetchedAtTheResolvedCommit(t *testing.T) {
+	src := tree(t, map[string]string{"go.mod": "module example.com/api\n\ngo 1.24\n"})
+	commit := strings.Repeat("c0ffee", 6) + "abcd"
+	fake := ghfake.New("octo", "fake-token", ghfake.Repo{FullName: "octo/api", SizeKB: 1, Dir: src, Commit: commit})
+	defer fake.Close()
+	client := &gh.TokenClient{BaseURL: fake.URL, HTTP: fake.Client(), Token: func() (string, error) { return "fake-token", nil }}
+
+	p := &probe{seen: map[string]probeSaw{}}
+	reg, err := scan.NewRegistry(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	disp := &orchestrator.DownloadDispatcher{Worker: scan.NewWorker(reg), GitHub: client, Root: t.TempDir()}
+	res, err := disp.Dispatch(context.Background(), orchestrator.Job{
+		RunID: "S-000007", Repo: "octo/api", Profile: scan.RepoProfile{Repo: "octo/api"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.CommitSHA != commit || res.Outcome != model.ScanComplete {
+		t.Errorf("result commit %q outcome %s", res.CommitSHA, res.Outcome)
+	}
+	saw := p.seen["octo/api"].opts
+	if saw.CommitSHA != commit || saw.Repo != "octo/api" || saw.RunID != "S-000007" {
+		t.Errorf("the adapter was run with %+v", saw)
+	}
+	wantTarball := "GET /repos/octo/api/tarball/" + commit
+	var order []string
+	for _, r := range fake.Requests() {
+		if strings.Contains(r, "/repos/octo/api/") {
+			order = append(order, r)
+		}
+	}
+	if strings.Join(order, " | ") != "GET /repos/octo/api/commits/HEAD | "+wantTarball {
+		t.Errorf("requests %v; want the head resolved, then the tarball at it", order)
+	}
+}
+
+// A checkout on disk records the commit its .git says it is at.
+func TestALocalCheckoutRecordsItsCommit(t *testing.T) {
+	commit := strings.Repeat("1234abcd", 5)
+	dir := tree(t, map[string]string{".git/HEAD": "ref: refs/heads/main\n", ".git/refs/heads/main": commit + "\n", "main.go": "package main\n"})
+	p := &probe{seen: map[string]probeSaw{}}
+	reg, err := scan.NewRegistry(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	disp := &orchestrator.LocalDispatcher{Worker: scan.NewWorker(reg), WorkDir: func(string) string { return dir }}
+	res, err := disp.Dispatch(context.Background(), orchestrator.Job{RunID: "S-1", Repo: "octo/api"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.CommitSHA != commit {
+		t.Errorf("commit %q, want %q", res.CommitSHA, commit)
+	}
+	// A copied tree with no .git records none, and is otherwise scanned.
+	bare := tree(t, map[string]string{"main.go": "package main\n"})
+	disp.WorkDir = func(string) string { return bare }
+	res, err = disp.Dispatch(context.Background(), orchestrator.Job{RunID: "S-1", Repo: "octo/api"})
+	if err != nil || res.CommitSHA != "" || res.Outcome != model.ScanComplete {
+		t.Errorf("a tree with no .git: %+v, %v", res, err)
+	}
 }

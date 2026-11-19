@@ -1,0 +1,26 @@
+{
+  "audit": [],
+  "can_edit": false,
+  "configured": false,
+  "fleet": {
+    "set": false,
+    "settings": {
+      "enabled": false,
+      "include_posture": false,
+      "timeout_s": 0,
+      "tools": []
+    }
+  },
+  "note": "NuGuard is not configured on this deployment (no scan worker has reported)",
+  "override_count": 0,
+  "overrides": [],
+  "selectable": [
+    "nga-rules",
+    "atlas",
+    "semgrep"
+  ],
+  "status": {
+    "reported": false,
+    "stale": false
+  }
+}

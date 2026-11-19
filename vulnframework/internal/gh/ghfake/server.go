@@ -15,6 +15,8 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -40,6 +42,18 @@ type Repo struct {
 	// Dir is a directory whose files become the tarball. Empty serves 404
 	// for the download, which is how a broken download is simulated.
 	Dir string
+	// Commit is the head of the default branch. Empty derives a fixed one
+	// from the name (CommitOf).
+	Commit string
+}
+
+// CommitOf is the head commit the fake reports for a repository.
+func CommitOf(r Repo) string {
+	if r.Commit != "" {
+		return r.Commit
+	}
+	sum := sha1.Sum([]byte("ghfake:" + r.FullName))
+	return hex.EncodeToString(sum[:])
 }
 
 // Server is the fake.
@@ -139,6 +153,8 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 		s.serveRepos(w, r)
 	case strings.HasPrefix(r.URL.Path, "/repos/") && strings.Contains(r.URL.Path, "/tarball"):
 		s.serveTarball(w, r)
+	case strings.HasPrefix(r.URL.Path, "/repos/") && strings.HasSuffix(r.URL.Path, "/commits/HEAD"):
+		s.serveHead(w, r)
 	default:
 		http.Error(w, `{"message":"Not Found"}`, http.StatusNotFound)
 	}
@@ -182,20 +198,45 @@ func (s *Server) serveRepos(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, out)
 }
 
-func (s *Server) serveTarball(w http.ResponseWriter, r *http.Request) {
-	rest := strings.TrimPrefix(r.URL.Path, "/repos/")
-	name, _, _ := strings.Cut(rest, "/tarball")
-	var repo *Repo
-	for i := range s.Repos {
-		if s.Repos[i].FullName == name {
-			repo = &s.Repos[i]
-		}
-	}
-	if repo == nil || repo.Dir == "" {
+// serveHead answers the head commit, as GitHub does for the SHA media type.
+func (s *Server) serveHead(w http.ResponseWriter, r *http.Request) {
+	name := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/repos/"), "/commits/HEAD")
+	repo := s.repo(name)
+	if repo == nil {
 		http.Error(w, `{"message":"Not Found"}`, http.StatusNotFound)
 		return
 	}
-	b, err := Tarball(strings.ReplaceAll(name, "/", "-")+"-0123abc", repo.Dir)
+	if r.Header.Get("Accept") == "application/vnd.github.sha" {
+		w.Header().Set("Content-Type", "application/vnd.github.sha")
+		_, _ = w.Write([]byte(CommitOf(*repo)))
+		return
+	}
+	writeJSON(w, map[string]any{"sha": CommitOf(*repo)})
+}
+
+func (s *Server) repo(name string) *Repo {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.Repos {
+		if s.Repos[i].FullName == name {
+			return &s.Repos[i]
+		}
+	}
+	return nil
+}
+
+// serveTarball serves the tree at the default branch, or at its head commit
+// by id; any other ref is unknown, as it would be on GitHub.
+func (s *Server) serveTarball(w http.ResponseWriter, r *http.Request) {
+	rest := strings.TrimPrefix(r.URL.Path, "/repos/")
+	name, ref, _ := strings.Cut(rest, "/tarball")
+	ref = strings.TrimPrefix(ref, "/")
+	repo := s.repo(name)
+	if repo == nil || repo.Dir == "" || (ref != "" && ref != CommitOf(*repo)) {
+		http.Error(w, `{"message":"Not Found"}`, http.StatusNotFound)
+		return
+	}
+	b, err := Tarball(strings.ReplaceAll(name, "/", "-")+"-"+CommitOf(*repo)[:7], repo.Dir)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

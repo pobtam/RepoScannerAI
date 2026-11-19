@@ -18,6 +18,7 @@
 | 0.1 | 2026-09-02 | Initial draft |
 | 0.3 | 2026-09-02 | Report generation as a first-class subsystem (§5.12). Report identity, reproducibility anchoring, templates, formats, delivery, and access inheritance. |
 | 0.2 | 2026-09-02 | Run identity (§5.2). Open/resolved classification and the absence-is-not-resolution rule (§5.3). Coverage history, gap classification and escalation (§5.4). Per-consumer reachability, module fan-out and version spread (§5.11). SLA status, coverage trending and same-kind deltas (§5.12, §5.15). Derived from prototype review; see VM-UI v0.2 §4.4, §4.7, §4.8. |
+| 0.4 | 2026-11-14 | Read-only Claude connector (§5.17, VM-F-1101..1108), proposed with D15. |
 
 ---
 
@@ -469,6 +470,21 @@ verification, and counting it as unresolved overstates outstanding work. See VM-
 | VM-F-1006 | MUST | Any content retrieved from an external source, including advisory text and upstream release notes, shall be treated as untrusted data. | e2e |
 | VM-F-1007 | MUST | Framework behavioural constraints shall be enforced by the execution harness. Prompt content shall not be the sole control for any security property. | inspection |
 | VM-F-1008 | MUST | Dependency integrity verification shall be performed after every dependency change. | integration |
+
+### 5.17 Read-only Claude connector (VM-F-11xx)
+
+Added 2026-11-14 for `cmd/vfmcp`, a local MCP server that lets Claude answer questions about the store. Proposed with D15; not yet accepted.
+
+| ID | Norm | Requirement | Verify |
+|---|---|---|---|
+| VM-F-1101 | MUST | The connector shall read only through the framework's own HTTP API. It shall not open the database, read the store, run `vfctl`, or read repository clones. | unit |
+| VM-F-1102 | MUST | The connector shall be read-only by construction: its HTTP transport shall refuse every method but GET and HEAD, it shall refuse every path outside an enumerated inventory of read routes, and every tool shall be declared read-only, non-destructive and idempotent. | unit |
+| VM-F-1103 | MUST | The connector shall see exactly what its authenticated identity sees through the API. It shall not assert an identity, and shall not offer a lower privilege level unless the API can project one per request. | unit |
+| VM-F-1104 | MUST | Text originating in scanned repositories or scanning tools shall be returned unchanged in fields named for what it is, labelled as untrusted data, and never mixed into instructions or summaries (extends VM-F-309). | unit |
+| VM-F-1105 | MUST | The connector shall return secret findings only as the API does (category, file, detector rule, state), and shall never send or log an API credential, NuGuard key or GitHub token. | unit |
+| VM-F-1106 | MUST | Every list shall default to 25 items, refuse more than 100, say how many matched (or that the API does not count them), and offer a cursor where more exist. No tool shall return a full AI-SBOM or raw tool output. | unit |
+| VM-F-1107 | MUST | Every returned item shall carry its stable identifier and a link to its page in the interface; summaries shall name the run they describe. | unit |
+| VM-F-1108 | MUST | Where the API reports that something was not measured, not computed, not reported or not configured, the connector shall say so in words. An unreachable or failing API shall be a tool error naming the setting to correct, never an empty result. | unit |
 
 ---
 

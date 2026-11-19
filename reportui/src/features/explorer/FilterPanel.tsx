@@ -21,19 +21,41 @@ import {
   type FlagDimension,
   type MultiDimension,
 } from '../../lib/view-state';
+import { domainLabel } from '../../lib/domain';
 
 const DIMENSION_LABELS: Record<MultiDimension, string> = {
   repo: 'Repository',
   tier: 'Tier',
   language: 'Language',
   category: 'Category',
+  domain: 'Type',
   state: 'State',
   reason: 'Reason code',
   priority: 'Priority',
   severity: 'Severity',
   reachable: 'Reachability',
   depClass: 'Dependency class',
+  found_by: 'Found by',
 };
+
+/**
+ * The tools a finding can be found by (VM-UI-F-1207). The API has no facet
+ * for this dimension, so these options carry no count: they are listed, not
+ * counted, and the panel says so rather than showing a zero it never
+ * measured.
+ */
+const FOUND_BY = [
+  'nuguard',
+  'actions-pin',
+  'gitleaks',
+  'gosec',
+  'govulncheck',
+  'npm-audit',
+  'osv-scanner',
+  'semgrep',
+  'staticcheck',
+  'trivy',
+];
 
 const FLAG_LABELS: Record<FlagDimension, { label: string; hint: string }> = {
   transitive: { label: 'Transitive', hint: 'the dependency is not declared directly' },
@@ -50,11 +72,12 @@ const FLAG_LABELS: Record<FlagDimension, { label: string; hint: string }> = {
   slaBreached: { label: 'Past SLA', hint: 'beyond its remediation window for its priority and tier' },
 };
 
-const FACET_KEYS: Record<MultiDimension, keyof Facets> = {
+const FACET_KEYS: Partial<Record<MultiDimension, keyof Facets>> = {
   repo: 'repos',
   tier: 'tiers',
   language: 'languages',
   category: 'categories',
+  domain: 'domains',
   state: 'states',
   reason: 'reasons',
   priority: 'priorities',
@@ -113,7 +136,9 @@ export function FilterPanel({
       )}
 
       {(Object.keys(DIMENSION_LABELS) as MultiDimension[]).map((dim) => {
-        const options = facets ? (facets[FACET_KEYS[dim]] as FacetOption[]) : [];
+        const key = FACET_KEYS[dim];
+        if (!key) return <UncountedGroup key={dim} dim={dim} values={FOUND_BY} state={state} onChange={onChange} />;
+        const options = facets ? (facets[key] as FacetOption[]) : [];
         if (options.length === 0 && !facets) return null;
         return (
           <fieldset key={dim} className="filter-group">
@@ -183,6 +208,40 @@ export function FilterPanel({
   );
 }
 
+/** A dimension with no facet: its options are listed without counts. */
+function UncountedGroup({
+  dim,
+  values,
+  state,
+  onChange,
+}: {
+  dim: MultiDimension;
+  values: string[];
+  state: ExplorerState;
+  onChange: (next: ExplorerState) => void;
+}) {
+  return (
+    <fieldset className="filter-group">
+      <legend>{DIMENSION_LABELS[dim]}</legend>
+      <p className="muted small">listed, not counted: the API has no counts for this dimension</p>
+      <ul>
+        {values.map((value) => (
+          <li key={value}>
+            <label>
+              <input
+                type="checkbox"
+                checked={(state[dim] ?? []).includes(value)}
+                onChange={() => onChange(toggle(state, dim, value))}
+              />
+              <span className="filter-value">{value === 'nuguard' ? 'NuGuard' : value}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+    </fieldset>
+  );
+}
+
 function labelFor(dim: MultiDimension, value: string): string {
   if (dim === 'reachable') {
     // The tri-state's middle value is spelled out, because "unknown" read
@@ -190,5 +249,6 @@ function labelFor(dim: MultiDimension, value: string): string {
     if (value === 'unknown') return 'unknown (not a determination)';
   }
   if (dim === 'tier') return `tier ${value}`;
+  if (dim === 'domain') return domainLabel(value);
   return value;
 }

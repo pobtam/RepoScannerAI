@@ -2,6 +2,7 @@
   "fingerprint": "f2224855ab1d7224",
   "repo": "demo-org/edge-proxy",
   "category": "dependency",
+  "domain": "app",
   "identity": {
     "primary_id": "CVE-DEMO-70006",
     "aliases": [
@@ -21,9 +22,9 @@
     "severity": "CRITICAL",
     "cvss": 9.1,
     "epss": 0.55,
-    "epss_as_of": "2026-10-22T03:00:00Z",
+    "epss_as_of": "2026-11-11T06:00:00Z",
     "kev": false,
-    "kev_as_of": "2026-10-21T17:00:00Z",
+    "kev_as_of": "2026-11-10T20:00:00Z",
     "reachable": "true",
     "dep_class": "production",
     "transitive": false
@@ -45,8 +46,8 @@
   "observation": {
     "first_seen_run": "S-000001",
     "last_seen_run": "S-000006",
-    "first_seen_at": "2026-09-17T23:00:00Z",
-    "last_seen_at": "2026-10-22T23:00:00Z",
+    "first_seen_at": "2026-10-08T02:00:00Z",
+    "last_seen_at": "2026-11-12T02:00:00Z",
     "not_reobserved": false
   },
   "refs": {
@@ -63,7 +64,7 @@
     "impact": "Impact depends on whether the affected path is exercised in production.",
     "remediation": "Upgrade example.com/http-router to v1.12.9.",
     "false_positive_candidate": false,
-    "triaged_at": "2026-09-17T23:00:00Z",
+    "triaged_at": "2026-10-08T02:00:00Z",
     "model": "claude-sonnet-5"
   },
   "score": {

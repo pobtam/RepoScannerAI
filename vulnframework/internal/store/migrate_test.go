@@ -68,6 +68,8 @@ func TestMigrationChecksumsAreStable(t *testing.T) {
 		15: "secret_reviews",
 		16: "github_discovery",
 		17: "scan_requests",
+		18: "scan_provenance",
+		19: "nuguard_controls",
 	}
 	migrations, err := store.LoadMigrations()
 	if err != nil {

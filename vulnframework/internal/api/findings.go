@@ -96,6 +96,20 @@ func (s *Server) parseSearch(r *http.Request) (store.SearchQuery, error) {
 	for _, raw := range listParam(r, "depClass") {
 		f.DepClasses = append(f.DepClasses, model.DepClass(raw))
 	}
+	for _, raw := range listParam(r, "found_by") {
+		if !knownTool(raw) {
+			return q, fmt.Errorf("unknown found_by %q; the tools are %v", raw, KnownTools)
+		}
+		f.FoundBy = append(f.FoundBy, raw)
+	}
+	for _, raw := range listParam(r, "domain") {
+		d := model.Domain(raw)
+		if !d.Valid() {
+			return q, fmt.Errorf("unknown domain %q; the set is %v (app: application vulnerability, "+
+				"ai: AI vulnerability)", raw, model.AllDomains)
+		}
+		f.Domains = append(f.Domains, d)
+	}
 
 	var err error
 	if f.Transitive, err = boolParam(r, "transitive"); err != nil {
@@ -280,6 +294,10 @@ func facetsDTO(c store.FacetCounts) Facets {
 	for _, p := range model.AllPriorities {
 		prios = append(prios, string(p))
 	}
+	domains := make([]string, 0, len(model.AllDomains))
+	for _, d := range model.AllDomains {
+		domains = append(domains, string(d))
+	}
 	cats := make([]string, 0, len(model.AllCategories))
 	for _, cc := range model.AllCategories {
 		cats = append(cats, string(cc))
@@ -310,6 +328,7 @@ func facetsDTO(c store.FacetCounts) Facets {
 		Severities: strOpts(c.Severities, sevs),
 		Reachable:  strOpts(c.Reachable, reach),
 		DepClasses: strOpts(c.DepClasses, nil),
+		Domains:    strOpts(c.Domains, domains),
 	}
 }
 
@@ -329,7 +348,9 @@ func (s *Server) handleFinding(w http.ResponseWriter, r *http.Request) {
 			"ask the security owner group; the record is counted in every aggregate you can see")
 		return
 	}
-	s.write(w, r, http.StatusOK, s.findingDTO(r.Context(), f, true))
+	out := s.findingDTO(r.Context(), f, true)
+	out.NuGuard = s.nuguardDetail(r.Context(), f)
+	s.write(w, r, http.StatusOK, out)
 }
 
 // findingDTO renders a finding, with every honesty distinction intact.
@@ -338,6 +359,7 @@ func (s *Server) findingDTO(ctx context.Context, f model.Finding, withScore bool
 		Fingerprint: f.Fingerprint,
 		Repo:        f.Repo,
 		Category:    string(f.Category),
+		Domain:      string(model.DomainOf(f)),
 		Identity: Identity{
 			PrimaryID: f.Identity.PrimaryID,
 			Aliases:   emptyIfNil(f.Identity.Aliases),

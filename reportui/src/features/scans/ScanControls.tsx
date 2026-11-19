@@ -8,8 +8,10 @@
  * finished, and a refused one says why.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { api, ApiRequestError } from '../../api/client';
-import type { ScanRequest } from '../../api/schemas';
+import type { NuGuardView, ScanNuGuardOptions, ScanRequest } from '../../api/schemas';
+import { ScanOptions, requestText } from '../nuguard/NuGuard';
 import { Badge, Panel } from '../../components/primitives';
 import { Link } from '../../lib/router';
 import { formatDate } from '../../lib/format';
@@ -80,6 +82,7 @@ export function ScanStatus({ r, onRetry }: { r: ScanRequest; onRetry?: () => voi
           </button>
         </>
       )}
+      {r.nuguard && <span className="small"> · {requestText(r.nuguard)}</span>}
       <span className="muted small"> · requested by {r.requested_by}</span>
     </span>
   );
@@ -95,8 +98,11 @@ export function ScanNow({ repo }: { repo: string }) {
     enabled,
     refetchInterval: (q) => (q.state.data?.some((r) => ACTIVE.has(r.status)) ? 5000 : false),
   });
+  // NuGuard options for this scan; undefined, the default, sends {repo}
+  // alone, exactly as before options existed (VM-UI-F-1204).
+  const [options, setOptions] = useState<ScanNuGuardOptions | undefined>();
   const request = useMutation({
-    mutationFn: () => api.requestScan(repo),
+    mutationFn: () => api.requestScan(repo, options),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['scans'] }),
   });
   if (!enabled) return null;
@@ -105,6 +111,7 @@ export function ScanNow({ repo }: { repo: string }) {
   const busy = request.isPending || (last != null && ACTIVE.has(last.status));
   return (
     <div className="scan-now">
+      <ScanOptions repo={repo} value={options} onChange={setOptions} />
       <button type="submit" onClick={() => request.mutate()} disabled={busy} aria-describedby="scan-now-status">
         {busy ? 'Scan queued' : 'Scan now'}
       </button>
@@ -181,8 +188,14 @@ export function ScanQueue() {
     enabled,
     refetchInterval: (q) => (q.state.data?.some((r) => ACTIVE.has(r.status)) ? 5000 : false),
   });
+  // One scan-level NuGuard option for every repository in the batch: on or
+  // off wins over each repository's override, and what is left unchosen
+  // comes from each repository's own settings. Previewed against one of them.
+  const [options, setOptions] = useState<ScanNuGuardOptions | undefined>();
+  const repos = useQuery({ queryKey: ['repos'], queryFn: api.repos, enabled: enabled && options != null });
+  const sample = repos.data?.find((r) => !r.archived)?.name;
   const all = useMutation({
-    mutationFn: () => api.requestScanAll(),
+    mutationFn: () => api.requestScanAll(options),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['scans'] }),
   });
   const retry = useMutation({
@@ -202,6 +215,13 @@ export function ScanQueue() {
         </button>
       }
     >
+      <ScanOptions repo={sample} value={options} onChange={setOptions} />
+      {options && (
+        <p className="muted small">
+          Applies to every repository in the batch: on or off here wins over a repository's own override, and anything
+          left unchosen comes from each repository's settings.
+        </p>
+      )}
       <div role="status" aria-live="polite">
         {all.isError && <p className="warn-text">{errorText(all.error)}</p>}
         {retry.isError && <p className="warn-text">{errorText(retry.error)}</p>}
@@ -237,6 +257,94 @@ export function ScanQueue() {
           </tbody>
         </table>
       )}
+    </Panel>
+  );
+}
+
+/**
+ * "Scan" on the AI scanning page: one repository, or every included one, with
+ * NuGuard on for the scan unless the options say otherwise. Security owners
+ * only, as the API requires; it queues a request like "Scan now" does.
+ */
+export function NuGuardScan({ v }: { v: NuGuardView }) {
+  const enabled = useScansEnabled() && v.configured && v.can_edit;
+  const qc = useQueryClient();
+  const repos = useQuery({ queryKey: ['repos'], queryFn: api.repos, enabled });
+  const included = (repos.data ?? []).filter((r) => !r.archived).map((r) => r.name);
+  // '' is every included repository.
+  const [target, setTarget] = useState('');
+  const [options, setOptions] = useState<ScanNuGuardOptions | undefined>({ mode: 'on' });
+  const latest = useQuery({
+    queryKey: ['scans', 'nuguard-page', target],
+    queryFn: () => api.scans(target, 1),
+    enabled: enabled && target !== '',
+    refetchInterval: (q) => (q.state.data?.some((r) => ACTIVE.has(r.status)) ? 5000 : false),
+  });
+  const one = useMutation({
+    mutationFn: () => api.requestScan(target, options),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['scans'] }),
+  });
+  const all = useMutation({
+    mutationFn: () => api.requestScanAll(options),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['scans'] }),
+  });
+  if (!enabled) return null;
+
+  const s = v.status;
+  const doubt = s.stale
+    ? 'the scan worker has not reported on NuGuard recently'
+    : s.reachable === false
+      ? 'the scan worker last found NuGuard unreachable'
+      : s.service_version && !s.version_ok
+        ? "NuGuard's version does not match the pinned one, so its results would be refused"
+        : '';
+  const last = target ? latest.data?.[0] : undefined;
+  const busy = one.isPending || all.isPending || (last != null && ACTIVE.has(last.status));
+  const err = target ? one.error : all.error;
+  return (
+    <Panel title="Scan with NuGuard" subtitle="queues a scan; the scan worker runs it with NuGuard as chosen below">
+      <div className="scan-now">
+        <label className="field">
+          <span>Repository</span>
+          <select
+            value={target}
+            onChange={(e) => {
+              setTarget(e.target.value);
+              one.reset();
+              all.reset();
+            }}
+          >
+            <option value="">all included repositories ({included.length})</option>
+            {included.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <ScanOptions repo={target || included[0]} value={options} onChange={setOptions} open />
+        {doubt && (
+          <p className="warn-text small">
+            NuGuard may not answer: {doubt}. A scan that cannot reach it records the gap on the coverage page.
+          </p>
+        )}
+        <button type="submit" onClick={() => (target ? one.mutate() : all.mutate())} disabled={busy}>
+          {busy ? 'Scan queued' : 'Scan'}
+        </button>
+        <span role="status" aria-live="polite">
+          {err != null && <span className="warn-text">{errorText(err)}</span>}
+          {target && !one.isError && one.data?.merged && (
+            <span className="muted">Already queued; this request was merged into it. </span>
+          )}
+          {target && last && <ScanStatus r={last} onRetry={() => one.mutate()} />}
+          {!target && all.data && (
+            <span className="muted">
+              {all.data.queued} queued, {all.data.merged} already queued or running.{' '}
+              <Link to="/repos">See the queue</Link>
+            </span>
+          )}
+        </span>
+      </div>
     </Panel>
   );
 }

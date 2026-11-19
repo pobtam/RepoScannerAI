@@ -283,6 +283,25 @@ VM-UI-F-804 resolves an otherwise confusing failure: a rollup showing four findi
 | VM-UI-F-1111 | MUST | The interface shall not present a "current" or "live" report option, since no such report is reproducible. |
 | VM-UI-F-1112 | SHOULD | Delivery to a ticket or the report repository shall be available from the issued report. |
 
+### 4.12 AI scanning controls (VM-UI-F-12xx)
+
+Added 2026-11-06 with the NuGuard controls. NuGuard stays opt-in (DECISIONS-NEEDED D13 amendment). The operator's flags on the scan worker set a ceiling; security owners choose within it; the API stores settings and never talks to NuGuard.
+
+| ID | Norm | Requirement |
+|---|---|---|
+| VM-UI-F-1201 | MUST | An "AI scanning (NuGuard)" page shall show the scan worker's last NuGuard status: configured, reachable, service version against the pinned version, and when it was checked. A status older than 15 minutes shall be shown as "status unknown: the scan worker has not reported since …", never as current. |
+| VM-UI-F-1202 | MUST | A security owner shall be able to turn NuGuard on or off for the fleet and choose its tools, posture and time limit, within the operator's ceiling. Options outside the ceiling shall be visible and disabled, with the reason ("not allowed by the operator", "not offered by the service"). Saving shall first show a confirmation summarising the change and how many repositories it affects. A value above the ceiling shall be refused by the API (422), naming the field and the ceiling. |
+| VM-UI-F-1203 | MUST | A repository's page shall show the NuGuard options a scan would use now, where each comes from (scan, repository, fleet, worker default), an override control for security owners, and the last ten scans' effective options. |
+| VM-UI-F-1204 | MUST | "Scan now" and "Scan all" shall offer NuGuard options, collapsed by default. With options chosen, the interface shall show what the scan would use, with any clip notes, before it is submitted. With none chosen, the request shall be exactly the one-click request it was before options existed. The scan list shall show the options each request asked for. |
+| VM-UI-F-1205 | MUST | Every settings change shall be kept forever with who, when, before, after and the reason given, and shown as a history. |
+| VM-UI-F-1206 | MUST | A tool a scan did not ask for shall be shown as "not requested", with the reason, distinct from a failed tool, on the coverage view and the run overview; the run overview shall show any clip notes. Turning NuGuard off shall never close its findings: they keep their state and are flagged not re-observed. |
+| VM-UI-F-1207 | MUST | The findings explorer shall filter on the tool that found a finding ("Found by"), NuGuard among the options. |
+| VM-UI-F-1208 | MUST | A NuGuard finding's page shall show a NuGuard section: rule, NuGuard tool, OWASP LLM and ASI references, MITRE ATLAS technique, enclosing function, and the effective options of the scan that last observed it, each absent with a reason where NuGuard gave none. |
+| VM-UI-F-1209 | MUST | A repository's page shall show the commit its latest scan read, short, with the full SHA on hover and copy. |
+| VM-UI-F-1210 | SHOULD | Where a scan kept its AI-SBOM, the AI components panel shall offer it for download from the stored copy; where it was not kept (over the size cap), it shall say why. |
+| VM-UI-F-1211 | MUST | With NuGuard not configured, the page and the repository section shall show one line, "NuGuard is not configured on this deployment", and no controls. |
+| VM-UI-F-1212 | MUST | Engineers shall see NuGuard's settings and status read-only; the public shall see none of it. Every write shall pass the five gates of the scan requests: role, same origin, CSRF token, rate limit, strict input. |
+
 ## 5. Non-functional requirements
 
 | ID | Norm | Requirement |

@@ -1,0 +1,31 @@
+{
+  "entries": [
+    {
+      "after": {
+        "mode": "off"
+      },
+      "changed_at": "2026-10-22T10:00:00Z",
+      "changed_by": "pat",
+      "id": 2,
+      "reason": "vendored SDK, no AI code",
+      "repo": "octo/web",
+      "scope": "repository"
+    },
+    {
+      "after": {
+        "enabled": true,
+        "include_posture": true,
+        "timeout_s": 300,
+        "tools": [
+          "nga-rules",
+          "atlas"
+        ]
+      },
+      "changed_at": "2026-10-22T10:00:00Z",
+      "changed_by": "pat",
+      "id": 1,
+      "reason": "AI rules on for the fleet",
+      "scope": "fleet"
+    }
+  ]
+}

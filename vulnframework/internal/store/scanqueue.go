@@ -5,11 +5,14 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 )
 
 // The scan queue (migration 0017): scans requested from the interface, vfctl
@@ -61,6 +64,9 @@ type ScanRequest struct {
 	HeartbeatAt *time.Time `json:"heartbeat_at,omitempty"`
 	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 	RetryOf     string     `json:"retry_of,omitempty"`
+	// NuGuard is what the request asked of NuGuard; nil asked nothing, and
+	// the repository and fleet settings apply (VM-UI-F-1204).
+	NuGuard *nuguardopt.Request `json:"nuguard,omitempty"`
 }
 
 // ScanQuery selects requests, newest first.
@@ -114,6 +120,13 @@ func NewScanRequestID(now time.Time) string {
 	var b [4]byte
 	_, _ = rand.Read(b[:])
 	return fmt.Sprintf("sr_%s_%s", now.UTC().Format("20060102T150405.000Z"), hex.EncodeToString(b[:]))
+}
+
+func requestJSON(r *nuguardopt.Request) json.RawMessage {
+	if r == nil {
+		return nil
+	}
+	return rawOrNil(r)
 }
 
 func validScanRequest(r ScanRequest) error {
@@ -308,7 +321,7 @@ func sortScanOldestFirst(s []ScanRequest) {
 // --- postgres ----------------------------------------------------------------
 
 const scanCols = `id, repo, batch_id, source, requested_by, requested_at, status, reason,
-  run_id, worker_id, started_at, heartbeat_at, finished_at, retry_of`
+  run_id, worker_id, started_at, heartbeat_at, finished_at, retry_of, nuguard::text`
 
 func scanRow(sc interface{ Scan(...any) error }) (ScanRequest, error) {
 	var (
@@ -316,10 +329,17 @@ func scanRow(sc interface{ Scan(...any) error }) (ScanRequest, error) {
 		batch, reason, run, worker, retry sql.NullString
 		started, heartbeat, finished      sql.NullTime
 		source, status                    string
+		ng                                sql.NullString
 	)
 	if err := sc.Scan(&r.ID, &r.Repo, &batch, &source, &r.RequestedBy, &r.RequestedAt, &status, &reason,
-		&run, &worker, &started, &heartbeat, &finished, &retry); err != nil {
+		&run, &worker, &started, &heartbeat, &finished, &retry, &ng); err != nil {
 		return r, err
+	}
+	if ng.Valid {
+		r.NuGuard = &nuguardopt.Request{}
+		if err := json.Unmarshal([]byte(ng.String), r.NuGuard); err != nil {
+			return r, fmt.Errorf("store: scan request %s has unreadable NuGuard options: %w", r.ID, err)
+		}
 	}
 	r.Source, r.Status = ScanSource(source), ScanStatus(status)
 	r.BatchID, r.Reason, r.RunID, r.WorkerID, r.RetryOf = batch.String, reason.String, run.String, worker.String, retry.String
@@ -340,15 +360,17 @@ func (p *Postgres) EnqueueScan(ctx context.Context, r ScanRequest) (ScanRequest,
 	if err := validScanRequest(r); err != nil {
 		return ScanRequest{}, false, err
 	}
-	insert := `INSERT INTO scan_requests (id, repo, batch_id, source, requested_by, requested_at, status, reason, retry_of)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	insert := `INSERT INTO scan_requests (id, repo, batch_id, source, requested_by, requested_at, status, reason, retry_of,
+  nuguard)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 	if r.Status == ScanQueued {
 		// The partial unique index decides: a second active request for the
 		// repository is not inserted, and the existing one is returned.
 		insert += ` ON CONFLICT (repo) WHERE status IN ('queued', 'running') DO NOTHING`
 	}
 	res, err := p.db.ExecContext(ctx, insert, r.ID, r.Repo, nullString(r.BatchID), string(r.Source),
-		r.RequestedBy, r.RequestedAt.UTC(), string(r.Status), nullString(r.Reason), nullString(r.RetryOf))
+		r.RequestedBy, r.RequestedAt.UTC(), string(r.Status), nullString(r.Reason), nullString(r.RetryOf),
+		nullJSON(requestJSON(r.NuGuard)))
 	if err != nil {
 		return ScanRequest{}, false, fmt.Errorf("store: enqueueing a scan of %s: %w", r.Repo, err)
 	}

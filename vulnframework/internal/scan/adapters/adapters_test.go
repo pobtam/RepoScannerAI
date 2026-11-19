@@ -27,11 +27,16 @@ var (
 )
 
 const (
-	goAPIRepo  = "org/wanaware-api"
-	goAPIDir   = "/tmp/scan-7f21a/clone"
-	webRepo    = "org/payments-web"
-	webDir     = "/tmp/scan-91c40/clone"
-	fixtureDir = "../../../testdata/fixtures"
+	goAPIRepo = "org/wanaware-api"
+	goAPIDir  = "/tmp/scan-7f21a/clone"
+	webRepo   = "org/payments-web"
+	webDir    = "/tmp/scan-91c40/clone"
+
+	// NuGuard scans remotely and reports repository-relative paths, so its
+	// fixtures have no clone directory.
+	quickstartRepo = "openai/openai-quickstart-python"
+	agentRepo      = "acme/support-agent"
+	fixtureDir     = "../../../testdata/fixtures"
 )
 
 func readFixture(t *testing.T, tool, name string) []byte {
@@ -111,6 +116,8 @@ func fixtureCases(t *testing.T, lock scan.ToolsLock) []fixtureCase {
 	sg := func() scan.Adapter { return adapters.NewSemgrep(r, lock.MustVersion("semgrep")) }
 	np := func() scan.Adapter { return adapters.NewNPMAudit(r, lock.MustVersion("npm-audit")) }
 	ap := func() scan.Adapter { return adapters.NewActionsPin(r, lock.MustVersion("actions-pin")) }
+	// Normalize reads only the stored result; no client is needed.
+	ng := func() scan.Adapter { return adapters.NewNuGuard(nil, lock.MustVersion("nuguard"), nil) }
 
 	return []fixtureCase{
 		{"govulncheck", "go-api.json", goAPIRepo, goAPIDir, gv(), nil},
@@ -138,6 +145,9 @@ func fixtureCases(t *testing.T, lock scan.ToolsLock) []fixtureCase {
 		{"npm-audit", "error.json", webRepo, webDir, np(), nil},
 		{"actions-pin", "go-api.json", goAPIRepo, goAPIDir, ap(), nil},
 		{"actions-pin", "empty.json", goAPIRepo, goAPIDir, ap(), nil},
+		{"nuguard", "quickstart-partial.json", quickstartRepo, "", ng(), nil},
+		{"nuguard", "ai-code.json", agentRepo, "", ng(), nil},
+		{"nuguard", "empty.json", agentRepo, "", ng(), nil},
 	}
 }
 

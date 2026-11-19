@@ -72,6 +72,377 @@ read this file first and resume from "Next".
     The chart is drawn in the design system's colours and follows dark
     mode; scanner changes are a ring and partial runs a solid dot, so they
     differ by shape as well as colour. Tests on both backends, UI tests.
+- **Built 2026-11-14, at your request: a read-only Claude connector**
+  (`vulnframework/cmd/vfmcp`, branch `feature/claude-connector-readonly`
+  from `feature/real-mode-nuguard` @ `8895c3e`). Not committed, not pushed.
+  Proposed as D15, not decided.
+  - **First, on `feature/real-mode-nuguard`:** the App/AI finding type was
+    committed as `1ed1230` (feature) and `8895c3e` (regenerated fixtures).
+  - **What it is:** an MCP server over stdio with eight tools:
+    `search_findings`, `get_finding`, `list_repositories`, `get_repository`,
+    `list_runs`, `compare_runs`, `get_coverage_gaps`, `get_nuguard_status`.
+    Each maps onto existing GET routes; no API change. The MCP subset
+    (initialize, ping, tools/list, tools/call) is hand-written to keep the
+    module's dependency set as it is (`scan/manifest.go`).
+  - **Auth:** it reads through the interface's development server
+    (`-api-url` defaults to `http://127.0.0.1:5173`, not 8080). In real mode
+    the API on 8080 refuses anonymous callers, and the development server
+    vouches for header-less local clients as `security_owner`
+    (`REAL-REPOS.md` §7). So the connector inherits full access. It sets no
+    identity header, and there is no `-level` option, because the API cannot
+    project a lower level per request. The Caddy stack is not supported;
+    that needs per-user tokens.
+  - **Verified:**
+    - 19 tests in `cmd/vfmcp` against the real API on the memory store with
+      demonstration data, also with `-race`. They cover:
+      - the protocol;
+      - writes refused by the transport;
+      - the route inventory checked against the published OpenAPI;
+      - every request on the wire is an inventoried GET with no identity
+        header;
+      - no store, database or exec imports;
+      - an engineer-level identity gets restricted secret findings;
+      - a hostile description arrives unchanged in `description`;
+      - no credential-shaped string, and no value-carrying field in
+        `api.Finding`;
+      - limits and paging;
+      - IDs and links;
+      - "not measured" in words;
+      - the API down, slow or 401 gives errors naming `-api-url`.
+    - `go vet ./...`; `go test ./...` on memory and on a throwaway Postgres
+      container.
+    - **Claude Code, live, on the demonstration data** (a separate demo API
+      on port 18181, so no real findings were sent to Anthropic). Three
+      questions were answered correctly through the tools:
+      - tier-1 critical past SLA: 6 findings in 3 repos;
+      - incomplete scans: checkout-web partial, legacy-reporting no
+        result, escalated;
+      - payments-api AI components: "not measured", not none.
+
+      A fourth question, why a merged finding isn't fixed yet, was also
+      answered from its observations.
+    - **Hand-run over stdio against real mode:** every tool. `compare_runs`
+      M-000007 → M-000008 shows only the canary fix `2c9b3e7776350975`
+      VERIFIED, and limit 500 is refused.
+  - **Found on the way:**
+    - vfmcp ignored SIGINT and SIGTERM while waiting on stdin, and Claude
+      Code had to SIGKILL it. It now exits on either signal.
+    - `/v1/runs`'s `total` is the page length, not a count, so the
+      connector says "not counted" rather than repeating it.
+    - In `claude -p`, servers from `--mcp-config` connect asynchronously,
+      so the first turn can run without them. Interactive Claude Code is
+      not affected. For the scripted try, `MCP_CONNECTION_NONBLOCKING=0`
+      fixed it.
+  - **Not verified:**
+    - Claude Desktop and Cowork (only the config is documented);
+    - the project `.mcp.json` inside an interactive Claude Code session (the
+      live try used an equivalent `--mcp-config`);
+    - Claude's answers on real data, by design.
+- **Done 2026-11-11 (evening), at your request: NuGuard live in real mode,
+  committed and reproducible.** Nothing pushed or merged.
+  - **NuGuard commits** (`nuguard/nuguard`, branch
+    `feature/remote-scan-service` from `develop` @ `ad7873ee`):
+    - `96f03c63` P1 and P5: no-false-clean tool status, finding identity.
+      One commit, because the two share `static_analyzer.py` hunk by hunk;
+    - `c1cfba0c` P2: Semgrep rules that can fire;
+    - `0d00e7df` P3 and P4: token without URL embedding, clone safety, and
+      the **proxy fix**. Under a host policy, git keeps the `*_PROXY` and CA
+      variables and still drops `GH_TOKEN`, `GITHUB_TOKEN` and `NUGUARD_*`;
+      tested. The tree-API client keeps httpx `trust_env`; tested;
+    - `04ad59d2` P6: packaging;
+    - `b4c91ca2` the service;
+    - `776b04cd` docs, including `remote-api.md` (proxy, native run with
+      `NUGUARD_TOOLS_JSON` and `NUGUARD_IMAGE_DIGEST`) and
+      `GATEWAY-DESIGN.md`, which the spec cites.
+    - `CONTEXT.md` (a dated orientation note) and `.DS_Store` files left
+      untracked. `.ng-src.tgz` deleted.
+  - **NuGuard checks:**
+    - ruff: no new errors. About 500 already exist on `develop`; one new
+      import-order error was fixed;
+    - mypy: clean (857 files);
+    - contracts, service, analysis and sbom: 549 passed, 2 skipped;
+    - full suite: 3449 passed, 66 skipped, 8 failed. The 8 failures are in
+      pentest, and also fail on `develop` (macOS temporary folder is a
+      symlink).
+    - Found on the way: **Semgrep cannot share NuGuard's environment.** It
+      fails on start-up over an OpenTelemetry version clash with NuGuard's
+      lockfile, so every scan would report `semgrep: failed`. The image
+      already isolates it; `nuguard-local.sh` now does too.
+  - **vulnerabilityAI commits** (`feature/real-mode-nuguard`, from
+    `b707be8`):
+    - `6be7ec0` Go and UI: scan each clone's GitHub origin;
+    - `bb0ad87` scripts: `run.sh --nuguard`, `nuguard-local.sh` as built
+      earlier today, and the `launch.sh` credential scrub;
+    - `a02d828` docs;
+    - `aab16bf` `nuguard-local.sh`: lockfile with `uv`, Semgrep in its own
+      environment, `git:<commit>` as the image digest, `tools.json`, a
+      fuller `status`;
+    - `4584c36` Ctrl-C clean-up in plain `--real`;
+    - `213a154` the briefs in `nuguard-integration/`;
+    - this documentation commit.
+    - Archives `.vf-src.tgz`, `.b707be8.tgz` and `.rmn.tgz` deleted.
+  - **vulnerabilityAI checks:**
+    - `go vet` clean, and `go test ./...` on memory and on Postgres (a
+      throwaway container, since removed);
+    - UI typecheck, and 162 UI tests;
+    - `scripts/test-real-cmdlines.sh`: the command lines are unchanged;
+    - `smoke.sh --real` and `--real --nuguard-fake`: OK;
+    - Ctrl-C in plain `--real`, on a throwaway database: the worker
+      container, the API and the dev server all stopped.
+  - **`uv` 0.13.7** was installed with Homebrew, with your approval.
+  - **Backups:**
+    - `~/.local/share/vulnframework/backups/real-20261111-160930.dump`,
+      taken by hand (140 findings);
+    - `real-20261111-161302.dump`, taken by `run.sh` before migrating schema
+      17 to 19.
+  - **Clones (step 5):**
+
+    | Repository | GitHub origin | HEAD pushed | Dirty | Visibility | NuGuard will |
+    |---|---|---|---|---|---|
+    | pobtampal/GCP-AutoPenTest | github.com/pobtampal/GCP-AutoPenTest | yes, `bad9378` = `main` | no | public | scan |
+    | pobtampal/GCP-Sec | github.com/pobtampal/GCP-Sec | yes, `912171d` = `main` | no | public | scan |
+
+    No unregistered clones are in `~/clones`. No token was needed or used.
+  - **Live sweep `S-000004`** (`./run.sh --real --nuguard ~/clones`):
+    - NuGuard 0.9.15, built from the lockfile, source
+      `git:776b04cd39ba717cf6f1efbf0ba6d4d9ef64d051`, clean, on
+      127.0.0.1:8090 only. Semgrep 1.172.0 is reported by the service.
+    - `GET /v1/nuguard`: configured, reachable, `version_ok`, fresh.
+    - **GCP-Sec:** complete. `nuguard`, `nga-rules`, `atlas` and `semgrep`
+      all ok. AI components measured: agent 1, model 1, privilege 4,
+      deployment 8 and others; provider anthropic. Image
+      `git:776b04cd…`, commit `912171d`.
+    - **GCP-AutoPenTest:** partial. All four NuGuard parts ok, but `gosec`
+      ("parsing report: unexpected end of JSON input") and `osv-scanner`
+      failed. That is the existing escalation (`normalise_failed`, 4
+      sweeps). AI components measured: agent 1, tool 1, 10 API endpoints
+      and others. Image `git:776b04cd…`, commit `bad9378`.
+    - `effective_nuguard` is recorded for both. The per-repository versions,
+      including `nuguard/image`, go to finding provenance and the
+      AI-components record, not to the run's `tool_versions`.
+    - **NuGuard findings: none** (`found_by=nuguard`, in both scopes), with
+      every NuGuard part ok. Posture findings are off by default.
+  - **Not caused by NuGuard, but visible in this sweep:** on GCP-Sec, 80
+    findings went VERIFIED to REGRESSED and 38 went to VERIFIED. All the
+    VERIFIED-to-REGRESSED moves had been made by `M-000002` (22 October),
+    whose trivy reported the same CVEs under CVE-only identities with no
+    `go.mod` location. Those identities existed only in that run.
+    `S-000004` restored the usual identities. The history now shows 80
+    "regressions" that are artefacts. The cause in `M-000002` is not known.
+  - **Controls, on GCP-Sec:**
+    - NuGuard off (audit #1), then Scan now: `M-000003`, NuGuard not
+      requested ("off for this repository"), no state changes;
+    - restored to inherit (audit #2), then Scan now: `M-000004`, NuGuard and
+      all its parts ok.
+    - There were no NuGuard findings, so "kept open and flagged not
+      re-observed" could not be exercised live. Unit and stack tests cover
+      it.
+  - **Restart test, on GCP-AutoPenTest:**
+    - NuGuard stopped, then Scan now: `M-000005` partial, with `nuguard`
+      failed, so a gap, not a clean result.
+    - The status card went on showing "reachable" until the worker's next
+      5-minute check (00:28:31Z), then showed unreachable.
+    - NuGuard started: the card recovered in 18 seconds. `M-000006` ran
+      NuGuard with every part ok.
+    - The four manual scans caused no state changes.
+  - **Interface:**
+    - The layout probe uses fixtures only, so it cannot point at a running
+      server.
+    - Instead, headless Chrome loaded the running app: the NuGuard page,
+      both repository pages (AI components panel) and a finding page all
+      rendered without error text.
+    - There is no NuGuard finding page to check.
+  - **Stopped:** everything this session started, by Ctrl-C on the run and
+    by name for the test containers. The containers and volumes match the
+    starting state. `vf-demo`, `vf-pg-test` and `nuguard-service` were not
+    touched.
+  - **Not verified:**
+    - a private repository with a token;
+    - a real proxy;
+    - a NuGuard finding end to end: none exist in these repositories;
+    - a large repository's time limits;
+    - Python repositories.
+- **Built 2026-11-11, at your request: NuGuard in real mode**
+  (branch `feature/real-mode-nuguard`, from `feature/nuguard-ui-controls`;
+  committed later the same day, see above). `./run.sh --real --nuguard ~/clones` runs NuGuard on
+  this Mac from the sibling checkout (`scripts/nuguard-local.sh`). It needs
+  no NuGuard image. See REAL-REPOS.md §6a.
+  - **Reachability experiment** (Docker Desktop 4.86.0, engine 29.7.2): a
+    server bound only to the Mac's `127.0.0.1` **is** reachable from the
+    scanner container at `host.docker.internal`, with or without
+    `--add-host`. The NuGuard client still refuses plain http to that name,
+    so option 1 was chosen: a loopback bridge, `cmd/loopbridge`, built and
+    mounted like the orchestrator. It listens on the container's
+    `127.0.0.1` and forwards to `host.docker.internal`. The client's
+    loopback rule is unchanged and there is no new flag.
+  - **The repository NuGuard scans** is the clone's github.com `origin`,
+    read from `.git/config` (`githubRepoFromGitConfig`, with table tests).
+    It is carried on `RunOpts.LocalClone`, filled by the `LocalDispatcher`
+    only when NuGuard is configured.
+    - With no GitHub origin: NuGuard not requested, "no GitHub origin;
+      NuGuard needs the repository on GitHub".
+    - With uncommitted changes, or a state that cannot be checked
+      (`git status` in the container, read-only): every NuGuard finding is
+      annotated "NuGuard scanned the committed state…". The note is shown
+      on the finding page, and it clears on a clean rescan.
+    - `ref_not_found` from a clone: gap `commit_not_on_github`, owner repo.
+  - **Found and fixed:**
+    - **The one-shot sweep ignored the stored NuGuard settings.** It called
+      `Sweep` without resolving them, so the start-of-run sweep and the
+      daily timer sweep would have scanned a repository switched off in
+      the interface. It now resolves them as the worker does
+      (`ResolveSweepNuGuard`). Without NuGuard configured, nothing changes.
+    - **`run.sh`'s stop trap never ran.** It ends with `exec npm run dev`,
+      which replaces the shell, so Ctrl-C left the scan worker container
+      running. Fixed **only for `--nuguard`** (no exec there), so that
+      real mode without it is exactly as before. `stop` now also ends the
+      server `go run` leaves behind.
+    - **`real_pg_up` returned during Postgres's first-start init**, so the
+      migration failed about half the time on a new database (seen in the
+      smoke test, 2 of 3 runs). It now waits for readiness over TCP.
+      `real_migrate` still hides a failure behind its `| tail` (existing
+      behaviour, left as it is).
+  - **The API server and the interface's dev server never get a
+    credential** (asked for after the first report). They start through
+    `scripts/launch.sh`, which removes `VULNFRAMEWORK_NUGUARD_API_KEY` and
+    `VULNFRAMEWORK_GITHUB_TOKEN` from their environment in every mode;
+    neither reads them. The scan containers still get theirs by name.
+    `scripts/test-real-cmdlines.sh` runs the launchers with both exported
+    and recorders as `go` and `npm`, and fails if either arrives (checked to
+    fail with the removal taken out). A live demo run with both exported
+    showed neither in the running servers' environments.
+  - **Backup before migrating:** `run.sh --real`, with or without
+    `--nuguard`, runs `scripts/db.sh backup` first when the database's
+    schema is older than the binary's. Checked on a throwaway database:
+    - a new database: no backup;
+    - a current one: no backup;
+    - schema 18 under this schema-19 binary: backed up, with its path
+      printed.
+  - **Verified:**
+    - `go vet`, and `go test ./...` on both backends;
+    - `-race` on scan, adapters, orchestrator, api, nuguard,
+      cmd/orchestrator and cmd/loopbridge;
+    - UI typecheck and 162 tests;
+    - `scripts/test-real-cmdlines.sh`: the container command lines without
+      `--nuguard` match those recorded from the unchanged `real.sh`; the
+      key and token are passed by name only;
+    - `scripts/smoke.sh --real` green 3 times in a row, with the same
+      output as before;
+    - `scripts/smoke.sh --real --nuguard-fake` green.
+  - **Real trial** with the real NuGuard 0.9.15 from the sibling checkout:
+    - **Setup:** the public `openai/openai-quickstart-node` at `6e6e034`,
+      registered as `trial/openai-quickstart-node`, so the origin decided
+      the repository. It used a throwaway database (`vf-trial-pg`, since
+      removed).
+    - **The sweep:** complete, with `nuguard/nga-rules`, `nuguard/atlas`
+      and `nuguard/semgrep` all ok, and the AI inventory recorded (4
+      models, an agent, a prompt and a tool; providers openai and
+      anthropic). NuGuard reported no findings for this repository.
+    - **Scan now:** worked through the worker's bridge, and the status page
+      showed NuGuard reachable at version 0.9.15.
+    - **Ctrl-C:** stopped the worker, the API and, when the run had started
+      it, NuGuard.
+  - **Not verified:**
+    - a private repository with a token;
+    - a proxy;
+    - a large repository's time limits;
+    - Python repositories (the adapter covers Go and JavaScript);
+    - `uv`, which was not installed then: the environment was built with
+      pip from Python 3.12 (since rebuilt from the lockfile, see above).
+  - **Observed once:** trivy failed to parse its own report on one of four
+    repositories scanned at once in the smoke test ("unexpected end of JSON
+    input"). It did not recur in four later runs.
+  - **The NuGuard checkout is uncommitted work** (`ad7873ee` plus local
+    changes, including the whole service). `status` says so.
+  - **The sibling's own `.venv` does not import NuGuard:** macOS had marked
+    its `.pth` files hidden, and Python 3.12 skips hidden ones. The script
+    builds a separate environment and clears that flag, and leaves the
+    sibling's `.venv` alone.
+- **Built 2026-11-06, at your request: NuGuard controls in the interface**
+  (branch `feature/nuguard-ui-controls`, from `feature/nuguard-adapter`).
+  - **Committed:** the adapter work as `9042e4e` on `feature/nuguard-adapter`
+    (the new brief asked for it to be committed first), and tool-aware
+    reconciliation alone as `a71d69e`, as the brief asked. Everything else is
+    **not committed**.
+  - **What:**
+    - **Tool-aware reconciliation** (VM-F-160/161): an absent finding
+      verifies only if every source that observed it (adapter, or
+      `nuguard/<tool>`) ran ok in that scan. Otherwise it keeps its state,
+      flagged not re-observed and linked to the run. The same code covers
+      every adapter.
+    - **Resolution:** one pure function, `nuguardopt.ResolveNuGuardOptions`
+      (scan request → repository → fleet → worker defaults, then clipped to
+      the ceiling). The worker uses it at claim time, and the API's preview
+      uses it through `store.ResolveNuGuard`.
+    - **Ceiling flags:** `-nuguard-allow-tools`, `-nuguard-allow-posture`,
+      `-nuguard-max-timeout` and `-nuguard-sbom-max-bytes`. The worker
+      refuses to start with a default above the ceiling.
+    - **The scan worker:**
+      - publishes NuGuard's status every 5 minutes (every 30 seconds while
+        unreachable);
+      - skips NuGuard when it is off, recording it as not requested;
+      - records the effective options and clip notes on every repository
+        scan;
+      - keeps the AI-SBOM when a scan asks, under a size cap.
+    - **Migration 0019** (both backends): the settings, the overrides, an
+      audit table, the status row, `scan_requests.nuguard`,
+      `effective_nuguard` and `tools_not_requested` on scan results, and
+      `ai_sbom`.
+    - **API:**
+      - `GET /v1/nuguard`, `PUT /v1/nuguard/settings`,
+        `GET /v1/nuguard/audit`, `GET /v1/nuguard/preview`;
+      - `GET` and `PUT /v1/repos/{repo}/nuguard`, and
+        `GET /v1/repos/{repo}/ai-sbom/{run_id}`;
+      - `nuguard` options on both scan requests, and `found_by` on findings.
+    - **Interface:**
+      - the "AI scanning (NuGuard)" page;
+      - the repository section, the scanned commit and the AI-SBOM
+        download;
+      - scan options with a preview;
+      - "Found by", the NuGuard section on a finding, and "not requested" on
+        Coverage and the run page;
+      - requirements VM-UI-F-1201..1212 in the UI spec.
+  - **Verified:**
+    - `go vet` and `go test ./...` on both backends;
+    - `-race` on store, api, orchestrator, scan, nuguard and nuguardopt;
+    - the UI typecheck and 161 tests, and `npm run probe:layout`;
+    - `deploy/test-stack.sh` (STACK OK), built under the tag
+      `nuguard-ui-test`. It covers: NuGuard off for a repository leaves its
+      finding unchanged and flagged; an engineer is read-only and refused
+      (403); fewer tools are recorded on the run;
+    - `scripts/smoke.sh --real` (SMOKE OK);
+    - the no-NuGuard worker golden still matches.
+  - **Not verified:**
+    - a real NuGuard service and image;
+    - a live GitHub run;
+    - Docker beyond the stack test above.
+- **Built 2026-11-03, at your request: NuGuard as an opt-in remote adapter**
+  (branch `feature/nuguard-adapter`, committed 2026-11-06 as `9042e4e`).
+  - **What:**
+    - a client for NuGuard's Remote Scan API (`internal/nuguard`) and a
+      fake service (`nuguardfake`);
+    - the adapter: code findings with our own fingerprints, each lost
+      NuGuard tool its own gap, the AI inventory as a signal;
+    - every adapter now scans one recorded commit (resolved before the
+      download, or read from `.git`);
+    - migration 0018 (`commit_sha`, `ai_inventory`), on both backends;
+    - an "AI components detected" panel on the repository page;
+    - flags on both commands and a compose sidecar.
+  - **Verified:**
+    - the Go suite on both backends, `-race` on scan, nuguard and
+      orchestrator, and the 138 UI tests with the typecheck;
+    - `scripts/smoke.sh` (demo);
+    - `deploy/test-stack.sh` with a fake NuGuard in the sidecar's place:
+      code finding, partial as a gap, down as a gap;
+    - NuGuard's `openapi.json` enums, checked in both directions.
+  - **Proof that NuGuard off changes nothing:** a golden captured before
+    any change, `testdata/worker/no-nuguard.golden.json`, still matches.
+  - **Not verified:**
+    - a real NuGuard service: its service code is uncommitted upstream, and
+      its image has never been built;
+    - a live GitHub run;
+    - the opt-in end-to-end test (`VF_NUGUARD_E2E=1`).
+  - **Awaiting you:** the D13 amendment in DECISIONS-NEEDED.md.
 - **Queued by you (2026-10-27):** after Phase 1 is committed, design
   accounts, login and workspaces (ACCOUNTS-DESIGN.md plus open questions in
   DECISIONS-NEEDED.md), then stop for review. No code for it until then.
@@ -601,6 +972,101 @@ GCP-AutoPenTest. Two defects to prove fixed in Phase 1:
   `vfctl scan enqueue -all` asks for the same thing as the button, so the
   rule is "a batch is a sweep" rather than a list of sources. Side effect,
   intended: the Coverage page, which reads sweep runs, now counts them too.
+- **NuGuard choices** (2026-11-03; deviations from the brief are also in
+  the hand-over):
+  - **Sidecar:** NuGuard runs in the scan worker's network namespace on
+    loopback, not on the compose network. That needs neither TLS nor
+    `trust_proxy`, and the key and token cross no network.
+  - **Names:**
+    - the gap cause for a failed clone reuses `download_failed` rather than
+      adding `fetch_failed`;
+    - annotation keys are version-tagged (`nuguard/0.9.15/fingerprint`), as
+      `osv-scanner`'s are, not `nuguard.fingerprint`;
+    - the empty fixture is `empty.json`, which the envelope tests require,
+      not `empty-succeeded.json`.
+  - **Interfaces:**
+    - `GapReporter` is `SubTools(out) (ok, gaps, err)`, so a report names the
+      NuGuard tools that ran as well as those lost;
+    - `RunOpts` also gained `RunID`, which the idempotency key needs.
+  - **Recording:**
+    - the run's tool list is now the registered adapters, not every
+      `tools.lock` entry, so an unconfigured NuGuard is not recorded on any
+      run; today the two sets are identical;
+    - the inventory shows on the repository page and API, not in issued
+      reports, which are content-hashed under `fleet.v1`; adding it there
+      needs a template version change of its own;
+    - only the first coverage gap of a scan is stored (an existing Phase 1
+      issue), so a scan with several NuGuard gaps stores the first.
+  - **Time:** `-nuguard-timeout` defaults to 10 minutes, inside the
+    15-minute scan limit, so a slow NuGuard cannot cost the local tools'
+    results.
+  - **Images:** `deploy/build.sh` and the compose file take `VF_IMAGE_TAG`
+    (default `v1`). The stack test of this branch was built as
+    `nuguard-test`, so your account-mode stack's `v1` images were not
+    touched.
+  - **Python (step 6) not done:** an adapter cannot see which other tools
+    covered a repository, so the "NuGuard alone is not a full scan" gap
+    needs a worker-level rule. Listed in NOW-VS-LATER.md.
+- **Real-mode NuGuard choices** (2026-11-11):
+  - **Option 1, the bridge**, because the experiment showed the Mac's
+    loopback is reachable. The client's rule stays as it is, and no flag
+    can widen it.
+  - **NuGuard's own environment** lives in
+    `~/.local/share/vulnframework/nuguard/venv`, not the checkout's `.venv`.
+    `uv sync` would remove packages the developer installed there, and that
+    `.venv` does not import. With `uv`, the install uses `--frozen`, so the
+    checkout's lockfile is never rewritten.
+  - **The checkout is found one level down too** (`../nuguard/nuguard`, the
+    layout on this Mac). `NUGUARD_DIR` overrides.
+  - **The settings file is rewritten on every start**, so the proxy and
+    certificate variables passed through match the current shell. The key
+    is made once.
+  - **The rendering test runs the real functions** with `docker` and `go`
+    replaced by recorders, rather than a separate dry-run mode, so it checks
+    the code that runs.
+  - **The working-tree note is a finding annotation**
+    (`nuguard/<version>/scanned`), not a gap. A gap would mark the scan
+    partial, though NuGuard did complete. An untracked file counts as a
+    change, because the local tools scanned it.
+  - **The origin decides the repository.** The registered name is used for
+    everything else, and never for NuGuard in real mode.
+  - **`--nuguard` keeps the shell alive** (no `exec`) so its clean-up runs.
+    Without `--nuguard`, nothing about `run.sh`'s process changed.
+- **NuGuard controls choices** (2026-11-06):
+  - **"Not requested" is a third list** (`tools_not_requested`, JSON with a
+    reason per tool) beside `tools_ok` and `tools_failed`. The coverage
+    views and the outcome classification are unchanged, because they read
+    only those two.
+  - **A source is named** `adapter` or `adapter/sub-tool`. The sub-tool
+    travels on a new `RawFinding.SubTool`, which is not identity. Only the
+    NuGuard goldens changed (by that field).
+  - **Legacy results:** a scan result that lists no tools at all (none
+    from the scan worker) is judged by its outcome alone, as before. A
+    result whose only list is "not requested" verifies nothing.
+  - **The fake narrows only when asked** (`Narrow`, `-narrow`). Captured
+    results are still replayed verbatim by default, which the existing
+    tests and the stack test rely on.
+  - **The adapter never counts an unasked tool as ok**, even if the service
+    ran it.
+  - **The resolution function is exported** (`ResolveNuGuardOptions`, in
+    `internal/nuguardopt`): the API and the worker are different packages.
+  - **The status re-check is 30 seconds while unreachable**, not a flat 5
+    minutes: the sidecar starts just after the worker.
+  - **Settings writes** pass the same role, origin and CSRF checks as scan
+    requests (shared `checkOwnerWrite`), and have their own rate limit (10 a
+    minute, counted from the audit). Without a configured NuGuard they
+    answer 409.
+  - **A scan request merged into one already queued keeps the queued one's
+    NuGuard options**; the response shows them.
+  - **"Found by" has no counts:** a facet over the tools needs new
+    aggregation in both backends. Listed in NOW-VS-LATER.md.
+  - **CycloneDX is 501** until a converter exists; JSON is served.
+  - **Fixtures:** the configured views come from a Go test that drives the
+    real server and worker (`TestNuGuardViewsFromTheRealServer`,
+    `UPDATE_UI_FIXTURES=1`). Of the demo fixtures, only `coverage.json` was
+    recaptured: a full recapture moved every date and lost the report
+    supersession `reports.json` was captured with. `capture-fixtures.mjs`
+    gained `ONLY=`.
 - **A batch can cover fewer repositories than the fleet** and its point is
   not marked partial: a repository already queued on its own when Scan all
   is pressed merges into that request and runs separately. The timer's

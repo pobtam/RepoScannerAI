@@ -5,7 +5,7 @@
  * Editing this file by hand re-creates the drift the generation exists to
  * prevent (UI-ADR-05, VM-UI-F-107).
  *
- * Source: http://127.0.0.1:18084/v1/schema/openapi.json
+ * Source: http://127.0.0.1:18181/v1/schema/openapi.json
  */
 export interface paths {
     "/v1/coverage": {
@@ -178,6 +178,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/nuguard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** NuGuard status, the operator's ceiling, fleet settings, repository overrides and the last 20 changes (engineers and up) */
+        get: operations["nuguard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/nuguard/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every NuGuard settings change, newest first (engineers and up; ?repo= to narrow, ?cursor= for the next page) */
+        get: operations["nuguardAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/nuguard/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What a scan of ?repo= would use, with ?nuguard=&tools=&include_posture=&keep_sbom=, and any clip notes (engineers and up) */
+        get: operations["nuguardPreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/nuguard/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the fleet's NuGuard settings within the ceiling (security owners; same-origin; X-CSRF-Token; body {enabled, tools, include_posture, timeout_s, reason?}; 422 names a field above the ceiling) */
+        put: operations["putNuGuardSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/reports": {
         parameters: {
             query?: never;
@@ -239,6 +307,41 @@ export interface paths {
         /** Repository profile, dependencies, pull requests and consumers */
         get: operations["repo"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/repos/{repo}/ai-sbom/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The AI-SBOM a scan kept, as NuGuard returned it (engineers and up; ?format=json; cyclonedx is 501), or 404 with the reason */
+        get: operations["repoAISBOM"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/repos/{repo}/nuguard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A repository's NuGuard override, the effective options now, and the last ten scans' options (engineers and up) */
+        get: operations["repoNuGuard"];
+        /** Set or clear a repository's NuGuard override (security owners; same-origin; X-CSRF-Token; body {mode, tools?, include_posture?, reason?}) */
+        put: operations["putRepoNuGuard"];
         post?: never;
         delete?: never;
         options?: never;
@@ -341,7 +444,7 @@ export interface paths {
         /** Scan requests, newest first */
         get: operations["scans"];
         put?: never;
-        /** Queue a scan of one registered repository (security owners; same-origin; X-CSRF-Token; body {repo}) */
+        /** Queue a scan of one registered repository (security owners; same-origin; X-CSRF-Token; body {repo, nuguard?: {mode, tools?, include_posture?, keep_sbom?}}) */
         post: operations["requestScan"];
         delete?: never;
         options?: never;
@@ -358,7 +461,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Queue a scan of every included repository as one batch (security owners; same-origin; X-CSRF-Token; no body) */
+        /** Queue a scan of every included repository as one batch (security owners; same-origin; X-CSRF-Token; no body, or {nuguard: {...}} for every repository in it) */
         post: operations["requestScanAll"];
         delete?: never;
         options?: never;
@@ -387,6 +490,35 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AIComponents: {
+            ai_sbom?: {
+                sha256: string;
+                size_bytes: number;
+                stored: boolean;
+                withheld?: string;
+            };
+            edge_count?: number;
+            frameworks?: string[];
+            image_digest?: string;
+            measured: boolean;
+            model_providers?: string[];
+            node_counts?: {
+                [key: string]: number;
+            };
+            note: string;
+            posture_observations?: {
+                [key: string]: number;
+            };
+            rulepack_sha256?: string;
+            run_id?: string;
+            source?: string;
+        };
+        AISBOMRef: {
+            sha256: string;
+            size_bytes: number;
+            stored: boolean;
+            withheld?: string;
+        };
         Attempt: {
             branch: string;
             /** Format: date-time */
@@ -463,6 +595,7 @@ export interface components {
                 credential_type?: string;
                 description?: string;
                 description_source?: string;
+                domain: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -476,6 +609,37 @@ export interface components {
                     module?: string;
                     module_major?: string;
                     package?: string;
+                };
+                nuguard?: {
+                    effective?: {
+                        clips?: {
+                            asked: string;
+                            field: string;
+                            used: string;
+                            why: string;
+                        }[];
+                        enabled: boolean;
+                        from: string;
+                        include_posture: boolean;
+                        keep_sbom: boolean;
+                        not_requested?: {
+                            reason: string;
+                            tool: string;
+                        }[];
+                        reason?: string;
+                        timeout_s: number;
+                        tools: string[];
+                    };
+                    function?: string;
+                    last_run?: string;
+                    mitre_atlas_technique?: string;
+                    note?: string;
+                    owasp_asi_ref?: string;
+                    owasp_llm_ref?: string;
+                    rule: string;
+                    scanned?: string;
+                    sub_tool?: string;
+                    version: string;
                 };
                 observation: {
                     /** Format: date-time */
@@ -598,6 +762,7 @@ export interface components {
                     credential_type?: string;
                     description?: string;
                     description_source?: string;
+                    domain: string;
                     fingerprint: string;
                     identity: {
                         aliases?: string[];
@@ -611,6 +776,37 @@ export interface components {
                         module?: string;
                         module_major?: string;
                         package?: string;
+                    };
+                    nuguard?: {
+                        effective?: {
+                            clips?: {
+                                asked: string;
+                                field: string;
+                                used: string;
+                                why: string;
+                            }[];
+                            enabled: boolean;
+                            from: string;
+                            include_posture: boolean;
+                            keep_sbom: boolean;
+                            not_requested?: {
+                                reason: string;
+                                tool: string;
+                            }[];
+                            reason?: string;
+                            timeout_s: number;
+                            tools: string[];
+                        };
+                        function?: string;
+                        last_run?: string;
+                        mitre_atlas_technique?: string;
+                        note?: string;
+                        owasp_asi_ref?: string;
+                        owasp_llm_ref?: string;
+                        rule: string;
+                        scanned?: string;
+                        sub_tool?: string;
+                        version: string;
                     };
                     observation: {
                         /** Format: date-time */
@@ -721,6 +917,7 @@ export interface components {
                 credential_type?: string;
                 description?: string;
                 description_source?: string;
+                domain: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -734,6 +931,37 @@ export interface components {
                     module?: string;
                     module_major?: string;
                     package?: string;
+                };
+                nuguard?: {
+                    effective?: {
+                        clips?: {
+                            asked: string;
+                            field: string;
+                            used: string;
+                            why: string;
+                        }[];
+                        enabled: boolean;
+                        from: string;
+                        include_posture: boolean;
+                        keep_sbom: boolean;
+                        not_requested?: {
+                            reason: string;
+                            tool: string;
+                        }[];
+                        reason?: string;
+                        timeout_s: number;
+                        tools: string[];
+                    };
+                    function?: string;
+                    last_run?: string;
+                    mitre_atlas_technique?: string;
+                    note?: string;
+                    owasp_asi_ref?: string;
+                    owasp_llm_ref?: string;
+                    rule: string;
+                    scanned?: string;
+                    sub_tool?: string;
+                    version: string;
                 };
                 observation: {
                     /** Format: date-time */
@@ -855,7 +1083,19 @@ export interface components {
             run_at: string;
             run_id: string;
             tools_failed?: string[];
+            tools_not_requested?: {
+                reason: string;
+                tool: string;
+            }[];
             tools_ok?: string[];
+        };
+        CoverageNotRequested: {
+            repo: string;
+            run_id: string;
+            tools: {
+                reason: string;
+                tool: string;
+            }[];
         };
         CoverageView: {
             complete: number;
@@ -887,6 +1127,10 @@ export interface components {
                 run_at: string;
                 run_id: string;
                 tools_failed?: string[];
+                tools_not_requested?: {
+                    reason: string;
+                    tool: string;
+                }[];
                 tools_ok?: string[];
             }[];
             history?: {
@@ -895,6 +1139,14 @@ export interface components {
                 runs: string[];
             }[];
             in_scope: number;
+            not_requested: {
+                repo: string;
+                run_id: string;
+                tools: {
+                    reason: string;
+                    tool: string;
+                }[];
+            }[];
             percent: number;
             run_id?: string;
             staleness: {
@@ -966,6 +1218,11 @@ export interface components {
                 disabled: boolean;
                 value: string;
             }[];
+            domains: {
+                count: number;
+                disabled: boolean;
+                value: string;
+            }[];
             languages: {
                 count: number;
                 disabled: boolean;
@@ -1030,6 +1287,7 @@ export interface components {
             credential_type?: string;
             description?: string;
             description_source?: string;
+            domain: string;
             fingerprint: string;
             identity: {
                 aliases?: string[];
@@ -1043,6 +1301,37 @@ export interface components {
                 module?: string;
                 module_major?: string;
                 package?: string;
+            };
+            nuguard?: {
+                effective?: {
+                    clips?: {
+                        asked: string;
+                        field: string;
+                        used: string;
+                        why: string;
+                    }[];
+                    enabled: boolean;
+                    from: string;
+                    include_posture: boolean;
+                    keep_sbom: boolean;
+                    not_requested?: {
+                        reason: string;
+                        tool: string;
+                    }[];
+                    reason?: string;
+                    timeout_s: number;
+                    tools: string[];
+                };
+                function?: string;
+                last_run?: string;
+                mitre_atlas_technique?: string;
+                note?: string;
+                owasp_asi_ref?: string;
+                owasp_llm_ref?: string;
+                rule: string;
+                scanned?: string;
+                sub_tool?: string;
+                version: string;
             };
             observation: {
                 /** Format: date-time */
@@ -1158,6 +1447,7 @@ export interface components {
                 credential_type?: string;
                 description?: string;
                 description_source?: string;
+                domain: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -1171,6 +1461,37 @@ export interface components {
                     module?: string;
                     module_major?: string;
                     package?: string;
+                };
+                nuguard?: {
+                    effective?: {
+                        clips?: {
+                            asked: string;
+                            field: string;
+                            used: string;
+                            why: string;
+                        }[];
+                        enabled: boolean;
+                        from: string;
+                        include_posture: boolean;
+                        keep_sbom: boolean;
+                        not_requested?: {
+                            reason: string;
+                            tool: string;
+                        }[];
+                        reason?: string;
+                        timeout_s: number;
+                        tools: string[];
+                    };
+                    function?: string;
+                    last_run?: string;
+                    mitre_atlas_technique?: string;
+                    note?: string;
+                    owasp_asi_ref?: string;
+                    owasp_llm_ref?: string;
+                    rule: string;
+                    scanned?: string;
+                    sub_tool?: string;
+                    version: string;
                 };
                 observation: {
                     /** Format: date-time */
@@ -1339,6 +1660,232 @@ export interface components {
             module_major?: string;
             package?: string;
         };
+        NuGuardAuditPage: {
+            entries: {
+                after?: {
+                    [key: string]: unknown;
+                };
+                before?: {
+                    [key: string]: unknown;
+                };
+                /** Format: date-time */
+                changed_at: string;
+                changed_by: string;
+                id: number;
+                reason?: string;
+                repo?: string;
+                scope: string;
+            }[];
+            next?: string;
+        };
+        NuGuardAuditView: {
+            after?: {
+                [key: string]: unknown;
+            };
+            before?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            changed_at: string;
+            changed_by: string;
+            id: number;
+            reason?: string;
+            repo?: string;
+            scope: string;
+        };
+        NuGuardDetail: {
+            effective?: {
+                clips?: {
+                    asked: string;
+                    field: string;
+                    used: string;
+                    why: string;
+                }[];
+                enabled: boolean;
+                from: string;
+                include_posture: boolean;
+                keep_sbom: boolean;
+                not_requested?: {
+                    reason: string;
+                    tool: string;
+                }[];
+                reason?: string;
+                timeout_s: number;
+                tools: string[];
+            };
+            function?: string;
+            last_run?: string;
+            mitre_atlas_technique?: string;
+            note?: string;
+            owasp_asi_ref?: string;
+            owasp_llm_ref?: string;
+            rule: string;
+            scanned?: string;
+            sub_tool?: string;
+            version: string;
+        };
+        NuGuardFleetView: {
+            /** Format: date-time */
+            changed_at?: string;
+            changed_by?: string;
+            set: boolean;
+            settings: {
+                enabled: boolean;
+                include_posture: boolean;
+                timeout_s: number;
+                tools: string[];
+            };
+        };
+        NuGuardOverrideView: {
+            /** Format: date-time */
+            changed_at: string;
+            changed_by: string;
+            include_posture?: boolean;
+            mode: string;
+            repo: string;
+            tools?: string[];
+        };
+        NuGuardPreview: {
+            clips: {
+                asked: string;
+                field: string;
+                used: string;
+                why: string;
+            }[];
+            configured: boolean;
+            effective: {
+                clips?: {
+                    asked: string;
+                    field: string;
+                    used: string;
+                    why: string;
+                }[];
+                enabled: boolean;
+                from: string;
+                include_posture: boolean;
+                keep_sbom: boolean;
+                not_requested?: {
+                    reason: string;
+                    tool: string;
+                }[];
+                reason?: string;
+                timeout_s: number;
+                tools: string[];
+            };
+            note?: string;
+            repo: string;
+        };
+        NuGuardScanOptions: {
+            effective?: {
+                clips?: {
+                    asked: string;
+                    field: string;
+                    used: string;
+                    why: string;
+                }[];
+                enabled: boolean;
+                from: string;
+                include_posture: boolean;
+                keep_sbom: boolean;
+                not_requested?: {
+                    reason: string;
+                    tool: string;
+                }[];
+                reason?: string;
+                timeout_s: number;
+                tools: string[];
+            };
+            not_requested?: {
+                reason: string;
+                tool: string;
+            }[];
+            note?: string;
+            /** Format: date-time */
+            run_at?: string;
+            run_id: string;
+        };
+        NuGuardStatusView: {
+            /** Format: date-time */
+            checked_at?: string;
+            last_error?: string;
+            pinned_version?: string;
+            reachable?: boolean;
+            reported: boolean;
+            service_version?: string;
+            stale: boolean;
+            stale_note?: string;
+            tools_allowed_by_service?: string[];
+            version_ok?: boolean;
+        };
+        NuGuardView: {
+            audit: {
+                after?: {
+                    [key: string]: unknown;
+                };
+                before?: {
+                    [key: string]: unknown;
+                };
+                /** Format: date-time */
+                changed_at: string;
+                changed_by: string;
+                id: number;
+                reason?: string;
+                repo?: string;
+                scope: string;
+            }[];
+            can_edit: boolean;
+            ceiling?: {
+                allow_posture: boolean;
+                allow_tools: string[];
+                configured: boolean;
+                defaults: {
+                    enabled: boolean;
+                    include_posture: boolean;
+                    timeout_s: number;
+                    tools: string[];
+                };
+                max_timeout_s: number;
+                service_tools?: string[];
+            };
+            configured: boolean;
+            fleet: {
+                /** Format: date-time */
+                changed_at?: string;
+                changed_by?: string;
+                set: boolean;
+                settings: {
+                    enabled: boolean;
+                    include_posture: boolean;
+                    timeout_s: number;
+                    tools: string[];
+                };
+            };
+            note?: string;
+            override_count: number;
+            overrides: {
+                /** Format: date-time */
+                changed_at: string;
+                changed_by: string;
+                include_posture?: boolean;
+                mode: string;
+                repo: string;
+                tools?: string[];
+            }[];
+            selectable: string[];
+            status: {
+                /** Format: date-time */
+                checked_at?: string;
+                last_error?: string;
+                pinned_version?: string;
+                reachable?: boolean;
+                reported: boolean;
+                service_version?: string;
+                stale: boolean;
+                stale_note?: string;
+                tools_allowed_by_service?: string[];
+                version_ok?: boolean;
+            };
+        };
         Observation: {
             /** Format: date-time */
             first_seen_at: string;
@@ -1424,6 +1971,32 @@ export interface components {
             };
             live: boolean;
             live_note?: string;
+            nuguard?: {
+                effective: {
+                    clips?: {
+                        asked: string;
+                        field: string;
+                        used: string;
+                        why: string;
+                    }[];
+                    enabled: boolean;
+                    from: string;
+                    include_posture: boolean;
+                    keep_sbom: boolean;
+                    not_requested?: {
+                        reason: string;
+                        tool: string;
+                    }[];
+                    reason?: string;
+                    timeout_s: number;
+                    tools: string[];
+                };
+                not_requested?: {
+                    reason: string;
+                    tool: string;
+                }[];
+                repo: string;
+            }[];
             provenance: {
                 caveats?: string[];
                 scanner_image?: string;
@@ -1470,6 +2043,29 @@ export interface components {
             runs: string[];
         };
         RepoDetail: {
+            ai_components: {
+                ai_sbom?: {
+                    sha256: string;
+                    size_bytes: number;
+                    stored: boolean;
+                    withheld?: string;
+                };
+                edge_count?: number;
+                frameworks?: string[];
+                image_digest?: string;
+                measured: boolean;
+                model_providers?: string[];
+                node_counts?: {
+                    [key: string]: number;
+                };
+                note: string;
+                posture_observations?: {
+                    [key: string]: number;
+                };
+                rulepack_sha256?: string;
+                run_id?: string;
+                source?: string;
+            };
             consumers?: {
                 excluded?: boolean;
                 reachable: string;
@@ -1518,6 +2114,7 @@ export interface components {
                 codeowners?: string[];
                 has_test_suite: boolean;
                 languages: string[];
+                last_commit_sha?: string;
                 last_outcome?: string;
                 /** Format: date-time */
                 last_scanned_at?: string;
@@ -1537,6 +2134,69 @@ export interface components {
             };
             sla_windows_provisional: boolean;
         };
+        RepoNuGuardView: {
+            can_edit: boolean;
+            configured: boolean;
+            effective: {
+                clips?: {
+                    asked: string;
+                    field: string;
+                    used: string;
+                    why: string;
+                }[];
+                enabled: boolean;
+                from: string;
+                include_posture: boolean;
+                keep_sbom: boolean;
+                not_requested?: {
+                    reason: string;
+                    tool: string;
+                }[];
+                reason?: string;
+                timeout_s: number;
+                tools: string[];
+            };
+            note?: string;
+            override?: {
+                /** Format: date-time */
+                changed_at: string;
+                changed_by: string;
+                include_posture?: boolean;
+                mode: string;
+                repo: string;
+                tools?: string[];
+            };
+            recent: {
+                effective?: {
+                    clips?: {
+                        asked: string;
+                        field: string;
+                        used: string;
+                        why: string;
+                    }[];
+                    enabled: boolean;
+                    from: string;
+                    include_posture: boolean;
+                    keep_sbom: boolean;
+                    not_requested?: {
+                        reason: string;
+                        tool: string;
+                    }[];
+                    reason?: string;
+                    timeout_s: number;
+                    tools: string[];
+                };
+                not_requested?: {
+                    reason: string;
+                    tool: string;
+                }[];
+                note?: string;
+                /** Format: date-time */
+                run_at?: string;
+                run_id: string;
+            }[];
+            repo: string;
+        };
         RepoSummary: {
             archived?: boolean;
             by_category?: {
@@ -1548,6 +2208,7 @@ export interface components {
             codeowners?: string[];
             has_test_suite: boolean;
             languages: string[];
+            last_commit_sha?: string;
             last_outcome?: string;
             /** Format: date-time */
             last_scanned_at?: string;
@@ -1574,6 +2235,32 @@ export interface components {
             supersedes?: string;
             template: string;
             withheld_count: number;
+        };
+        RunNuGuard: {
+            effective: {
+                clips?: {
+                    asked: string;
+                    field: string;
+                    used: string;
+                    why: string;
+                }[];
+                enabled: boolean;
+                from: string;
+                include_posture: boolean;
+                keep_sbom: boolean;
+                not_requested?: {
+                    reason: string;
+                    tool: string;
+                }[];
+                reason?: string;
+                timeout_s: number;
+                tools: string[];
+            };
+            not_requested?: {
+                reason: string;
+                tool: string;
+            }[];
+            repo: string;
         };
         RunObservation: {
             /** Format: date-time */
@@ -1637,6 +2324,12 @@ export interface components {
                 /** Format: date-time */
                 finished_at?: string;
                 id: string;
+                nuguard?: {
+                    include_posture?: boolean;
+                    keep_sbom?: boolean;
+                    mode: string;
+                    tools?: string[];
+                };
                 reason?: string;
                 repo: string;
                 /** Format: date-time */
@@ -1657,6 +2350,12 @@ export interface components {
                 /** Format: date-time */
                 finished_at?: string;
                 id: string;
+                nuguard?: {
+                    include_posture?: boolean;
+                    keep_sbom?: boolean;
+                    mode: string;
+                    tools?: string[];
+                };
                 reason?: string;
                 repo: string;
                 /** Format: date-time */
@@ -1675,6 +2374,12 @@ export interface components {
             /** Format: date-time */
             finished_at?: string;
             id: string;
+            nuguard?: {
+                include_posture?: boolean;
+                keep_sbom?: boolean;
+                mode: string;
+                tools?: string[];
+            };
             reason?: string;
             repo: string;
             /** Format: date-time */
@@ -1740,6 +2445,7 @@ export interface components {
                 credential_type?: string;
                 description?: string;
                 description_source?: string;
+                domain: string;
                 fingerprint: string;
                 identity: {
                     aliases?: string[];
@@ -1753,6 +2459,37 @@ export interface components {
                     module?: string;
                     module_major?: string;
                     package?: string;
+                };
+                nuguard?: {
+                    effective?: {
+                        clips?: {
+                            asked: string;
+                            field: string;
+                            used: string;
+                            why: string;
+                        }[];
+                        enabled: boolean;
+                        from: string;
+                        include_posture: boolean;
+                        keep_sbom: boolean;
+                        not_requested?: {
+                            reason: string;
+                            tool: string;
+                        }[];
+                        reason?: string;
+                        timeout_s: number;
+                        tools: string[];
+                    };
+                    function?: string;
+                    last_run?: string;
+                    mitre_atlas_technique?: string;
+                    note?: string;
+                    owasp_asi_ref?: string;
+                    owasp_llm_ref?: string;
+                    rule: string;
+                    scanned?: string;
+                    sub_tool?: string;
+                    version: string;
                 };
                 observation: {
                     /** Format: date-time */
@@ -2146,6 +2883,86 @@ export interface operations {
             };
         };
     };
+    nuguard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the AI scanning page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NuGuardView"];
+                };
+            };
+        };
+    };
+    nuguardAudit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description one page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NuGuardAuditPage"];
+                };
+            };
+        };
+    };
+    nuguardPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NuGuardPreview"];
+                };
+            };
+        };
+    };
+    putNuGuardSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the page after the change */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NuGuardView"];
+                };
+            };
+        };
+    };
     reports: {
         parameters: {
             query?: never;
@@ -2222,6 +3039,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RepoDetail"];
+                };
+            };
+        };
+    };
+    repoAISBOM: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the AI-SBOM */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    repoNuGuard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the setting */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepoNuGuardView"];
+                };
+            };
+        };
+    };
+    putRepoNuGuard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the setting after the change */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepoNuGuardView"];
                 };
             };
         };

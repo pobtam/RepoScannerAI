@@ -7,10 +7,12 @@ package scan
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 )
 
 // Language identifies a repository language for adapter selection.
@@ -78,6 +80,33 @@ type RunOpts struct {
 
 	// APICredits is the rate budget granted for this invocation (VM-AD §7.2).
 	APICredits int
+
+	// RunID, Repo and CommitSHA name exactly what is being scanned: the run,
+	// the repository as owner/name, and the commit its tree on disk was taken
+	// at. An adapter that scans remotely (NuGuard) uses them to scan the same
+	// commit the local tools see. None is a credential, and no credential is
+	// ever added to RunOpts (VM-F-206): a credential an adapter needs reaches
+	// it through a function, as gh.TokenClient.Token does.
+	//
+	// The worker fills RunID and Repo from its own arguments. CommitSHA is
+	// set by the dispatcher, and empty where nothing recorded the commit (a
+	// checkout with no .git, a download that resolved none).
+	RunID     string
+	Repo      string
+	CommitSHA string
+
+	// NuGuard is the NuGuard options this repository's scan resolved to
+	// (nuguardopt.ResolveNuGuardOptions, run by the scan worker), or nil
+	// where nothing resolved any and the adapter's own configuration
+	// applies. No secret: tools, posture, timeout and where each came from.
+	NuGuard *nuguardopt.Effective
+
+	// LocalClone is set where the tree is a local clone (real mode), by a
+	// dispatcher asked to read it: the clone's GitHub owner/name, which a
+	// remote adapter scans in place of the registered name, and whether the
+	// tree on disk differs from the commit. Nil where the tree was
+	// downloaded from GitHub at the commit. No credential.
+	LocalClone *LocalClone
 }
 
 // RawOutput is a tool's verbatim output plus the context needed to normalise
@@ -102,6 +131,27 @@ type RawOutput struct {
 	// keeps normalisation a pure function of bytes, which is what makes the
 	// fixture tests meaningful.
 	Aux map[string][]byte
+
+	// Versions records what the tool reported about itself beyond its pinned
+	// version, keyed as Result.ToolVersions is: "nuguard" (the version the
+	// service reported), "nuguard/rulepack", "nuguard/image". The worker
+	// merges it into the result's ToolVersions (VM-F-202). Nil for a tool
+	// with nothing further to report.
+	Versions map[string]string
+
+	// Requested names the tools a wrapping adapter asked for in this run, so
+	// SubTools can tell a tool that was asked for and is missing from one
+	// that was not asked for. Nil for a one-tool adapter.
+	Requested []string
+
+	// SBOM is a document the tool returned beside its findings because the
+	// scan asked to keep it (NuGuard's AI-SBOM). Nil when not asked for.
+	SBOM json.RawMessage
+
+	// Annotations are added to every finding Normalize returns from this
+	// run: what is true of the run rather than of one finding (NuGuard
+	// scanned the commit, not the working tree the local tools scanned).
+	Annotations map[string]string
 }
 
 // Adapter is the scanner contract (VM-AD §8.4).

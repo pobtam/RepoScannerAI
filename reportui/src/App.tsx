@@ -21,6 +21,7 @@ import { RepoDetail, RepoIndex } from './features/repos/Repos';
 import { Waves } from './features/waves/Waves';
 import { Reports } from './features/reports/Reports';
 import { GitHubPage } from './features/github/GitHub';
+import { NuGuardPage, useNuGuardVisible } from './features/nuguard/NuGuard';
 import { Link, RouterProvider, match, useRouter } from './lib/router';
 import { icons } from './components/icons';
 
@@ -49,7 +50,16 @@ export function App() {
 
 /** The navigation, in the order a reader works: what happened, what is
  *  open, whether it was all looked at; then the records behind it. */
-const NAV: { heading: string; items: { to: string; label: string; icon: ReactNode; active: (p: string) => boolean }[] }[] = [
+type NavItem = {
+  to: string;
+  label: string;
+  icon: ReactNode;
+  active: (p: string) => boolean;
+  /** Shown only to a caller the API lets see NuGuard: engineers and up. */
+  nuguard?: boolean;
+};
+
+const NAV: { heading: string; items: NavItem[] }[] = [
   {
     heading: 'Monitor',
     items: [
@@ -74,13 +84,17 @@ const NAV: { heading: string; items: { to: string; label: string; icon: ReactNod
   },
   {
     heading: 'Sources',
-    items: [{ to: '/github', label: 'GitHub', icon: icons.github, active: (p) => p === '/github' }],
+    items: [
+      { to: '/github', label: 'GitHub', icon: icons.github, active: (p) => p === '/github' },
+      { to: '/nuguard', label: 'AI scanning (NuGuard)', icon: icons.ai, active: (p) => p === '/nuguard', nuguard: true },
+    ],
   },
 ];
 
 function Shell() {
   const { path } = useRouter();
   const [navOpen, setNavOpen] = useState(false);
+  const nuguardVisible = useNuGuardVisible();
 
   // A drawer left open over the page you just chose is in the way.
   useEffect(() => setNavOpen(false), [path]);
@@ -100,7 +114,7 @@ function Shell() {
           {NAV.map((section) => (
             <div className="nav-section" key={section.heading}>
               <p className="nav-heading">{section.heading}</p>
-              {section.items.map((item) => (
+              {section.items.filter((item) => !item.nuguard || nuguardVisible).map((item) => (
                 <Link key={item.to} to={item.to} className="nav-link" current={item.active(path)}>
                   {item.icon}
                   {item.label}
@@ -172,6 +186,7 @@ function Routes() {
   if (path === '/waves') return <Waves />;
   if (path === '/reports') return <Reports />;
   if (path === '/github') return <GitHubPage />;
+  if (path === '/nuguard') return <NuGuardPage />;
 
   if (path === '/repos') return <RepoIndex />;
   const repo = match(path, '/repos/:repo*');

@@ -298,5 +298,17 @@
       "count": 11,
       "disabled": false
     }
+  ],
+  "domains": [
+    {
+      "value": "app",
+      "count": 17,
+      "disabled": false
+    },
+    {
+      "value": "ai",
+      "count": 0,
+      "disabled": true
+    }
   ]
 }

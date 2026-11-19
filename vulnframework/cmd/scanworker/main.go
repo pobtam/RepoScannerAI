@@ -1,6 +1,6 @@
 // Command scanworker scans one repository and reports the result (VM-AD §8.1).
 //
-//	input:  { run_id, repo, mode: "full"|"diff", base_sha?, head_sha? }
+//	input:  { run_id, repo, mode: "full"|"diff", base_sha?, head_sha?, commit? }
 //	output: the normalised findings, dependency inventory and coverage gaps
 //	exit:   0 on completion, including partial coverage; non-zero only on
 //	        infrastructure failure
@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strings"
@@ -45,6 +46,7 @@ func run() error {
 		mode      = flag.String("mode", "full", "full | diff")
 		baseSHA   = flag.String("base", "", "base commit, diff mode only")
 		headSHA   = flag.String("head", "", "head commit, diff mode only")
+		commit    = flag.String("commit", "", "the commit the checkout is at; empty reads it from the checkout's .git")
 		changed   = flag.String("changed", "", "comma-separated changed files, diff mode only")
 		languages = flag.String("languages", "", "comma-separated repository languages, e.g. go,javascript")
 		tier      = flag.Int("tier", 3, "repository tier")
@@ -54,6 +56,10 @@ func run() error {
 		out       = flag.String("out", "-", "where to write the result document, or - for stdout")
 		timeout   = flag.Duration("timeout", 15*time.Minute, "overall scan timeout (VM-NF-102)")
 	)
+	// NuGuard, the opt-in remote AI code-rule and inventory adapter. It is
+	// given a GitHub token only if $VULNFRAMEWORK_GITHUB_TOKEN is set: the
+	// same read-only token, never a write credential (VM-F-206).
+	nuguardFlags := adapters.RegisterNuGuardFlags(flag.CommandLine)
 	flag.Parse()
 
 	if *runID == "" || *repo == "" {
@@ -65,9 +71,15 @@ func run() error {
 		return err
 	}
 
+	log := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	ng, err := nuguardFlags.Build(context.Background(), lock, adapters.OptionalToken("VULNFRAMEWORK_GITHUB_TOKEN"), log)
+	if err != nil {
+		return err
+	}
+
 	// Every scanner binary sits behind this interface, so the worker is
 	// exercisable with a fake and no tools installed.
-	reg, err := adapters.NewRegistry(runner.Exec{}, lock)
+	reg, err := adapters.NewRegistryWith(runner.Exec{}, lock, adapters.Optional{NuGuard: ng})
 	if err != nil {
 		return err
 	}
@@ -85,6 +97,12 @@ func run() error {
 		BaseSHA:      *baseSHA,
 		HeadSHA:      *headSHA,
 		ChangedFiles: splitList(*changed),
+		CommitSHA:    *commit,
+	}
+	if opts.CommitSHA == "" {
+		// A tree with no .git has no commit to record; an adapter that needs
+		// one (NuGuard) records a gap, and the others are unaffected.
+		opts.CommitSHA, _ = scan.GitHead(*dir)
 	}
 
 	// A cancelled scan must still report what it has: the orchestrator needs

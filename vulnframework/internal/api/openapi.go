@@ -32,11 +32,14 @@ func schemaTypes() []any {
 		Timeline{}, Transition{}, RunObservation{}, Attempt{},
 		RunSummary{}, RunPage{}, Overview{}, Comparison{}, StateChange{},
 		CoverageView{}, CoverageGap{}, RepoCoverageHistory{},
-		RepoSummary{}, RepoDetail{}, Dependency{}, Consumer{},
+		RepoSummary{}, RepoDetail{}, Dependency{}, Consumer{}, AIComponents{},
 		Wave{}, TrendSeries{}, TrendPoint{},
 		ReportSummary{}, Health{}, Error{},
 		GitHubView{}, GitHubAccount{}, DiscoveredRepo{}, ExcludedRepo{}, DiscoverySummary{},
 		ScanRequestView{}, ScanRequestResult{}, ScanBatchResult{}, CSRFToken{},
+		NuGuardView{}, NuGuardStatusView{}, NuGuardFleetView{}, NuGuardOverrideView{}, NuGuardAuditView{},
+		NuGuardAuditPage{}, RepoNuGuardView{}, NuGuardScanOptions{}, NuGuardPreview{}, NuGuardDetail{},
+		RunNuGuard{}, CoverageNotRequested{}, AISBOMRef{},
 		Identity{}, Location{}, Versions{}, Classification{}, SLA{},
 		Observation{}, Refs{}, Provenance{}, Triage{}, ScoreBreakdown{}, ScoreInputs{},
 	}
@@ -111,9 +114,18 @@ func (s *Server) openAPI() (map[string]any, error) {
 		"/v1/reports":                get("reports", "Issued reports", arrayResponse("ReportSummary", "the reports")),
 		"/v1/reports/{id}":           get("report", "One issued report, as issued", jsonResponse("ReportSummary", "the report")),
 		"/v1/csrf":                   get("csrf", "A CSRF token for this caller, required in X-CSRF-Token on every write", jsonResponse("CSRFToken", "the token")),
-		"/v1/scans":                  merge(get("scans", "Scan requests, newest first", arrayResponse("ScanRequestView", "the requests")), post("requestScan", "Queue a scan of one registered repository (security owners; same-origin; X-CSRF-Token; body {repo})", jsonResponse("ScanRequestResult", "the request, or the one it merged into"))),
-		"/v1/scans/all":              post("requestScanAll", "Queue a scan of every included repository as one batch (security owners; same-origin; X-CSRF-Token; no body)", jsonResponse("ScanBatchResult", "the batch")),
-		"/v1/github":                 get("github", "The connected GitHub account and every repository discovery saw, with whether it is scanned", jsonResponse("GitHubView", "the account view")),
+		"/v1/scans":                  merge(get("scans", "Scan requests, newest first", arrayResponse("ScanRequestView", "the requests")), post("requestScan", "Queue a scan of one registered repository (security owners; same-origin; X-CSRF-Token; body {repo, nuguard?: {mode, tools?, include_posture?, keep_sbom?}})", jsonResponse("ScanRequestResult", "the request, or the one it merged into"))),
+		"/v1/scans/all":              post("requestScanAll", "Queue a scan of every included repository as one batch (security owners; same-origin; X-CSRF-Token; no body, or {nuguard: {...}} for every repository in it)", jsonResponse("ScanBatchResult", "the batch")),
+		"/v1/nuguard":                get("nuguard", "NuGuard status, the operator's ceiling, fleet settings, repository overrides and the last 20 changes (engineers and up)", jsonResponse("NuGuardView", "the AI scanning page")),
+		"/v1/nuguard/settings":       put("putNuGuardSettings", "Replace the fleet's NuGuard settings within the ceiling (security owners; same-origin; X-CSRF-Token; body {enabled, tools, include_posture, timeout_s, reason?}; 422 names a field above the ceiling)", jsonResponse("NuGuardView", "the page after the change")),
+		"/v1/nuguard/audit":          get("nuguardAudit", "Every NuGuard settings change, newest first (engineers and up; ?repo= to narrow, ?cursor= for the next page)", jsonResponse("NuGuardAuditPage", "one page")),
+		"/v1/nuguard/preview":        get("nuguardPreview", "What a scan of ?repo= would use, with ?nuguard=&tools=&include_posture=&keep_sbom=, and any clip notes (engineers and up)", jsonResponse("NuGuardPreview", "the preview")),
+		"/v1/repos/{repo}/nuguard":   merge(get("repoNuGuard", "A repository's NuGuard override, the effective options now, and the last ten scans' options (engineers and up)", jsonResponse("RepoNuGuardView", "the setting")), put("putRepoNuGuard", "Set or clear a repository's NuGuard override (security owners; same-origin; X-CSRF-Token; body {mode, tools?, include_posture?, reason?})", jsonResponse("RepoNuGuardView", "the setting after the change"))),
+		"/v1/repos/{repo}/ai-sbom/{run_id}": get("repoAISBOM", "The AI-SBOM a scan kept, as NuGuard returned it (engineers and up; ?format=json; cyclonedx is 501), or 404 with the reason", map[string]any{
+			"200": map[string]any{"description": "the AI-SBOM", "content": map[string]any{"application/json": map[string]any{
+				"schema": map[string]any{"type": "object", "additionalProperties": true}}}},
+		}),
+		"/v1/github": get("github", "The connected GitHub account and every repository discovery saw, with whether it is scanned", jsonResponse("GitHubView", "the account view")),
 	}
 
 	return map[string]any{
@@ -143,6 +155,16 @@ func get(id, summary string, responses map[string]any) map[string]any {
 func post(id, summary string, responses map[string]any) map[string]any {
 	return map[string]any{
 		"post": map[string]any{
+			"operationId": id,
+			"summary":     summary,
+			"responses":   responses,
+		},
+	}
+}
+
+func put(id, summary string, responses map[string]any) map[string]any {
+	return map[string]any{
+		"put": map[string]any{
 			"operationId": id,
 			"summary":     summary,
 			"responses":   responses,

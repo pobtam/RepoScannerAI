@@ -599,3 +599,135 @@ of RD §10:
 
 **Needs from you:** whether 8c is wanted at all, and which repositories
 would opt in first.
+
+---
+
+## D13 amendment (proposed 2026-11-03, awaiting owner)
+
+D13 stands as written: this project's own Phase 3 rules remain the plan.
+This amendment proposes one addition, which you can accept or reject on its
+own. It is built (branch `feature/nuguard-adapter`) and **off unless
+configured**.
+
+**What it adds.** NuGuard's Remote Scan API as an opt-in adapter
+(`internal/scan/adapters/nuguard.go`), for two things only:
+
+- **AI code rules:** NuGuard's `code` findings (from nga-rules, atlas, and
+  semgrep with NuGuard's AI rule pack) become this project's code findings,
+  with this project's own fingerprints. NuGuard's fingerprint is kept as an
+  annotation only.
+- **An AI component inventory:** agents, models, tools, prompts, frameworks
+  and providers. This is shown on the repository page as "AI components
+  detected", labelled as an inventory signal, never as findings, and as
+  "not measured" where NuGuard did not run.
+
+**Defaults, each a switch:**
+- Tools are `nga-rules, atlas, semgrep`.
+- `network: false`.
+- `include_posture: false`. With posture on, posture observations are only
+  counted into the inventory, never turned into findings.
+- `include_sbom: false` and `use_llm: false`.
+- Dependency, IaC and container scanning stay with this project's own tools,
+  which already cover them. Asking NuGuard too would duplicate findings
+  under other identifiers.
+
+**What was re-evaluated, and how far:**
+
+- **The false-clean status:** the service reports a status per tool
+  (`coverage.tool_runs`), and a job with any tool failed, skipped or timed
+  out is `partial`. The captured result in
+  `testdata/fixtures/nuguard/quickstart-partial.json` shows this: `osv`
+  failed, so the job is `partial`. The adapter turns each lost tool into
+  its own coverage gap.
+- **The Semgrep AI rules:** **five** rules are changed in the NuGuard
+  working tree: prompt-injection f-string, eval on LLM output, hardcoded API
+  key, LLM SSRF, and pickle model load. Each has positive and negative
+  fixtures there. The brief said six; the tree shows five.
+- **The service itself.** None of this is in a NuGuard release:
+  - The service (`nuguard/service/`) and these rule fixes are uncommitted
+    in the sibling checkout, which still reports version 0.9.15.
+  - The adapter was tested against a fake built from the service's
+    published contract (`openapi.json`, checked in both directions by
+    `internal/nuguard/contract_test.go`) and one real captured result.
+  - It has not been run against a real NuGuard service, and the NuGuard
+    container image has never been built.
+- **The proxy bug is still there:** the clone step's `_INHERITED_ENV` keeps
+  only `PATH`, `LANG` and the temp variables, so NuGuard cannot clone
+  through an egress proxy. Our VM uses a port firewall, not a proxy, so it
+  is not a blocker here.
+
+**Note, 2026-11-06 (not a decision):** NuGuard is now user-controllable
+within an operator ceiling (branch `feature/nuguard-ui-controls`, built on
+the adapter branch). The operator's flags on the scan worker set what is
+allowed. Security owners turn it on or off for the fleet, a repository or
+one scan, and choose among the three AI tools and posture, from the
+interface. Engineers see the settings read-only. Every change is audited,
+and every scan records the options it used. Reconciliation became
+tool-aware first, so switching NuGuard off never closes its findings. This
+changes nothing about the amendment itself, which is still yours to accept
+or reject. With it rejected, the controls show "NuGuard is not configured
+on this deployment" and nothing else.
+
+**Needs from you:**
+
+1. **Accept or reject the amendment.** Rejecting it leaves D13 as it was.
+   The adapter stays off and can be deleted.
+2. **Before enabling it anywhere:**
+   - NuGuard's service and rule fixes are released upstream;
+   - the image is built from that release, pinned, and passes its
+     readiness check;
+   - `config/tools.lock` pins that release's version;
+   - one run of the opt-in end-to-end test
+     (`VF_NUGUARD_E2E=1 … go test ./internal/scan/adapters -run NuGuardEndToEnd`).
+3. **The pin.** `config/tools.lock` now pins `nuguard 0.9.15`. A service
+   reporting any other version is refused at start-up and on every result.
+
+---
+
+## D15 — Claude connector (read-only), proposed 2026-11-14, awaiting owner
+
+**Blocks:** using the connector on real data, and any version that writes.
+
+**What it is.** `vulnframework/cmd/vfmcp` (branch
+`feature/claude-connector-readonly`) is a local MCP server. People ask Claude
+Desktop, Cowork or Claude Code questions such as "which tier-1 repos have
+critical findings past their SLA?", and Claude answers from vulnframework's
+API, with links into the interface. It is **read-only by construction**:
+- its HTTP client sends only GET and HEAD;
+- it can reach only a fixed list of read routes;
+- every tool is declared read-only;
+- tests prove each of these (VM-F-1101..1108, `USAGE.md` "Ask Claude about
+  your findings").
+
+**The decisions:**
+
+1. **The data notice.** Whatever Claude reads through the connector goes to
+   Anthropic as part of the conversation: finding details, descriptions,
+   advisory text, repository names, file paths, rule names, run history.
+   Secret *values* never do, because vulnframework never stores them. This
+   is the same question AI triage raised (opt-in, `REAL-REPOS.md` §4 and §6),
+   for a wider set of fields. Accept it, accept it for some repositories
+   only, or reject it.
+2. **Local only.** Version 1 runs on one machine, over stdio, against the
+   local stack. There is no remote (HTTPS) transport. It does not work with
+   the Compose stack's Caddy login, because it won't automate a login or
+   store a password.
+3. **The access level it inherits.** It sees exactly what its identity sees
+   in the interface. In `./run.sh --real` that is the development server's
+   local identity, `security_owner`: full access, including secret
+   findings' locations, for any program on this Mac that starts the
+   connector (`REAL-REPOS.md` §7). It can't be set lower: the API has no
+   per-request way to answer at a lower level, and filtering in the
+   connector would be pretend.
+4. **What a write version would need** (starting with "request a scan"):
+   - per-user API tokens, so each request is attributable and revocable;
+   - an explicit confirmation step for every write, shown to the person
+     before it happens, not decided by the model;
+   - the access log recording that the request came through Claude
+     (today the connector sends `User-Agent: vfmcp/<version>`, which the log
+     does not record);
+   - the existing write gates (security-owner level, CSRF, rate limit)
+     applied unchanged.
+
+**Not decided here.** Nothing about this is marked decided. The connector
+is built and tested; whether, where and for whom to use it is yours.

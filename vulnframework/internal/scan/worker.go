@@ -2,6 +2,8 @@ package scan
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/wanaware/vulnframework/internal/model"
+	"github.com/wanaware/vulnframework/internal/nuguardopt"
 )
 
 // Worker runs a repository's applicable scanners and assembles the result
@@ -50,6 +53,23 @@ type Result struct {
 	// Aliases is the identifier grouping built during this scan, retained so a
 	// caller can audit why two tools' findings collapsed (VM-AD §5).
 	Aliases *AliasTable `json:"-"`
+
+	// CommitSHA is the commit the scanned tree was taken at, so a report can
+	// quote exactly what was scanned. Empty where nothing recorded it.
+	CommitSHA string `json:"commit_sha"`
+
+	// AIInventory is the AI component inventory, from an adapter that reports
+	// one (InventoryReporter). Nil is "not measured", never "none found".
+	AIInventory *AIInventory `json:"ai_inventory,omitempty"`
+
+	// EffectiveNuGuard is the NuGuard options this scan ran with (RunOpts),
+	// recorded as provenance (VM-F-202); nil where none were resolved.
+	EffectiveNuGuard *nuguardopt.Effective `json:"effective_nuguard,omitempty"`
+	// ToolsNotRequested are the tools this scan did not ask for, with the
+	// reason: neither ok nor failed (NotRequestedReporter).
+	ToolsNotRequested []NotRequested `json:"tools_not_requested,omitempty"`
+	// AISBOM is the AI-SBOM the scan asked to keep, as the tool returned it.
+	AISBOM *KeptSBOM `json:"ai_sbom,omitempty"`
 
 	// Deps is the repository's dependency manifest (VM-F-602, VM-AD §8.1).
 	//
@@ -98,10 +118,11 @@ const (
 // coverage gap on the result — never a job failure, and never silence.
 func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile RepoProfile, opts RunOpts) (Result, error) {
 	started := w.clock()
+	opts.RunID, opts.Repo = runID, repo
 
 	res := Result{
-		RunID: runID, Repo: repo, Dir: dir,
-		ToolVersions: map[string]string{},
+		RunID: runID, Repo: repo, Dir: dir, CommitSHA: opts.CommitSHA,
+		ToolVersions: map[string]string{}, EffectiveNuGuard: opts.NuGuard,
 	}
 
 	adapters := w.Registry.For(profile)
@@ -115,19 +136,25 @@ func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile Repo
 	}
 
 	for _, a := range adapters {
+		// A tool this scan did not ask for is recorded as such, and an
+		// adapter switched off is not run: neither ok nor failed, so its
+		// findings are neither verified nor counted as a gap's (VM-F-160).
+		if nr, ok := a.(NotRequestedReporter); ok {
+			list := nr.NotRequested(opts)
+			res.ToolsNotRequested = append(res.ToolsNotRequested, list...)
+			if namesTool(list, a.Name()) {
+				continue
+			}
+		}
 		res.ToolVersions[a.Name()] = a.Version()
 
 		raw, err := a.Run(ctx, dir, opts)
 		if err != nil {
 			res.ToolsFailed = append(res.ToolsFailed, a.Name())
-			res.Gaps = append(res.Gaps, CoverageGap{
-				Tool:  a.Name(),
-				Cause: "execution_failed",
-				// The adapter could not be executed at all: missing binary,
-				// timeout, cancelled context. That is the platform's to fix.
-				Owner:  OwnerPlatform,
-				Detail: err.Error(),
-			})
+			// The adapter could not be executed at all: missing binary,
+			// timeout, cancelled context. That is the platform's to fix,
+			// unless the adapter knows better (GapError).
+			res.Gaps = append(res.Gaps, gapFor(a.Name(), err, "execution_failed"))
 			continue
 		}
 
@@ -140,15 +167,41 @@ func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile Repo
 		findings, err := a.Normalize(raw)
 		if err != nil {
 			res.ToolsFailed = append(res.ToolsFailed, a.Name())
-			res.Gaps = append(res.Gaps, CoverageGap{
-				Tool:  a.Name(),
-				Cause: "normalise_failed",
-				// The tool ran but its output could not be understood. That is
-				// an adapter defect, which is the platform's.
-				Owner:  OwnerPlatform,
-				Detail: err.Error(),
-			})
+			// The tool ran but its output could not be understood, or was
+			// refused (a version or commit it was not asked for). An adapter
+			// defect or a broken contract, which is the platform's.
+			res.Gaps = append(res.Gaps, gapFor(a.Name(), err, "normalise_failed"))
 			continue
+		}
+
+		// An adapter wrapping several tools can lose some of them and still
+		// produce valid output; each lost one is a gap, never silence
+		// (VM-F-211). It ran only if at least one of its tools did.
+		if gr, ok := a.(GapReporter); ok {
+			ran, gaps, err := gr.SubTools(raw)
+			if err != nil {
+				res.ToolsFailed = append(res.ToolsFailed, a.Name())
+				res.Gaps = append(res.Gaps, gapFor(a.Name(), err, "normalise_failed"))
+				continue
+			}
+			for _, g := range gaps {
+				res.ToolsFailed = append(res.ToolsFailed, g.Tool)
+			}
+			res.Gaps = append(res.Gaps, gaps...)
+			if len(ran) == 0 {
+				res.ToolsFailed = append(res.ToolsFailed, a.Name())
+				continue
+			}
+			res.ToolsOK = append(res.ToolsOK, ran...)
+		}
+		for k, v := range raw.Versions {
+			res.ToolVersions[k] = v
+		}
+		if ir, ok := a.(InventoryReporter); ok {
+			res.AIInventory = ir.Inventory(raw)
+		}
+		if raw.SBOM != nil {
+			res.AISBOM = &KeptSBOM{Tool: a.Name(), Version: raw.Versions[a.Name()], Document: raw.SBOM}
 		}
 
 		// Code, secret and config findings are diff-scoped where a diff is
@@ -195,6 +248,39 @@ func (w *Worker) Scan(ctx context.Context, runID, repo, dir string, profile Repo
 	res.DurationSec = int(w.clock().Sub(started).Seconds())
 
 	return res, nil
+}
+
+// KeptSBOM is an SBOM a tool returned because the scan asked to keep it.
+type KeptSBOM struct {
+	Tool     string          `json:"tool"`
+	Version  string          `json:"version"`
+	Document json.RawMessage `json:"document"`
+}
+
+func namesTool(list []NotRequested, tool string) bool {
+	for _, n := range list {
+		if n.Tool == tool {
+			return true
+		}
+	}
+	return false
+}
+
+// gapFor records an adapter's failure as a coverage gap: with the cause and
+// owner the adapter attached (GapError), or else the given cause, owned by the
+// platform.
+func gapFor(tool string, err error, cause string) CoverageGap {
+	g := CoverageGap{Tool: tool, Cause: cause, Owner: OwnerPlatform, Detail: err.Error()}
+	var ge *GapError
+	if errors.As(err, &ge) {
+		if ge.Cause != "" {
+			g.Cause = ge.Cause
+		}
+		if ge.Owner != "" {
+			g.Owner = ge.Owner
+		}
+	}
+	return g
 }
 
 // classify derives the repository outcome from which tools survived

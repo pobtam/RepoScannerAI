@@ -35,6 +35,42 @@ func (c Category) Valid() bool { return categorySet[c] }
 
 func (c Category) String() string { return string(c) }
 
+// Domain says whether a finding is an application vulnerability or an AI
+// vulnerability: a defect in how the code uses models, agents, prompts and
+// tools. It is derived from which scanners reported the finding (DomainOf),
+// never stored, so it cannot drift from the provenance it is read from.
+type Domain string
+
+const (
+	DomainApp Domain = "app"
+	DomainAI  Domain = "ai"
+)
+
+// AllDomains is the closed enumeration, in display order.
+var AllDomains = []Domain{DomainApp, DomainAI}
+
+// Valid reports whether d is a member of the closed enumeration.
+func (d Domain) Valid() bool { return d == DomainApp || d == DomainAI }
+
+// AIScanners are the adapters whose findings are AI vulnerabilities: they
+// look only at how code uses AI (NuGuard's AI rules, NGA posture rules and
+// ATLAS mapping). A finding any of them reported is an AI vulnerability, even
+// if another tool reported it too. Add this project's own Phase 3 AI rules
+// here when they exist (D13).
+var AIScanners = []string{"nuguard"}
+
+// DomainOf classifies a finding by the tools that reported it.
+func DomainOf(f Finding) Domain {
+	for _, t := range f.Provenance.Tools {
+		for _, ai := range AIScanners {
+			if t == ai {
+				return DomainAI
+			}
+		}
+	}
+	return DomainApp
+}
+
 // Reachable is a tri-state: "true" | "false" | "unknown".
 //
 // It is deliberately NOT a bool (VM-F-243, VM-AD §4.1). The third value is
@@ -429,12 +465,19 @@ type RawFinding struct {
 	Category Category
 
 	// Identity inputs. Which are populated depends on Category (VM-AD §5).
-	PrimaryID      string   // dependency: advisory id, before alias resolution
-	Aliases        []string // dependency: alias set, e.g. from the OSV aliases field
-	Tool           string   // code: reporting tool name
-	RuleID         string   // code: tool rule id
-	DetectorRuleID string   // secret: detector rule id
-	CheckID        string   // config: check id
+	PrimaryID string   // dependency: advisory id, before alias resolution
+	Aliases   []string // dependency: alias set, e.g. from the OSV aliases field
+	Tool      string   // code: reporting tool name
+
+	// SubTool names the tool inside a wrapping adapter that reported this —
+	// "semgrep" for nuguard/semgrep — and is empty for an adapter that is
+	// one tool. Not identity: it is what tool-aware reconciliation needs to
+	// know which source must have run before the finding's absence means
+	// anything (VM-F-160).
+	SubTool        string `json:",omitempty"`
+	RuleID         string // code: tool rule id
+	DetectorRuleID string // secret: detector rule id
+	CheckID        string // config: check id
 
 	// Location inputs.
 	Module      string // dependency: module path
@@ -503,10 +546,14 @@ type RawFinding struct {
 func ResidualWarning(c Category) string {
 	switch c {
 	case CategoryCode:
-		return "This finding is located to a FILE, not to a function: no scanner in the pinned tool " +
-			"set reports the enclosing symbol. Two occurrences of the same rule in the same file are " +
-			"therefore one finding, so this verification may have confirmed the reported occurrence " +
-			"while another in the same file remains. Check the file, not just the fix (OQ-AUDIT-02)."
+		// Still true where a scanner names the enclosing function (NuGuard,
+		// when configured): identity is file-level by decision, so that one
+		// defect seen by two tools stays one finding (OQ-AUDIT-02, VM-F-106).
+		return "This finding is located to a FILE, not to a function: its identity is the rule and " +
+			"the file, even where a scanner also names the enclosing function. Two occurrences of " +
+			"the same rule in the same file are therefore one finding, so this verification may " +
+			"have confirmed the reported occurrence while another in the same file remains. Check " +
+			"the file, not just the fix (OQ-AUDIT-02)."
 	case CategorySecret:
 		return "This finding is located to a FILE. Two credentials in the same file are one finding, " +
 			"so this verification may have confirmed one rotation while another credential in the " +

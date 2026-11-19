@@ -271,8 +271,10 @@ func TestEveryToolHasThreeEnvelopes(t *testing.T) {
 	// actions-pin has no external binary and cannot produce a tool-error
 	// envelope; gitleaks, trivy and semgrep exit non-zero without a structured
 	// error document, so their failure path is covered by the runner tests.
+	// nuguard's failures are job states and HTTP answers, not result
+	// documents; they are covered by the adapter's own tests.
 	wantEmpty := []string{"govulncheck", "gosec", "staticcheck", "osv-scanner",
-		"gitleaks", "trivy", "semgrep", "npm-audit", "actions-pin"}
+		"gitleaks", "trivy", "semgrep", "npm-audit", "actions-pin", "nuguard"}
 	wantError := []string{"govulncheck", "gosec", "staticcheck", "osv-scanner", "npm-audit"}
 
 	for _, tool := range wantEmpty {

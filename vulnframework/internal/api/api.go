@@ -185,6 +185,13 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /v1/scans", s.handleScanList)
 	s.mux.HandleFunc("POST /v1/scans", s.handleScanRequest)
 	s.mux.HandleFunc("POST /v1/scans/all", s.handleScanAll)
+
+	// NuGuard controls (nuguard.go, VM-UI-F-1201..1212).
+	s.mux.HandleFunc("GET /v1/nuguard", s.handleNuGuard)
+	s.mux.HandleFunc("GET /v1/nuguard/audit", s.handleNuGuardAudit)
+	s.mux.HandleFunc("GET /v1/nuguard/preview", s.handleNuGuardPreview)
+	s.mux.HandleFunc("PUT /v1/nuguard/settings", s.handleNuGuardSettings)
+	s.mux.HandleFunc("PUT /v1/repos/{repo...}", s.handlePutRepo)
 }
 
 // --- middleware --------------------------------------------------------------

@@ -240,3 +240,24 @@ func writeFile(t *testing.T, dir, name, content string) {
 		t.Fatal(err)
 	}
 }
+
+func TestHeadCommitIsReadAndChecked(t *testing.T) {
+	commit := strings.Repeat("ab12", 10)
+	fake := ghfake.New("octo", "fake-token", ghfake.Repo{FullName: "octo/api", Commit: commit})
+	defer fake.Close()
+	c := &gh.TokenClient{BaseURL: fake.URL, HTTP: fake.Client(), Token: func() (string, error) { return "fake-token", nil }}
+	got, err := c.HeadCommit(context.Background(), "octo/api")
+	if err != nil || got != commit {
+		t.Errorf("HeadCommit = %q, %v", got, err)
+	}
+	if _, err := c.HeadCommit(context.Background(), "octo/missing"); err == nil {
+		t.Error("an unknown repository resolved")
+	}
+	if _, err := c.HeadCommit(context.Background(), "../etc"); err == nil {
+		t.Error("a name that is not owner/repo was sent")
+	}
+	fake.Repos[0].Commit = "not-a-commit"
+	if _, err := c.HeadCommit(context.Background(), "octo/api"); err == nil {
+		t.Error("an answer that is not a commit id was accepted")
+	}
+}

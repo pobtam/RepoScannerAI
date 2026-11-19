@@ -701,6 +701,7 @@ A scanner that fails produces a coverage gap entry, not a job failure (VM-F-204)
 | Any | `gitleaks` | Secrets | Working tree every run; history on separate schedule |
 | Any | `trivy config` / `trivy fs` | Container + IaC misconfiguration | |
 | Any | *(internal)* | Actions SHA pinning check | Parse `.github/workflows/*`, flag mutable tag refs |
+| Go, JS/TS | `nuguard` *(opt-in, remote)* | AI code rules + AI component inventory | **Off unless `-nuguard-url` is set** (D13 amendment, proposed 2026-11-03). A remote service, not in the scanner image: its version is checked against `tools.lock` at start-up and on every result, and the commit it scanned must be the one the local tools scanned. Only `code` findings become findings; the inventory is a signal; each lost NuGuard tool is its own gap (`nuguard/<tool>`). |
 
 ### 8.3 Tool pinning
 

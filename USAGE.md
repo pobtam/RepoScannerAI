@@ -89,6 +89,10 @@ wondering whether the filter is broken.
 all in the URL, so you can copy the address and send someone exactly what you
 are looking at.
 
+**Found by** filters on the tool that reported a finding: NuGuard, or any of
+this project's own scanners. Its options carry no counts (the API does not
+count this dimension yet), and the panel says so.
+
 ### Reading a row
 
 * **Priority** — P0 is most urgent. A ⚠ next to it means the figure rests on
@@ -154,6 +158,18 @@ A repository that has **never** been scanned says "never scanned" rather than
 "0 hours", because an age that does not exist should not be rendered as a
 small one.
 
+**Not requested is not failed.** A tool a scan did not ask for (NuGuard
+switched off for a repository or a scan, or one of its tools not chosen) is
+listed under "Tools not requested", with the reason, apart from the gaps:
+
+* *failed* means the tool was asked and lost: a coverage gap, and the scan
+  is partial;
+* *not requested* means nobody asked: the scan can still be complete.
+
+Either way, the findings that tool reported before are **not** closed by its
+silence. They keep their state and are flagged not re-observed until a scan
+with that tool looks again.
+
 ---
 
 ## History
@@ -183,6 +199,59 @@ A repository with **no test suite** is flagged prominently. It matters because
 without tests there is no way to prove a fix worked, so the system does not
 attempt automated fixes there at all.
 
+The header shows the **commit** the latest scan read, short; hover for the
+full SHA, and copy it with the button beside it.
+
+Where NuGuard is configured, the **NuGuard** section says what a scan of this
+repository would use now, and where each part comes from (this repository,
+the fleet setting, or the scan worker's default), with the last ten scans'
+options. Security owners can set an override here: on, off, or inherit, with
+this repository's own tools if wanted. Where a scan kept its AI-SBOM, the "AI
+components detected" panel offers it for download.
+
+---
+
+## AI scanning (NuGuard)
+
+In the navigation for engineers and security owners only; the public does not
+see it. NuGuard adds AI code rules and an AI component inventory. Dependency,
+IaC and container scanning stay with this project's own tools.
+
+Where the deployment has no NuGuard, the page says one line, "NuGuard is not
+configured on this deployment", and nothing else.
+
+* **Status:** what the scan worker last found: reachable, the service's
+  version against the pinned one, and when it checked. If the worker has not
+  reported for 15 minutes, the page says the status is unknown rather than
+  showing old values as current.
+* **Fleet settings:** on or off, the tools, posture (counted into the
+  inventory, never findings) and the time limit. A tool the operator does not
+  allow, or the service does not offer, is shown greyed out with the reason.
+  **Save** asks you to confirm, and says how many repositories the change
+  affects; repositories with their own on/off override keep it.
+* **Repository overrides** and the **settings history:** every change, who
+  made it, when, before and after, and the reason given. Kept forever.
+
+Engineers see all of it read-only.
+
+**Options for one scan.** "Scan now" and "Scan all" have a collapsed
+**NuGuard options** section: default, on or off, and when on, the tools,
+posture and "Keep the AI-SBOM". With options chosen, the page shows what the
+scan would use before you start it, including anything the operator's limits
+cut ("semgrep → left out (not offered by the service)"). Leave it closed and
+"Scan now" is the same one click it always was.
+
+**Turning NuGuard off does not close its findings.** They stay open, flagged
+not re-observed, until a scan with NuGuard looks again.
+
+**On your own Mac.** `./run.sh --real --nuguard ~/clones` runs NuGuard locally,
+from the NuGuard checkout next to this repository, and scans your clones with
+it. NuGuard downloads each repository from GitHub, so a clone with no GitHub
+origin shows NuGuard as not requested. A commit not yet pushed is a coverage
+gap, owned by the repository. When your copy has uncommitted changes, NuGuard's
+findings say it scanned the commit, not your working tree. See REAL-REPOS.md,
+"NuGuard in real mode".
+
 ---
 
 ## Waves
@@ -210,6 +279,121 @@ original.
 
 There is deliberately no "current" report. A report anchored to *now* could not
 be reproduced, and a citation to it could not be checked.
+
+---
+
+## Ask Claude about your findings
+
+`vfmcp` is a **read-only Claude connector** (an MCP server). Add it to Claude
+Desktop, Cowork or Claude Code and ask questions in plain words; Claude
+answers from the same data the interface shows, with links back to it.
+
+It **only reads**. It can't request scans, change NuGuard settings, or
+change any finding, approval or record. This is enforced in code, not by
+convention: its HTTP client sends only `GET` and `HEAD`, it can reach only a
+fixed list of read endpoints, and the tests prove both.
+
+> **What it sends to Anthropic.** Whatever Claude reads through the
+> connector becomes part of your conversation with Claude and is sent to
+> Anthropic: finding details, descriptions and advisory text, repository
+> names, file paths, rule names and run history. **Secret values are never
+> included**, because vulnframework never stores them: a secret finding
+> shows its category, file, detector rule and state only. Use it only where
+> sending that to Anthropic is acceptable. It is an open decision
+> (`DECISIONS-NEEDED.md` D15), like AI triage.
+
+### What it sees
+
+Exactly what you see in the interface, never more. It reads through the
+interface's own address and is given the same identity:
+
+* **`./run.sh --real`:** the development server vouches for you as
+  `security_owner` (`REAL-REPOS.md` §7), so the connector has **full access,
+  including secret findings' locations**. Anything on this Mac that can start
+  the connector, or connect to `127.0.0.1:5173`, has the same access.
+* **`./run.sh` (the demonstration):** the demonstration's fixed identity and
+  its invented data.
+* **The Compose stack behind the Caddy login** (`https://localhost:18443`):
+  **not supported yet.** That needs per-user API tokens; the connector won't
+  automate a login or store a password. See `NOW-VS-LATER.md`.
+
+There is no option to make it see less: the API has no way to answer at a
+lower level for one request, and filtering in the connector would only hide
+data it had already received.
+
+### Add it to Claude Code
+
+It is already configured for this repository in `.mcp.json`. Start the stack
+(`./run.sh` or `./run.sh --real`), then start Claude Code at the repository
+root and approve the `vulnframework` server when asked. To add it yourself:
+
+```sh
+claude mcp add -s project vulnframework -- \
+  go -C vulnframework run ./cmd/vfmcp -api-url http://127.0.0.1:5173
+```
+
+### Add it to Claude Desktop or Cowork
+
+Build it once:
+
+```sh
+cd vulnframework && go build -o bin/vfmcp ./cmd/vfmcp
+```
+
+Then add this to the `mcpServers` section of Claude Desktop's configuration
+(Settings → Developer → Edit Config), with the full path to the binary, and
+restart Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "vulnframework": {
+      "command": "/full/path/to/vulnerabilityAI/vulnframework/bin/vfmcp",
+      "args": ["-api-url", "http://127.0.0.1:5173"]
+    }
+  }
+}
+```
+
+Flags:
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `-api-url` | `http://127.0.0.1:5173` | Where to read. The interface's address, because in real mode the API's own port (8080) refuses callers the development server has not vouched for. Plain `http` is refused to anything but this machine. |
+| `-ui-url` | same as `-api-url` | The address used in links. |
+| `-timeout` | `15s` | The time allowed for each API call. |
+
+### Questions to try
+
+* "Which tier-1 repos have critical findings past their SLA?"
+* "Why wasn't finding 2c9b3e7776350975 marked fixed?" (or "…why was it?")
+* "Which repos haven't had a complete scan, and why?"
+* "What AI components does pobtampal/nuguard-canary use?"
+* "What open AI findings does this repo have?"
+* "What changed between runs M-000007 and M-000008?"
+* "Is NuGuard up, and who changed its settings last?"
+
+Its tools: `search_findings`, `get_finding`, `list_repositories`,
+`get_repository`, `list_runs`, `compare_runs`, `get_coverage_gaps` and
+`get_nuguard_status`. Every answer carries fingerprints, run IDs and
+repository names with links into the interface, so you can check it.
+
+### What it can't do
+
+* **Change anything.** Requesting a scan comes later, as a separate step
+  with its own confirmation.
+* **Recompute priorities.** Priority, severity, score and SLA status are
+  vulnframework's. Claude is told to explain them, never to re-derive them.
+* **Show an AI-SBOM or raw tool output.** It links to them instead.
+* **Look back further than the API does.** Coverage gaps are as of each
+  repository's latest scan; there is no "this week" filter in the API, and
+  the run list doesn't count runs, so the connector says "not counted".
+* **Trust what it reads.** Descriptions, file paths and NuGuard text come
+  from scanned code and tools. Claude is told they are data, never
+  instructions.
+* **Show in the access log as "via Claude".** Its requests are logged as
+  yours. They carry `User-Agent: vfmcp/0.1.0`, but the access log doesn't
+  record that yet.
 
 ---
 

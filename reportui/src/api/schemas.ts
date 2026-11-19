@@ -142,10 +142,52 @@ export const triage = z.object({
   model: z.string().optional(),
 });
 
+/* --- NuGuard (VM-UI-F-1201..1212) ------------------------------------- */
+
+/** A tool a scan did not ask for, and why: neither ok nor failed. */
+export const notRequested = z.object({ tool: z.string(), reason: z.string() });
+
+/** A value the operator's ceiling did not allow, and what was used. */
+export const clipNote = z.object({ field: z.string(), asked: z.string(), used: z.string(), why: z.string() });
+
+/**
+ * What one repository's scan uses (or used), after inheritance and the
+ * ceiling: provenance a NuGuard finding or inventory is read against.
+ */
+export const effectiveNuGuard = z.object({
+  enabled: z.boolean(),
+  tools: z.array(z.string()),
+  include_posture: z.boolean(),
+  timeout_s: z.number(),
+  keep_sbom: z.boolean(),
+  from: z.string(),
+  reason: z.string().optional(),
+  clips: z.array(clipNote).optional(),
+  not_requested: z.array(notRequested).optional(),
+});
+
+/** A NuGuard finding's own detail, on the detail view only. */
+export const nuguardDetail = z.object({
+  version: z.string(),
+  rule: z.string(),
+  sub_tool: z.string().optional(),
+  owasp_llm_ref: z.string().optional(),
+  owasp_asi_ref: z.string().optional(),
+  mitre_atlas_technique: z.string().optional(),
+  function: z.string().optional(),
+  scanned: z.string().optional(),
+  last_run: z.string().optional(),
+  effective: effectiveNuGuard.optional(),
+  note: z.string().optional(),
+});
+
 export const finding = z.object({
   fingerprint: z.string(),
   repo: z.string(),
   category: z.string(),
+  // "app" (application vulnerability) or "ai" (AI vulnerability), from the
+  // scanners that reported it.
+  domain: z.enum(['app', 'ai']),
   identity: identity,
   location: location,
   versions: versions.optional(),
@@ -166,6 +208,7 @@ export const finding = z.object({
   annotations: z.record(z.string(), z.string()).optional(),
   score: scoreBreakdown.optional(),
   restricted: z.boolean().optional(),
+  nuguard: nuguardDetail.optional(),
 });
 
 export const corpus = z.object({
@@ -205,6 +248,7 @@ export const facets = z.object({
   severities: z.array(facetOption),
   reachable: z.array(facetOption),
   dep_classes: z.array(facetOption),
+  domains: z.array(facetOption),
 });
 
 export const transition = z.object({
@@ -373,6 +417,9 @@ export const overview = z.object({
   coverage: coverage,
   provenance: reportProvenance,
   caveats: z.array(z.string()).optional(),
+  nuguard: z
+    .array(z.object({ repo: z.string(), effective: effectiveNuGuard, not_requested: z.array(notRequested).optional() }))
+    .optional(),
 });
 
 export const coverageGap = z.object({
@@ -386,6 +433,7 @@ export const coverageGap = z.object({
   owner: z.string().optional(),
   tools_ok: z.array(z.string()).optional(),
   tools_failed: z.array(z.string()).optional(),
+  tools_not_requested: z.array(notRequested).optional(),
   consecutive_runs: z.number(),
   consecutive_deferrals: z.number(),
   last_qualifying_run: z.string().optional(),
@@ -412,6 +460,7 @@ export const coverageView = z.object({
   escalations: z.array(escalation).optional(),
   warning: z.string(),
   history: z.array(repoCoverageHistory),
+  not_requested: z.array(z.object({ repo: z.string(), run_id: z.string(), tools: z.array(notRequested) })),
 });
 
 export const repoSummary = z.object({
@@ -430,6 +479,7 @@ export const repoSummary = z.object({
   last_scanned_run: z.string().optional(),
   last_scanned_at: z.string().optional(),
   last_outcome: z.string().optional(),
+  last_commit_sha: z.string().optional(),
   no_test_suite_note: z.string().optional(),
 });
 
@@ -450,6 +500,28 @@ export const consumer = z.object({
   reason: z.string().optional(),
 });
 
+/**
+ * What the latest scan found of a repository's AI use: an inventory signal,
+ * never findings. "Not measured" is its own state, said in words, never
+ * rendered as zero.
+ */
+export const aiComponents = z.object({
+  measured: z.boolean(),
+  note: z.string(),
+  run_id: z.string().optional(),
+  source: z.string().optional(),
+  rulepack_sha256: z.string().optional(),
+  image_digest: z.string().optional(),
+  node_counts: openMap.optional(),
+  edge_count: z.number().optional(),
+  frameworks: z.array(z.string()).optional(),
+  model_providers: z.array(z.string()).optional(),
+  posture_observations: openMap.optional(),
+  ai_sbom: z
+    .object({ stored: z.boolean(), size_bytes: z.number(), sha256: z.string(), withheld: z.string().optional() })
+    .optional(),
+});
+
 export const repoDetail = z.object({
   repo: repoSummary,
   sla_windows: z.record(z.string(), z.record(z.string(), z.string())),
@@ -458,6 +530,7 @@ export const repoDetail = z.object({
   open_prs: z.array(attempt).optional(),
   consumers: z.array(consumer).optional(),
   coverage: z.array(repoCoverageHistory),
+  ai_components: aiComponents,
 });
 
 export const wave = z.object({
@@ -546,6 +619,14 @@ export const scanRequest = z.object({
   started_at: z.string().optional(),
   finished_at: z.string().optional(),
   retry_of: z.string().optional(),
+  nuguard: z
+    .object({
+      mode: z.enum(['default', 'on', 'off']),
+      tools: z.array(z.string()).optional(),
+      include_posture: z.boolean().optional(),
+      keep_sbom: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const scanRequestResult = z.object({ request: scanRequest, merged: z.boolean() });
@@ -605,6 +686,101 @@ export const githubView = z.object({
   }),
 });
 
+export const nuguardStatus = z.object({
+  reported: z.boolean(),
+  stale: z.boolean(),
+  stale_note: z.string().optional(),
+  checked_at: z.string().optional(),
+  reachable: z.boolean().optional(),
+  service_version: z.string().optional(),
+  pinned_version: z.string().optional(),
+  version_ok: z.boolean().optional(),
+  tools_allowed_by_service: z.array(z.string()).optional(),
+  last_error: z.string().optional(),
+});
+
+export const nuguardFleet = z.object({
+  enabled: z.boolean(),
+  tools: z.array(z.string()),
+  include_posture: z.boolean(),
+  timeout_s: z.number(),
+});
+
+export const nuguardCeiling = z.object({
+  configured: z.boolean(),
+  allow_tools: z.array(z.string()),
+  allow_posture: z.boolean(),
+  max_timeout_s: z.number(),
+  service_tools: z.array(z.string()).optional(),
+  defaults: nuguardFleet,
+});
+
+export const nuguardOverride = z.object({
+  repo: z.string(),
+  mode: z.string(),
+  tools: z.array(z.string()).optional(),
+  include_posture: z.boolean().optional(),
+  changed_by: z.string(),
+  changed_at: z.string(),
+});
+
+export const nuguardAudit = z.object({
+  id: z.number(),
+  scope: z.string(),
+  repo: z.string().optional(),
+  before: z.record(z.string(), z.unknown()).optional(),
+  after: z.record(z.string(), z.unknown()).optional(),
+  changed_by: z.string(),
+  changed_at: z.string(),
+  reason: z.string().optional(),
+});
+
+export const nuguardView = z.object({
+  configured: z.boolean(),
+  note: z.string().optional(),
+  status: nuguardStatus,
+  ceiling: nuguardCeiling.optional(),
+  selectable: z.array(z.string()),
+  fleet: z.object({
+    set: z.boolean(),
+    settings: nuguardFleet,
+    changed_by: z.string().optional(),
+    changed_at: z.string().optional(),
+  }),
+  override_count: z.number(),
+  overrides: z.array(nuguardOverride),
+  audit: z.array(nuguardAudit),
+  can_edit: z.boolean(),
+});
+
+export const nuguardAuditPage = z.object({ entries: z.array(nuguardAudit), next: z.string().optional() });
+
+export const nuguardScanOptions = z.object({
+  run_id: z.string(),
+  run_at: z.string().optional(),
+  effective: effectiveNuGuard.optional(),
+  not_requested: z.array(notRequested).optional(),
+  note: z.string().optional(),
+});
+
+export const repoNuGuard = z.object({
+  repo: z.string(),
+  configured: z.boolean(),
+  note: z.string().optional(),
+  override: nuguardOverride.optional(),
+  effective: effectiveNuGuard,
+  recent: z.array(nuguardScanOptions),
+  can_edit: z.boolean(),
+});
+
+export const nuguardPreview = z.object({
+  repo: z.string(),
+  configured: z.boolean(),
+  effective: effectiveNuGuard,
+  clips: z.array(clipNote),
+  note: z.string().optional(),
+});
+
 export const apiError = z.object({
   error: z.string(),
   detail: z.string().optional(),
@@ -635,6 +811,15 @@ export type GitHubView = z.infer<typeof githubView>;
 export type ScanRequest = z.infer<typeof scanRequest>;
 export type DiscoveredRepo = z.infer<typeof discoveredRepo>;
 export type ApiError = z.infer<typeof apiError>;
+export type EffectiveNuGuard = z.infer<typeof effectiveNuGuard>;
+export type NotRequested = z.infer<typeof notRequested>;
+export type NuGuardView = z.infer<typeof nuguardView>;
+export type NuGuardAuditEntry = z.infer<typeof nuguardAudit>;
+export type NuGuardAuditPage = z.infer<typeof nuguardAuditPage>;
+export type RepoNuGuard = z.infer<typeof repoNuGuard>;
+export type NuGuardPreview = z.infer<typeof nuguardPreview>;
+export type NuGuardDetail = z.infer<typeof nuguardDetail>;
+export type ScanNuGuardOptions = NonNullable<ScanRequest['nuguard']>;
 
 /* ---------------------------------------------------------------------------
  * The compile-time proof.
@@ -693,6 +878,14 @@ export type _proofs = [
   Proof<Matches<StateChange, Schemas['StateChange']>>,
   Proof<Matches<Health, Schemas['Health']>>,
   Proof<Matches<ApiError, Schemas['Error']>>,
+  Proof<Matches<NuGuardView, Schemas['NuGuardView']>>,
+  Proof<Matches<NuGuardAuditPage, Schemas['NuGuardAuditPage']>>,
+  Proof<Matches<RepoNuGuard, Schemas['RepoNuGuardView']>>,
+  Proof<Matches<NuGuardPreview, Schemas['NuGuardPreview']>>,
+  Proof<Matches<z.infer<typeof overview>, Schemas['Overview']>>,
+  Proof<Matches<z.infer<typeof coverageView>, Schemas['CoverageView']>>,
+  Proof<Matches<ScanRequest, Schemas['ScanRequestView']>>,
+  Proof<Matches<z.infer<typeof aiComponents>, Schemas['AIComponents']>>,
 
   // The nested shapes, where the honesty fields live.
   Proof<Matches<z.infer<typeof identity>, Schemas['Identity']>>,
@@ -713,4 +906,10 @@ export type _proofs = [
   Proof<Matches<z.infer<typeof repoCoverageHistory>, Schemas['RepoCoverageHistory']>>,
   Proof<Matches<z.infer<typeof dependency>, Schemas['Dependency']>>,
   Proof<Matches<z.infer<typeof trendPoint>, Schemas['TrendPoint']>>,
+  Proof<Matches<NuGuardDetail, Schemas['NuGuardDetail']>>,
+  Proof<Matches<z.infer<typeof nuguardStatus>, Schemas['NuGuardStatusView']>>,
+  Proof<Matches<z.infer<typeof nuguardOverride>, Schemas['NuGuardOverrideView']>>,
+  Proof<Matches<z.infer<typeof nuguardAudit>, Schemas['NuGuardAuditView']>>,
+  Proof<Matches<z.infer<typeof nuguardScanOptions>, Schemas['NuGuardScanOptions']>>,
+  Proof<Matches<z.infer<typeof effectiveNuGuard>, NonNullable<Schemas['NuGuardDetail']['effective']>>>,
 ];

@@ -16,6 +16,7 @@
  * someone a list they did not ask for, with no indication, is worse than
  * showing them the unfiltered one.
  */
+import { domainLabel } from './domain';
 import { z } from 'zod';
 
 export const scopeSchema = z.enum(['open', 'all', 'run']);
@@ -37,12 +38,16 @@ export const explorerState = z.object({
   tier: list.optional(),
   language: list.optional(),
   category: list.optional(),
+  // App or AI vulnerability (src/lib/domain.ts).
+  domain: list.optional(),
   state: list.optional(),
   reason: list.optional(),
   priority: list.optional(),
   severity: list.optional(),
   reachable: list.optional(),
   depClass: list.optional(),
+  // The tools that reported a finding (VM-UI-F-1207).
+  found_by: list.optional(),
   transitive: tri.optional(),
   firstParty: tri.optional(),
   blocked: tri.optional(),
@@ -65,12 +70,14 @@ export const MULTI_DIMENSIONS = [
   'tier',
   'language',
   'category',
+  'domain',
   'state',
   'reason',
   'priority',
   'severity',
   'reachable',
   'depClass',
+  'found_by',
 ] as const;
 export type MultiDimension = (typeof MULTI_DIMENSIONS)[number];
 
@@ -211,7 +218,11 @@ export function activeFilters(
   const out: { dimension: string; value: string; label: string }[] = [];
   for (const dim of MULTI_DIMENSIONS) {
     for (const value of state[dim] ?? []) {
-      out.push({ dimension: dim, value, label: `${dim}: ${value}` });
+      out.push({
+        dimension: dim,
+        value,
+        label: dim === 'domain' ? `type: ${domainLabel(value)}` : `${dim}: ${value}`,
+      });
     }
   }
   for (const flag of FLAG_DIMENSIONS) {

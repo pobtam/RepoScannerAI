@@ -402,3 +402,31 @@ func TestLineIsDisplayOnlyInTheRecord(t *testing.T) {
 		t.Fatalf("a finding carrying a line number was rejected: %v", err)
 	}
 }
+
+// A finding is an AI vulnerability when an AI scanner reported it, even
+// alongside other tools; otherwise it is an application vulnerability.
+func TestDomainOf(t *testing.T) {
+	for _, tc := range []struct {
+		tools []string
+		want  model.Domain
+	}{
+		{nil, model.DomainApp},
+		{[]string{"gosec"}, model.DomainApp},
+		{[]string{"govulncheck", "osv-scanner", "trivy"}, model.DomainApp},
+		{[]string{"nuguard"}, model.DomainAI},
+		{[]string{"semgrep", "nuguard"}, model.DomainAI},
+	} {
+		f := model.Finding{Provenance: model.Provenance{Tools: tc.tools}}
+		if got := model.DomainOf(f); got != tc.want {
+			t.Errorf("DomainOf(%v) = %q, want %q", tc.tools, got, tc.want)
+		}
+	}
+	for _, d := range model.AllDomains {
+		if !d.Valid() {
+			t.Errorf("%q not valid", d)
+		}
+	}
+	if model.Domain("AI").Valid() || model.Domain("").Valid() {
+		t.Error("only the lower-case values are valid")
+	}
+}
